@@ -1,1 +1,1 @@
-# OSMOD v0.0.2 alpha
+# OSMOD v0.0.3 alpha
