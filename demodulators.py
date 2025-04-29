@@ -17,7 +17,7 @@ from scipy.fft import fft, fftfreq
 from collections import Counter
 import ctypes
 
-from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float
+from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, ctop_int
 
 """
 MIT License
@@ -303,8 +303,28 @@ class DemodulatorPSK(ModemCoreUtils):
 
 
 
-  """ This method returns the index of the most frequently occurring peak (not the start of the pulse!!)"""
   def findPulseStartIndex(self, signal):
+    self.debug.info_message("findPulseStartIndex" )
+
+    try:
+      if self.osmod.use_compiled_c_code == True:
+        self.debug.info_message("calling compiled C code")
+
+        c_signal             = ptoc_double_array(signal)
+
+        self.osmod.compiled_lib.find_pulse_start_index.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        self.osmod.compiled_lib.find_pulse_start_index.restype = ctypes.c_int
+        start_index = self.osmod.compiled_lib.find_pulse_start_index(c_signal, signal.size, self.osmod.parameters[5], self.osmod.symbol_block_size, self.osmod.pulses_per_block)
+
+        return start_index
+      else:
+        return self.findPulseStartIndexInterpretedPython(signal)
+    except:
+      sys.stdout.write("Exception in findPulseStartIndex: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  """ This method returns the index of the most frequently occurring peak (not the start of the pulse!!)"""
+  def findPulseStartIndexInterpretedPython(self, signal):
     self.debug.info_message("findPulseStartIndex" )
     try:
       all_list = []
@@ -405,7 +425,7 @@ class DemodulatorPSK(ModemCoreUtils):
 
   """ returns the most frequently occuring value in input data list that is not in items_to_ignore list """
   def count_max_occurrences(self, data, items_to_ignore):
-    self.debug.info_message("count_max_occurrences" )
+    #self.debug.info_message("count_max_occurrences" )
     try:
       if items_to_ignore == []:
         counts = Counter(data)
@@ -416,7 +436,7 @@ class DemodulatorPSK(ModemCoreUtils):
         return []
 
       max_count = max(counts.values())
-      self.debug.info_message("max_counts: " + str({key: value for key, value in counts.items() if value == max_count}) )
+      #self.debug.info_message("max_counts: " + str({key: value for key, value in counts.items() if value == max_count}) )
 
       return_value = [key for key, value in counts.items() if value == max_count]
 
@@ -437,7 +457,7 @@ class DemodulatorPSK(ModemCoreUtils):
       pulse_width = self.osmod.symbol_block_size / self.osmod.pulses_per_block
 
       for i in range(0, int(len(signal) // self.osmod.symbol_block_size)): 
-        self.debug.info_message("getting test peak")
+        #self.debug.info_message("getting test peak")
         test_peak = signal[i*self.osmod.symbol_block_size:(i*self.osmod.symbol_block_size) + self.osmod.symbol_block_size]
         test_max = np.max(test_peak)
         test_min = np.min(test_peak)
@@ -455,8 +475,8 @@ class DemodulatorPSK(ModemCoreUtils):
           all_list_ab.append(sequence_value)
           """ where == which pulse numerically from the start"""
           all_dict_where[sequence_value] = min_indices[0][x] % (self.osmod.symbol_block_size // self.osmod.pulses_per_block)
-      self.debug.info_message("Frequency Section all indices: " + str(all_list))
-      self.debug.info_message("Frequency Section all ab indices: " + str(all_list_ab))
+      #self.debug.info_message("Frequency Section all indices: " + str(all_list))
+      #self.debug.info_message("Frequency Section all ab indices: " + str(all_list_ab))
 
       half = int(self.osmod.pulses_per_block / 2)
 
@@ -486,14 +506,18 @@ class DemodulatorPSK(ModemCoreUtils):
     """ apply receive side RRC filter"""
     for block_count in range(0, int(len(audio_block) // self.osmod.symbol_block_size)): 
       offset = (block_count * self.osmod.pulses_per_block) * pulse_length
-      self.debug.info_message("block_count: " + str(block_count))
+      #self.debug.info_message("block_count: " + str(block_count))
       for pulse_count in range(0, self.osmod.pulses_per_block): 
         if (offset + pulse_start_index + ( (pulse_count+1) * pulse_length)) < int(len(audio_block)):
           audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] = audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] * self.osmod.filtRRC_coef_main
 
+    self.osmod.getDurationAndReset('apply RRC to wave')
+
     """ fft bandpass filter"""
     fft_filtered_lower  = self.bandpass_filter_fft(audio_block, frequency[0] + self.osmod.fft_filter[0], frequency[0] + self.osmod.fft_filter[1])
     fft_filtered_higher = self.bandpass_filter_fft(audio_block, frequency[1] + self.osmod.fft_filter[2], frequency[1] + self.osmod.fft_filter[3] )
+
+    self.osmod.getDurationAndReset('bandpass_filter_fft in receive_pre_filters_filter_wave')
 
     return (fft_filtered_lower.real + fft_filtered_lower.imag ) / 2, (fft_filtered_higher.real + fft_filtered_higher.imag) / 2
 
@@ -531,20 +555,29 @@ class DemodulatorPSK(ModemCoreUtils):
       fft_filtered_lower  = self.bandpass_filter_fft(audio_block, frequency[0] + self.osmod.fft_interpolate[0], frequency[0] + self.osmod.fft_interpolate[1])
       fft_filtered_higher = self.bandpass_filter_fft(audio_block, frequency[1] + self.osmod.fft_interpolate[2], frequency[1] + self.osmod.fft_interpolate[3])
 
+      self.osmod.getDurationAndReset('bandpass_filter_fft')
+
       max_occurrences_lower, where_lower    = self.testCodeGetFrequencySectionStart(fft_filtered_lower)
       max_occurrences_higher, where_higher  = self.testCodeGetFrequencySectionStart(fft_filtered_higher)
       self.debug.info_message("max_occurrences_lower: " + str(max_occurrences_lower))
       self.debug.info_message("max_occurrences_higher: " + str(max_occurrences_higher))
 
+      self.osmod.getDurationAndReset('testCodeGetFrequencySectionStart')
+
       max_occurrences_lists = self.removeConflictingItemsTwoList([max_occurrences_lower, max_occurrences_higher])
       max_occurrences_lower  = max_occurrences_lists[0]
       max_occurrences_higher = max_occurrences_lists[1]
+
+      self.osmod.getDurationAndReset('removeConflictingItemsTwoList')
 
       self.debug.info_message("max_occurrences_lower 2: " + str(max_occurrences_lower))
       self.debug.info_message("max_occurrences_higher 2: " + str(max_occurrences_higher))
 
       interpolated_lower  = self.interpolate_contiguous_items(max_occurrences_lower)
       interpolated_higher = self.interpolate_contiguous_items(max_occurrences_higher)
+
+      self.osmod.getDurationAndReset('interpolate_contiguous_items')
+
       self.debug.info_message("interpolated_lower: " + str(interpolated_lower))
       self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
 
@@ -585,6 +618,9 @@ class DemodulatorPSK(ModemCoreUtils):
       if len(interpolated_lower) == half:
         first_value = self.get_first_interpolated(interpolated_lower)
         self.block_start_candidates.append(first_value)
+
+      self.osmod.getDurationAndReset('interpolate_contiguous_items 2')
+
 
       self.debug.info_message("modified interpolated_lower: " + str(interpolated_lower))
       self.debug.info_message("modified interpolated_higher: " + str(interpolated_higher))
@@ -645,6 +681,9 @@ class DemodulatorPSK(ModemCoreUtils):
           if item >= self.osmod.pulses_per_block:
             restored_sorted_list.append(item % self.osmod.pulses_per_block)
         self.debug.info_message("restored_sorted_list: " + str(restored_sorted_list))
+
+        self.osmod.getDurationAndReset('sort_interpolated')
+
         return restored_sorted_list
       else:
         for item in normalized_list:
@@ -654,6 +693,9 @@ class DemodulatorPSK(ModemCoreUtils):
           if item < self.osmod.pulses_per_block:
             restored_sorted_list.append(item)
         self.debug.info_message("restored_sorted_list: " + str(restored_sorted_list))
+
+        self.osmod.getDurationAndReset('sort_interpolated')
+
         return restored_sorted_list
 
     except:

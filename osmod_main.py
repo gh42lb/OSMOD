@@ -18,7 +18,7 @@ from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
 from modulators import ModulatorPSK
 from demodulators import DemodulatorPSK
 from osmod_2fsk_8psk import mod_2FSK8PSK, demod_2FSK8PSK
-from osmod_2fsk_4psk import mod_2FSK4PSK, demod_2FSK4PSK
+#from osmod_2fsk_4psk import mod_2FSK4PSK, demod_2FSK4PSK
 from modem_core_utils import ModemCoreUtils
 from queue import Queue
 from datetime import datetime, timedelta
@@ -71,13 +71,18 @@ class osModem(object):
     self.mod_2fsk8psk   = mod_2FSK8PSK(self)
     self.demod_2fsk8psk = demod_2FSK8PSK(self)
 
-    self.mod_2fsk4psk   = mod_2FSK4PSK(self)
-    self.demod_2fsk4psk = demod_2FSK4PSK(self)
+    #self.mod_2fsk4psk   = mod_2FSK4PSK(self)
+    #self.demod_2fsk4psk = demod_2FSK4PSK(self)
 
     self.dataQueue = Queue()
     self.inputBuffer = Queue()
 
     self.two_times_pi = 2 * np.pi
+
+    self.timer_dict_when = {}
+    self.timer_dict_elapsed = {}
+    self.timer_last_name = ''
+
 
     """ initialize the initialization blocks for the different modulations"""
 
@@ -466,18 +471,33 @@ class osModem(object):
   def calcCarrierFrequencies(self, center_frequency):
     self.debug.info_message("calcCarrierFrequencies")
     try:
+
+      enable_align_checked = self.form_gui.window['cb_enable_align'].get()
+      carrier_alignment = self.form_gui.window['option_carrier_alignment'].get()
+
+      enable_separation_override_checked = self.form_gui.window['cb_enable_separation_override'].get()
+      separation_override = self.form_gui.window['option_separation_options'].get()
+
       frequency = []
       span = (self.num_carriers-1) * self.carrier_separation
       if span > 0:
         for i in range(0, self.num_carriers):
           temp_freq = center_frequency - int(span/2) + (i * self.carrier_separation) 
           """ frequency must be on a 20Hz boundary for the 20 characters per second mode to work correctly """
-          temp_freq = temp_freq // 20
-          temp_freq = temp_freq * 20
-          #frequency.append(center_frequency - int(span/2) + (i * self.carrier_separation) )
+          if enable_align_checked and i == 0:
+            temp_freq = temp_freq // int(carrier_alignment)
+            temp_freq = temp_freq * int(carrier_alignment)
+          else:
+            if enable_separation_override_checked:
+              temp_freq = frequency[i-1] + int(separation_override)
+            else:
+              temp_freq = frequency[i-1] + span
+
           frequency.append(temp_freq)
       else:
         frequency.append(center_frequency)
+
+      self.debug.info_message("calcCarrierFrequencies. frequencies: " + str(frequency))
 
       return frequency
 
@@ -557,26 +577,34 @@ class osModem(object):
   def startTimer(self, name):
     self.debug.info_message("startTimer")
     try:
-      self.timer_dict = {}
-      self.timer_dict[name] = datetime.now()
+      self.timer_dict_when[name] = datetime.now()
+      self.timer_dict_elapsed[name] = datetime.now() - datetime.now()
+      self.timer_last_name = name
     except:
       self.debug.error_message("Exception in startTimer: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
-  def getDuration(self, name):
-    self.debug.info_message("getDuration")
-    try:
-      return datetime.now() - self.timer_dict[name] 
-    except:
-      self.debug.error_message("Exception in getDuration: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
   def getDurationAndReset(self, name):
     self.debug.info_message("getDurationAndReset")
     try:
-      elapsed = datetime.now() - self.timer_dict[name] 
-      self.timer_dict[name] = datetime.now()
+      elapsed = datetime.now() - self.timer_dict_when[self.timer_last_name] 
+      if name in self.timer_dict_when:
+        self.timer_dict_when[name] = datetime.now()
+        self.timer_dict_elapsed[name] = self.timer_dict_elapsed[name] + elapsed
+        self.debug.info_message("total elapsed time for " + name + ": " + str(elapsed))
+      else:
+        self.timer_dict_when[name] = datetime.now()
+        self.timer_dict_elapsed[name] = datetime.now() - self.timer_dict_when[self.timer_last_name] 
+        self.debug.info_message("elapsed time for " + name + ": " + str(elapsed))
+
+      self.timer_last_name = name
       return elapsed
     except:
       self.debug.error_message("Exception in getDurationAndReset: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  def getSummary(self):
+    self.debug.info_message("getSummary")
+    for key in self.timer_dict_elapsed:
+      self.debug.info_message("total elapsed time for " + key + ": " + str(self.timer_dict_elapsed[key]))
 
      
   def startEncoder(self, text, mode):

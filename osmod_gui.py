@@ -104,6 +104,10 @@ LB28-2.5-10I,LB28-1.25-10I,LB28-0.625-10I,LB28-0.3125-10I,LB28-0.15625-10I'.spli
 
     combo_chunk_options  = '5,10,15,20,25,30,35,40,45,50'.split(',')
 
+    combo_align_options  = '5,10,15,20,25,30,35,40,45,50,100'.split(',')
+
+    combo_separation_options  = '5,10,15,20,25,30,35,40,45,50,100'.split(',')
+
     combo_text_options  = '0:peter piper,1:jack be nimble,2:row row row,3:hickory dickory,4:its raining,5:jack and jill,6:humpty dumpty,7:wise old owl,8:hey diddle diddle,9:baa baa,10:twinkle twinkle,11:on a boat,12:queen of hearts'.split(',')
 
     sg.theme('DarkGrey8')
@@ -148,7 +152,9 @@ LB28-2.5-10I,LB28-1.25-10I,LB28-0.625-10I,LB28-0.3125-10I,LB28-0.15625-10I'.spli
         self.loaded_compiled_library = False
 
     if self.loaded_compiled_library == True:
-      combo_code_options  = 'interpreted python,compiled c'.split(',')
+      #combo_code_options  = 'interpreted python,compiled c'.split(',')
+      combo_code_options  = 'compiled c,interpreted python'.split(',')
+      self.osmod.use_compiled_c_code = True
     else:
       combo_code_options  = 'interpreted python'.split(',')
 
@@ -190,18 +196,23 @@ LB28-2.5-10I,LB28-1.25-10I,LB28-0.625-10I,LB28-0.3125-10I,LB28-0.15625-10I'.spli
                            sg.Button('Run Test', size=(11, 1), key='btn_testit2'),
                            sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform', visible = False),
                            sg.Button('start 8psk decoder', size=(11, 1), key='btn_8pskdecoder', visible = False),
-                           sg.CBox('Enable AWGN', key='cb_enable_awgn',  ),
+                           sg.CBox('Enable AWGN', key='cb_enable_awgn', default=True ),
                            sg.Text('Code Options: ')  ,
                            sg.Combo(combo_code_options, key='combo_code_options', default_value=combo_code_options[0], enable_events=True),
                            sg.Text('Text Options: ')  ,
                            sg.Combo(combo_text_options, key='combo_text_options', default_value=combo_text_options[0], enable_events=True)],
                           [sg.Text('Chunk Size: ')  ,
-                           sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True)],
+                           sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True),
+                           sg.CBox('Align 1st Carrier', key='cb_enable_align', default=True ),
+                           sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[3] ),
+                           sg.CBox('Override carrier separation', key='cb_enable_separation_override', default=True ),
+                           sg.Combo(combo_separation_options, key='option_separation_options', default_value=combo_separation_options[2] )],
+
 
                         [sg.Frame('AWGN Factor', [
 
                           [
-                           sg.Slider(range=(0,10), default_value = 7.16, orientation='h', resolution=0.01, expand_x = True, enable_events = True, key='btn_slider_awgn')],
+                           sg.Slider(range=(0,10), default_value = 7.8, orientation='h', resolution=0.01, expand_x = True, enable_events = True, key='btn_slider_awgn')],
  
                         ], size=(1000, 60) )],
 
@@ -245,15 +256,15 @@ LB28-2.5-10I,LB28-1.25-10I,LB28-0.625-10I,LB28-0.3125-10I,LB28-0.15625-10I'.spli
 
     self.tabgrp = [
 
-                       [sg.Button('About', size=(9, 1), key='btn_about'),
+                       [#sg.Button('About', size=(9, 1), key='btn_about'),
                         sg.Button('Exit')],
                        [sg.TabGroup([[
-                             sg.Tab('TX', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' ),
+                             sg.Tab('Test Options', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' ),
                              sg.Tab('Charts', self.layout_charts, title_color='Blue',border_width =10, background_color='Gray' )]],
                        tab_location='centertop',
                        title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1010, 550), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
 
-    self.window = sg.Window("OSMOD v0.0.2 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD v0.0.3 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
     return (self.window)
 

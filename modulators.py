@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin
 from modem_core_utils import ModemCoreUtils
+import ctypes
+
+from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, ctop_int, ptoc_float_list
 
 """
 MIT License
@@ -167,14 +170,15 @@ class ModulatorPSK(ModemCoreUtils):
   def modulate_2fsk_npsk_optimized(self, frequency, bit_sequence, n_bits, n_sections):
     self.debug.info_message("modulate_2fsk_npsk_optimized: ")
 
-    self.debug.info_message("full bit_sequence: " + str(bit_sequence) )
+    #self.debug.info_message("full bit_sequence: " + str(bit_sequence) )
 
-    modulated_wave_signal = np.array( [] )
+    self.osmod.getDurationAndReset('init')
+
     try:
       phase_sequence1 = []
       phase_sequence2 = []
       phase_sequence3 = []
-      self.debug.info_message("bit_sequence: " + str(bit_sequence[0]) )
+      #self.debug.info_message("bit_sequence: " + str(bit_sequence[0]) )
 
       if n_sections == 2:
         for i in range(0, len(bit_sequence[0]), n_bits):
@@ -186,7 +190,59 @@ class ModulatorPSK(ModemCoreUtils):
           phase_sequence2.append(self.phase_shift_angles[int(''.join(str(bit) for bit in bit_sequence[1][i:i+n_bits]), 2)])
           phase_sequence3.append(self.phase_shift_angles[int(''.join(str(bit) for bit in bit_sequence[2][i:i+n_bits]), 2)])
 
-      self.debug.info_message("phase_sequence1: " + str(phase_sequence1) )
+      #self.debug.info_message("phase_sequence1: " + str(phase_sequence1) )
+
+      return self.modulatePhases([phase_sequence1, phase_sequence2, phase_sequence3], frequency, n_sections)
+
+    except:
+      self.debug.error_message("Exception in modulate_2fsk_npsk_optimized: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+  
+
+  def modulatePhases(self, sequences, frequency, n_sections):
+    try:
+      #if False:
+      if self.osmod.use_compiled_c_code == True:
+        self.debug.info_message("calling compiled C code")
+
+        num_samples              = self.osmod.symbol_block_size
+        time                     = np.arange(num_samples) / self.osmod.sample_rate
+        c_time                   = ptoc_double_array(time)
+        modulated_block_signal   = np.zeros(self.osmod.symbol_block_size)
+        wave_signal_size         = self.osmod.symbol_block_size * len(sequences[0])
+        modulated_wave_signal    = np.zeros(wave_signal_size)
+        c_modulated_block_signal = ptoc_double_array(modulated_block_signal)
+        c_modulated_wave_signal  = ptoc_double_array(modulated_wave_signal)
+        c_frequency              = ptoc_float_list(frequency)
+        c_phases1                = ptoc_float_list(sequences[0])
+        c_phases2                = ptoc_float_list(sequences[1])
+        c_phases3                = c_phases2 #ptoc_double_array(sequences[2])
+        c_filtRRC_coef_main      = ptoc_double_array(self.osmod.filtRRC_coef_main)
+        
+        #params....(double* modulated_block_signal, int symbol_block_size, double* modulated_wave_signal, int multi_block_size,
+        #           double* phases1, double* phases2, double* phases3, double* filtRRC_coef_main, double* time, int num_phases,
+        #           int pulses_per_block, float* frequency, int n_sections)
+
+        #self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+        self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+        self.osmod.compiled_lib.modulate_phases.restype = ctypes.c_int
+        self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
+
+        return modulated_wave_signal
+      else:
+        return self.modulatePhasesInterpretedPython(sequences, frequency, n_sections)
+    except:
+      sys.stdout.write("Exception in modulatePhases: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def modulatePhasesInterpretedPython(self, sequences, frequency, n_sections):
+
+    try:
+
+      modulated_wave_signal = np.array( [] )
+
+      phase_sequence1 = sequences[0]
+      phase_sequence2 = sequences[1]
+      phase_sequence3 = sequences[2]
 
       num_samples = self.osmod.symbol_block_size
       time = np.arange(num_samples) / self.osmod.sample_rate
@@ -216,6 +272,9 @@ class ModulatorPSK(ModemCoreUtils):
 
     except:
       self.debug.error_message("Exception in modulate_2fsk_npsk_optimized: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    self.osmod.getDurationAndReset('modulate_2fsk_npsk_optimized')
+
 
     return modulated_wave_signal
 

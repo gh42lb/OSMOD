@@ -9,6 +9,7 @@ import debug as db
 import constant as cn
 import osmod_constant as ocn
 import matplotlib.pyplot as plt
+import scipy as sp
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, sosfiltfilt
@@ -246,7 +247,8 @@ class ModemCoreUtils(object):
       N = signal_length * total_symbol_span
 
       t = np.linspace(-N/2, N/2, N, endpoint=False) * (1/Fs) * symbol_span * (12*total_symbol_span*self.osmod.symbol_block_size / N)
-      h = np.zeros(N, dtype=np.float32)
+      #h = np.zeros(N, dtype=np.float32)
+      h = np.zeros(N, dtype=np.float64)
       for i in range(N):
         if t[i] == 0.0:
           h[i] = (1.0 - alpha) + ((4 * alpha) / np.pi)
@@ -540,7 +542,7 @@ class ModemCoreUtils(object):
 
 
   """ bandpass filter fft"""
-  def bandpass_filter_fft(self, signal, freq_lo, freq_hi):
+  def bandpass_filter_fft2(self, signal, freq_lo, freq_hi):
     self.debug.info_message("bandpass_filter_fft")
 
     try:
@@ -556,6 +558,19 @@ class ModemCoreUtils(object):
     return filtered_signal
 
 
+  """ bandpass filter fft"""
+  def bandpass_filter_fft(self, signal, freq_lo, freq_hi):
+    self.debug.info_message("bandpass_filter_fft")
 
+    try:
+      fft_signal  = sp.fft.fft(signal)
+      frequencies = sp.fft.fftfreq(len(signal), 1/self.osmod.sample_rate)
+      mask         = (np.abs(frequencies) >= freq_lo) & (np.abs(frequencies) <= freq_hi)
+      fft_filtered = fft_signal * mask
+      filtered_signal = sp.fft.ifft(fft_filtered)
+    except:
+      self.debug.error_message("Exception in getStrongestFrequency: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return filtered_signal
 
 

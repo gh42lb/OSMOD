@@ -130,6 +130,9 @@ class OsmodTest(object):
     self.debug.info_message("test1")
 
     try:
+
+      self.osmod.startTimer('init')
+
       """ initialize the block"""
       self.osmod.setInitializationBlock(mode)
 
@@ -188,7 +191,7 @@ class OsmodTest(object):
       self.osmod.demod_2fsk8psk.remainder = np.array([])
 
       """ split into blocks for testing..."""
-      self.osmod.startTimer('test12_demod_timer')
+      #self.osmod.startTimer('test12_demod_timer')
 
       rcvd_bitstring_1 = []
       rcvd_bitstring_2 = []
@@ -207,7 +210,7 @@ class OsmodTest(object):
 
       self.debug.info_message("complete")
 
-      self.debug.info_message("elapsed time: " + str(self.osmod.getDuration('test12_demod_timer')))
+      #self.debug.info_message("elapsed time: " + str(self.osmod.getDuration('test12_demod_timer')))
       self.debug.info_message("text len: " + str(len(text)))
 
       self.debug.info_message("total_audio_length: " + str(total_audio_length))
@@ -248,6 +251,9 @@ class OsmodTest(object):
       self.osmod.form_gui.window['text_ebn0_value'].update("Eb/N0: " + str(ebn0))
       self.osmod.form_gui.window['text_ebn0db_value'].update("Eb/N0 (dB): " + str(ebn0_db))
       self.osmod.form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
+
+      self.osmod.getSummary()
+
 
     except:
       self.debug.error_message("Exception in test1: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))

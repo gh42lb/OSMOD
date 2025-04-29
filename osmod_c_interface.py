@@ -20,9 +20,17 @@ def ptoc_double_array(numpy_array):
     ctypes_array = (ctypes.c_double * numpy_array.size).from_buffer(numpy_array)
     return ctypes_array
 
+def ptoc_float_list(float_list):
+    return (ctypes.c_float * len(float_list))(*float_list)
+
 """ convert float to ctypes float """
 def ptoc_float(float_var):
     return ctypes.c_float(float_var)
+
+""" convert ctypes int to int """
+def ctop_int(int_var):
+    return int_var.value
+
 
 """ convert numpy complex128 array to ctypes pointer """
 #complex can be passed directly to C
