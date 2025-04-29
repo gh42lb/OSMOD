@@ -2,46 +2,6 @@
 #include <complex.h>
 #include <math.h>
 
-int mytestmain() {
-
-    float phase_offset      = 0.8f;
-    float frequency_offset  = 0.01f;
-    unsigned int n          = 40;
-
-    float complex x         = 0;
-    float phase_error       = 0;
-    float  phi_hat          = 0;
-    float  complex y        = 0;
-
-    unsigned int i;
-    for (i=0; i<n; i++)  {
-        x = cexpf(_Complex_I*(phase_offset + i * frequency_offset));
-        y = cexpf(_Complex_I*phi_hat);
-        phase_error = cargf(x*conjf(y));
-        printf("%3u : phase = %12.8f, error = %12.8f\n", i, phi_hat, phase_error);
-    }
-
-    printf("done.\n");
-    return 0;
-
-}
-
-
-int myfunc() {
-    printf("Hello from C.\n");
-}
-
-int my_func_with_float_data(float*arr, int size) {
-    printf("My C Func With Float Data.\n");
-
-    for(int i = 0; i < size; i++) {
-      printf("%f ", arr[i]);
-      arr[i] = 0.0;
-
-    }
-
-    printf("\n");
-}
 
 
 int my_func_with_complex_data(complex double *arr, int size) {
@@ -54,8 +14,6 @@ int my_func_with_complex_data(complex double *arr, int size) {
 
     printf("\n");
 }
-
-
 
 
 int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recovered_signal1b, float frequency, double* t, int size) {
@@ -73,12 +31,14 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
     double phase_normal;
     double phase_45;
     double phase_error;
-    double  ratio;
+    double ratio;
 
     double term1;
     double term2;
     double term3;
     double term4;
+    double term5;
+    double term6;
 
     double frequency_estimate = 0.0;
     double phase_estimate = 0.0;
@@ -87,11 +47,16 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
     double K1 = 2.0 * damping_factor * loop_bandwidth ;
     double K2 = pow(loop_bandwidth, 2.0) ;
 
+    term5 = M_PI * 2 / 8;
+    term6 = 2 * M_PI;
     for(int i = 0; i < size; i++) {
-      recovered_signal1a[i] = signal[i] * cos(2 * M_PI * (frequency + frequency_estimate) * t[i] + phase_estimate);
-      recovered_signal1b[i] = signal[i] * sin(2 * M_PI * (frequency + frequency_estimate) * t[i] + phase_estimate);
-      recovered_signal2a    = signal[i] * cos(2 * M_PI * (frequency + frequency_estimate) * t[i] + phase_estimate + M_PI * 2 / 8);
-      recovered_signal2b    = signal[i] * sin(2 * M_PI * (frequency + frequency_estimate) * t[i] + phase_estimate + M_PI * 2 / 8);
+      term1 = term6 * (frequency + frequency_estimate) * t[i];
+      term3 = term1 + phase_estimate;
+      term4 = term3 + term5;
+      recovered_signal1a[i] = signal[i] * cos(term3);
+      recovered_signal1b[i] = signal[i] * sin(term3);
+      recovered_signal2a    = signal[i] * cos(term4);
+      recovered_signal2b    = signal[i] * sin(term4);
       recovered_signal2     = recovered_signal2a - recovered_signal2b;
 
       I0   = recovered_signal1a[i];
@@ -113,7 +78,7 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
       max2 = fmax(max2, fabs(recovered_signal1b[i]));
     }
 
-    ratio = fmax(max1, max2) / 10000.0;   //parameters[3]
+    ratio = fmax(max1, max2) / 10000.0;
     for(int i = 0; i < size; i++) {
       recovered_signal1a[i] = recovered_signal1a[i]/ratio;
       recovered_signal1b[i] = recovered_signal1b[i]/ratio;
@@ -125,13 +90,159 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
 }
 
 
+float find_median(int* list, int n);
+
+int find_pulse_start_index(double* signal, int size, int percent, int symbol_block_size, int pulses_per_block) {
+    printf("find_pulse_start_index\n");
+
+    int sample_start;
+    float f_median;
+    int* all_list = (int*)malloc(10000 * sizeof(int));
+    int all_list_item_count = 0;
+
+    int pulse_width = symbol_block_size / pulses_per_block;
+    double running_max = 0.0;
+    double running_min = 0.0;
+
+    for(int i = symbol_block_size; i < size; i+=symbol_block_size) {
+
+        for(int j = i-symbol_block_size; j<i && j<size; j++){
+          running_max = fmax(signal[j], running_max);
+          running_min = fmin(signal[j], running_min);
+        }
+
+        for(int j = i-symbol_block_size; j<i && j<size; j++){
+          if(signal[j] * (100/running_max) > percent || signal[j] * (100/running_min) > percent ){
+            all_list[all_list_item_count] =  j % pulse_width;
+            all_list_item_count ++;
+            if( all_list_item_count % 10000 == 0){    
+              all_list = (int*)realloc(all_list, (all_list_item_count + 10000) * sizeof(int));
+            }
+          }
+        }
+        running_max = 0;
+        running_min = 0;
+    }
+
+    f_median = find_median(all_list, all_list_item_count);
+    sample_start = (int)f_median;
+
+    free(all_list);
+
+    printf("sample start: %d", (int)sample_start % pulse_width);
+    printf("Completed find_pulse_start_index\n");
+
+    return (int)sample_start % pulse_width;
+}
 
 
+int compare (const void* a, const void* b){
+    return (*(int*)a - *(int*)b);
+}
+
+float find_median(int* list, int n){
+    qsort(list, n, sizeof(int), compare);
+
+    if(n % 2 ==0){
+        return (float)(list[n/2 - 1] + list[n/2]) / 2.0;
+    } else {
+        return (float)list[n/2];
+    }
+}
 
 
+int* symbol_wave_0_of_2[256];
+int* symbol_wave_1_of_2[256];
+
+int* symbol_wave_0_of_3[256];
+int* symbol_wave_1_of_3[256];
+int* symbol_wave_2_of_3[256];
 
 
+int* symbol_wave_1_of_2[] = {(int[]){1, 0}, 
+                             (int[]){1, 1, 0, 0},
+                             (int[]){1, 1, 1, 1, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+								     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+								     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
 
+int* symbol_wave_2_of_2[] = {(int[]){0, 1}, 
+                             (int[]){0, 0, 1, 1},
+                             (int[]){0, 0, 0, 0, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+								     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+								     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} };
+
+
+int* symbol_wave_1_of_3[] = {(int[]){1, 0, 0}, 
+                             (int[]){1, 1, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
+
+int* symbol_wave_2_of_3[] = {(int[]){0, 1, 0}, 
+                             (int[]){0, 0, 1, 1, 0, 0},
+                             (int[]){0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} };
+
+int* symbol_wave_3_of_3[] = {(int[]){0, 0, 1}, 
+                             (int[]){0, 0, 0, 0, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                             (int[]){0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1} };
+
+
+int modulate_phases(double* modulated_block_signal, int symbol_block_size, double* modulated_wave_signal, int multi_block_size, float* phases1, float* phases2, float* phases3, double* filtRRC_coef_main, double* time, int num_phases, int pulses_per_block, float* frequency, int n_sections) {
+
+    double amplitude = 0.7;
+
+    int     pulse_length = symbol_block_size / pulses_per_block;
+    double  term5;
+    double  term6;
+    double  term7;
+    double  term8;
+    double  term9;
+    double  term10;
+    double  term11;
+    double  pulses_wave1;
+    double  pulses_wave2;
+
+    for(int i = 0; i < num_phases; i++) {
+        for(int k = 0; k < symbol_block_size; k++) {
+          term5 = 2 * M_PI * time[k];
+          term6 = term5 * frequency[0];
+          term7 = term5 * frequency[1];
+          term8 = term6 + phases1[i];
+          term9 = term7 + phases2[i];
+          pulses_wave1 = (double)symbol_wave_1_of_2[(int)(log2(pulses_per_block))-1][(int)(k / pulse_length)];
+          pulses_wave2 = (double)symbol_wave_2_of_2[(int)(log2(pulses_per_block))-1][(int)(k / pulse_length)];
+          term10 = (amplitude * cos(term8) + amplitude * sin(term8)) * (pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+          term11 = (amplitude * cos(term9) + amplitude * sin(term9)) * (pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+
+          modulated_wave_signal[(i * symbol_block_size) + k] = term10 + term11;
+        }
+    }
+    return 0;
+}
 
 
 
