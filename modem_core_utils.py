@@ -10,6 +10,8 @@ import constant as cn
 import osmod_constant as ocn
 import matplotlib.pyplot as plt
 import scipy as sp
+import gc
+import FreeSimpleGUI as sg
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, sosfiltfilt
@@ -18,7 +20,7 @@ from scipy.io.wavfile import write, read
 from datetime import datetime, timedelta
 from scipy.fft import fft
 from numpy.fft import ifft
-
+from scipy.signal import periodogram
 
 """
 MIT License
@@ -78,19 +80,19 @@ class ModemCoreUtils(object):
 
     for char in self.encoding_b64:
       self.b64_charfromindex_list.append(char)
-      self.debug.info_message("b64_charfromindex_list appending: " + str(char))
+      self.debug.verbose_message("b64_charfromindex_list appending: " + str(char))
     for index in range(len(self.b64_charfromindex_list)):
       char = self.b64_charfromindex_list[index]
       self.b64_indexfromchar_dict[char] = index
-      self.debug.info_message("b64_indexfromchar_dict: [" + str(char) + ']=' + str(index))
+      self.debug.verbose_message("b64_indexfromchar_dict: [" + str(char) + ']=' + str(index))
 
     for char in self.encoding_normal:
       self.normal_charfromindex_list.append(char)
-      self.debug.info_message("normal_charfromindex_list appending: " + str(char))
+      self.debug.verbose_message("normal_charfromindex_list appending: " + str(char))
     for index in range(len(self.normal_charfromindex_list)):
       char = self.normal_charfromindex_list[index]
       self.normal_indexfromchar_dict[char] = index
-      self.debug.info_message("normal_indexfromchar_dict: [" + str(char) + ']=' + str(index))
+      self.debug.verbose_message("normal_indexfromchar_dict: [" + str(char) + ']=' + str(index))
 
 
   """ file based methods"""
@@ -102,7 +104,12 @@ class ModemCoreUtils(object):
     except:
       self.debug.error_message("Exception in modDemod: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-    return np.frombuffer(audio_data, dtype=np.float32)
+    signal = np.frombuffer(audio_data, dtype=np.float32)
+
+    #return signal.astype(np.float64)
+    return signal.astype(np.longdouble)
+    #return np.frombuffer(audio_data, dtype=np.float32)
+    #return np.frombuffer(audio_data, dtype=np.float64)
 
   def writeFileWav(self, filename, multi_block):
     self.debug.info_message("writeFileWav")
@@ -117,6 +124,7 @@ class ModemCoreUtils(object):
 
       self.debug.info_message("writing audio file")
       multi_block = multi_block.astype(np.float32)
+      #multi_block = multi_block.astype(np.float64)
       write(filename, self.osmod.sample_rate, multi_block)
     except:
       self.debug.error_message("Exception in writeFileWav: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -371,7 +379,232 @@ class ModemCoreUtils(object):
     return bit_doublets, quad_array
 
 
+  def drawPhaseCharts(self, data, chart_type, window, form_gui, canvas_name):
 
+    self.debug.info_message("drawPhaseCharts")
+    try:
+      graph = self.osmod.form_gui.window[canvas_name]
+      graph.erase()
+
+      x_max = 1300
+      y_max = 400
+      x_chart_offset = 130
+      y_chart_offset = 60
+      twiddle = 5
+
+      box_color = 'cyan'
+
+      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), point_to=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
+
+    except:
+      self.debug.error_message("Exception in drawPhaseCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """
+DATA_MODE           = 0
+DATA_EBN0_DB        = 1
+DATA_SNR_EQUIV_DB   = 2
+DATA_BER            = 3
+DATA_CPS            = 4
+DATA_BPS            = 5
+DATA_NOISE_FACTOR   = 6
+DATA_AMPLITUDE      = 7
+DATA_CHUNK_SIZE     = 8
+  """
+  def compare_a_equals_b(self, a, b):
+    if a == b:
+      return True
+    else:
+      return False
+
+  def compare_a_greater_than_b(self, a, b):
+    if a > b:
+      return True
+    else:
+      return False
+
+  def compare_a_less_than_b(self, a, b):
+    if a < b:
+      return True
+    else:
+      return False
+
+  def drawDotPlotCharts(self, data, chart_type, window, values, form_gui):
+
+    self.debug.info_message("drawDotPlotCharts")
+    try:
+      colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'cyan', 'black', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray']
+      dict_name_colors = {}
+      color_count = 0
+      dict_lookup = {'Eb/N0': ocn.DATA_EBN0_DB, 'BER':ocn.DATA_BER ,'BPS':ocn.DATA_BPS ,'CPS':ocn.DATA_CPS ,'Chunk Size':ocn.DATA_CHUNK_SIZE ,'SNR':ocn.DATA_SNR_EQUIV_DB, 'Noise Factor':ocn.DATA_NOISE_FACTOR, 'Amplitude':ocn.DATA_AMPLITUDE }
+
+      filter_1 = window['cb_analysis_filter1'].get()
+      filter_2 = window['cb_analysis_filter2'].get()
+      mode_to_match = window['combo_analysis_modes'].get()
+      item_to_compare_index = dict_lookup[window['combo_analysis_itemtocompare'].get()]
+      compare_operator = window['combo_analysis_campare_operator'].get()
+      if filter_2:
+        compare_value = float(window['in_analysis_comparewithvalue'].get())
+      compare_func = None
+      if compare_operator == '=':
+        compare_func = self.compare_a_equals_b
+      elif compare_operator == '>':
+        compare_func = self.compare_a_greater_than_b
+      elif compare_operator == '<':
+        compare_func = self.compare_a_less_than_b
+
+      graph = self.osmod.form_gui.window['graph_dotplotdata']
+      graph.erase()
+
+      x_max = 1300
+      y_max = 400
+      x_chart_offset = 130
+      y_chart_offset = 60
+      twiddle = 5
+
+      box_color = 'cyan'
+
+      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), point_to=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
+      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
+
+
+      if chart_type == 'X:Eb/N0 Y:BER':
+        x_index = ocn.DATA_EBN0_DB
+        y_index = ocn.DATA_BER
+        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:CPS Y:Eb/No':
+        x_index = ocn.DATA_CPS
+        y_index = ocn.DATA_EBN0_DB
+        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:ChunkSize Y:Eb/N0':
+        x_index = ocn.DATA_CHUNK_SIZE
+        y_index = ocn.DATA_EBN0_DB
+        graph.draw_text('Chunk Size', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:CPS Y:BER':
+        x_index = ocn.DATA_CPS
+        y_index = ocn.DATA_BER
+        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:BER Y:Eb/N0':
+        x_index = ocn.DATA_BER
+        y_index = ocn.DATA_EBN0_DB
+        graph.draw_text('Bit Error Rate', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:CPS Y:Eb/N0+ABS(Eb/N0)*BER':
+        x_index = ocn.DATA_CPS
+        y_index = ocn.DATA_CALC_1
+        for point in range(0, len(data)):
+          calculated_value = float(data[point][ocn.DATA_EBN0_DB]) + (abs(float(data[point][ocn.DATA_EBN0_DB]) * float(data[point][ocn.DATA_BER] )))
+          data[point].append(calculated_value)
+          self.debug.info_message("data[point]: " + str(data[point]))
+        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Eb/N0+ABS(Eb/N0)*BER', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+
+
+
+
+      data_x_max = -1000000000
+      data_x_min = 1000000000
+      data_y_max = -1000000000
+      data_y_min = 1000000000
+      for point in range(0, len(data)): 
+        include = False
+        if filter_1:
+          if data[point][ocn.DATA_MODE] == mode_to_match:
+            if filter_2:
+              if compare_func(float(data[point][item_to_compare_index]), compare_value):
+                include = True
+              else:
+                include = False
+            else:
+              include = True
+        elif filter_2:
+          if compare_func(float(data[point][item_to_compare_index]), compare_value):
+            include = True
+          else:
+            include = False
+        else:
+          include = True
+
+        if include:
+          self.debug.info_message("data_x: " + str(float(data[point][x_index])))
+          data_x_max = max(data_x_max, float(data[point][x_index]))
+          data_x_min = min(data_x_min, float(data[point][x_index]))
+          self.debug.info_message("data_y: " + str(float(data[point][y_index])))
+          data_y_max = max(data_y_max, float(data[point][y_index]))
+          data_y_min = min(data_y_min, float(data[point][y_index]))
+          if data[point][ocn.DATA_MODE] not in dict_name_colors:
+            dict_name_colors[data[point][ocn.DATA_MODE]] = color_count
+            color_count = color_count + 1
+
+      graph.draw_text("{:.2f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+
+
+      self.debug.info_message("data_x_max: " + str(data_x_max))
+      self.debug.info_message("data_y_max: " + str(data_y_max))
+
+      if (data_x_max - data_x_min) == 0 and data_x_max > 0:
+        data_x_min = 0
+      if (data_x_max - data_x_min) == 0 and data_x_max < 0:
+        data_x_max = 0
+      if (data_y_max - data_y_min) == 0 and data_y_max > 0:
+        data_y_min = 0
+      if (data_y_max - data_y_min) == 0 and data_y_max < 0:
+        data_y_max = 0
+
+      x_scaling = x_max / (data_x_max - data_x_min)
+      y_scaling = y_max / (data_y_max - data_y_min)
+      
+      for point in range(0, len(data)): 
+        include = False
+        if filter_1:
+          if data[point][ocn.DATA_MODE] == mode_to_match:
+            if filter_2:
+              if compare_func(float(data[point][item_to_compare_index]), compare_value):
+                include = True
+              else:
+                include = False
+            else:
+              include = True
+        elif filter_2:
+          if compare_func(float(data[point][item_to_compare_index]), compare_value):
+            include = True
+          else:
+            include = False
+        else:
+          include = True
+
+        if include:
+          x_point = (float(data[point][x_index]) - data_x_min) * x_scaling
+          y_point = (float(data[point][y_index]) - data_y_min) * y_scaling
+          self.debug.info_message("x_point: " + str(x_point))
+          self.debug.info_message("y_point: " + str(y_point))
+          plot_color_index = dict_name_colors[data[point][ocn.DATA_MODE]]
+          self.debug.info_message("plot_color_index: " + str(plot_color_index))
+          plot_color = colors[plot_color_index]
+          self.debug.info_message("plot_color: " + str(plot_color))
+          graph.draw_point((x_chart_offset + x_point,y_chart_offset + y_point), size=8, color=plot_color)
+
+      count = 0
+      for mode_name, color_index in dict_name_colors.items():
+        plot_color = colors[color_index]
+        graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*20)), size=16, color=plot_color)
+        graph.draw_text(mode_name, location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*20)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+        count = count + 1
+
+    except:
+      self.debug.error_message("Exception in drawDotPlotCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   def re_drawWaveCharts(self, x_magnifier1, x_magnifier2, y_magnifier1, y_magnifier2):
@@ -388,6 +621,7 @@ class ModemCoreUtils(object):
     try:
       peak_y = 2
       y_offset = 0.5
+      #y_offset = 0.0
       self.debug.info_message("peak y: " + str(peak_y))
       last_y1 = 0
       last_y2 = 0
@@ -488,6 +722,9 @@ class ModemCoreUtils(object):
   """ Eb/N0 = SNR(dB) + 10 * log10(Bandwidth / bit_rate)   """
   def calculate_EbN0(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal):
     self.debug.info_message("calculateSNR_EbN0")
+
+    gc.collect()
+
     try:
       t = np.arange(0, 1, 1/self.osmod.sample_rate)
       fft_output = np.fft.fft(noise_free_signal)
@@ -500,6 +737,7 @@ class ModemCoreUtils(object):
       freq_high_signal_lo = signal_frequency[1] - 2
       freq_indices = np.where(((frequencies >= freq_low_signal) & (frequencies <= freq_low_signal_hi)) | ((frequencies >= freq_high_signal_lo) & (frequencies <= freq_high_signal)) )[0]
       signal_psd = np.abs(fft_output[freq_indices])**2
+      self.debug.info_message("signal_psd: " + str(signal_psd) )
 
       fft_output = np.fft.fft(signal)
       psd = np.abs(fft_output)**2
@@ -509,11 +747,15 @@ class ModemCoreUtils(object):
       freq_high_noise = 2750
       freq_indices = np.where(((frequencies >= freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_low_signal_hi) & (frequencies <= freq_high_signal_lo)) | ((frequencies >= freq_high_signal) & (frequencies <= freq_high_noise)))
       noise_psd = np.abs(fft_output[freq_indices])**2
+      self.debug.info_message("noise_psd: " + str(noise_psd) )
 
       signal_energy = np.sum(signal_psd)
+      self.debug.info_message("signal_energy: " + str(signal_energy) )
       eb = signal_energy / numbits
+      self.debug.info_message("eb: " + str(eb) )
       """ N0 is often derived using average (mean)"""
       N0 = np.mean(noise_psd)
+      self.debug.info_message("N0: " + str(N0) )
       """ ...but the definition states that N0 is psd in 1Hz of bandwidth..."""
 
       ebn0 = eb / N0
@@ -525,11 +767,9 @@ class ModemCoreUtils(object):
       self.debug.info_message("Eb/N0 (dB): " + "{:.2f}".format(ebn0_db) + " (dB)")
       self.debug.info_message("Equivalent SNR over 2500 Hz standard (dB): " + "{:.2f}".format(SNR_equiv_db) + " (dB)")
 
-      return ebn0_db, ebn0, SNR_equiv_db
+      return float(ebn0_db), float(ebn0), float(SNR_equiv_db)
     except:
       self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
-
 
 
   def calculateBER(self, bit_triplets):

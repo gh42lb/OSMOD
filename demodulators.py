@@ -85,6 +85,7 @@ class DemodulatorPSK(ModemCoreUtils):
     for i in range(0, len(decoded_values_real)):
       lookup_string = str(decoded_values_real[i]) + ':' + str(decoded_values_imag[i])
       if lookup_string == '0:0':
+        self.osmod.has_invalid_decodes = True
         self.debug.error_message("invalid decode: " + lookup_string)
         self.osmod.form_gui.window['ml_txrx_recvtext'].print('*', end="", text_color='red', background_color = 'white')
       else:
@@ -105,6 +106,7 @@ class DemodulatorPSK(ModemCoreUtils):
         lookup_string1 = str(decoded_values1_real[i]) + ':' + str(decoded_values1_imag[i])
         lookup_string2 = str(decoded_values2_real[i]) + ':' + str(decoded_values2_imag[i])
         if lookup_string1 == '0:0' or lookup_string2 == '0:0':
+          self.osmod.has_invalid_decodes = True
           self.debug.error_message("invalid decode: " + lookup_string1)
           self.osmod.form_gui.window['ml_txrx_recvtext'].print('*', end="", text_color='red', background_color = 'white')
         else:

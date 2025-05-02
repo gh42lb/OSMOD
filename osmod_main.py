@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import threading
 import sys
+import gc
 
 from numpy import pi
 from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
@@ -23,6 +24,8 @@ from modem_core_utils import ModemCoreUtils
 from queue import Queue
 from datetime import datetime, timedelta
 
+from osmod_dictionary import PersistentData
+from osmod_analysis import OsmodAnalysis
 
 class osModem(object):
 
@@ -52,6 +55,10 @@ class osModem(object):
   def __init__(self, form_gui):  
     self.debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
     self.debug.info_message("__init__")
+
+    self.opd = PersistentData(self)
+
+    self.analysis = OsmodAnalysis(self)
 
     self.form_gui = form_gui
 
@@ -86,7 +93,301 @@ class osModem(object):
 
     """ initialize the initialization blocks for the different modulations"""
 
-    self.modulation_initialization_block = {'LB28-0.15625-10I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+    """ New standard naming convention for LB28 modes: LB28-<pulses_per_block>-<num_carriers>-<carrier_separation>-<I,N,O or E> I=Interpolated, N=Normal, O=Orthogonal E=Experimental."""
+    """ For non-standard block size LB28 modes: LB28-<block_size>-<pulses_per_block>-<num_carriers>-<carrier_separation>-<I,N,O or E> I=Interpolated, N=Normal, O=Orthogonal E=Experimental."""
+    """ The baud rate and other details are in the info section """
+    #self.modulation_initialization_block = {'LB28-0.15625-10I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+    self.modulation_initialization_block = {'LB28-2048-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 409600,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 10,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 2048,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                        'LB28-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 409600,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 2048,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                 'LB28-204800-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 204800,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 2048,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                 'LB28-102400-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 102400,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 2048,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+
+                                        'LB28-1024-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 204800,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 10,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 1024,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                        'LB28-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 204800,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 1024,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.64, 0.8, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                 'LB28-102400-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 102400,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 1024,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.64, 0.8, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-51200-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 51200,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 1024,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.64, 0.8, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                         'LB28-512-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 102400,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 10,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 512,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                         'LB28-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 102400,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 512,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.54, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-51200-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 51200,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 512,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.54, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-25600-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 25600,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 512,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.54, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+
+                                         'LB28-256-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -109,7 +410,58 @@ class osModem(object):
                                                               'pulses_per_block'     : 256,
                                                               'process_debug'        : False,
                                                               'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                        'LB28-0.3125-10I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+
+                                         'LB28-256-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 51200,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 256,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-25600-256-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
+                                                              'symbol_block_size'    : 25600,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.twohundredfiftysixths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (64/256, 192/256),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_interpolate'      : (-1, 1, -1, 1),
+                                                              'pulses_per_block'     : 256,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+
+#                                        'LB28-0.3125-10I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                        'LB28-128-2-10-I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -132,7 +484,31 @@ class osModem(object):
                                                               'pulses_per_block'     : 128,
                                                               'process_debug'        : False,
                                                               'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                        'LB28-0.625-10I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                        'LB28-128-2-15-I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.3125 characters per second, 1.875 baud (bits per second)',
+                                                              'symbol_block_size'    : 25600,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.onehundredtwentyeighths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (32/128, 96/128),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-2, 2, -2, 2),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 128,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+#                                        'LB28-0.625-10I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                        'LB28-64-2-10-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -155,7 +531,56 @@ class osModem(object):
                                                               'pulses_per_block'     : 64,
                                                               'process_debug'        : False,
                                                               'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                        'LB28-1.25-10I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                        'LB28-64-2-15-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '0.625 characters per second, 3.75 baud (bits per second)',
+                                                              'symbol_block_size'    : 12800,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (16/64, 48/64),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-4, 4, -4, 4),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 64,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-6400-64-2-15-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '1.25 characters per second, 7.5 baud (bits per second)',
+                                                              'symbol_block_size'    : 6400,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (16/64, 48/64),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-4, 4, -4, 4),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 64,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.95, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+#                                        'LB28-1.25-10I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                        'LB28-32-2-10-I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -178,7 +603,33 @@ class osModem(object):
                                                               'pulses_per_block'     : 32,
                                                               'process_debug'        : False,
                                                               'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                      'LB28-2.5-10I':        {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+
+                                  'LB28-3200-32-2-15-I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '2.5 characters per second, 15 baud (bits per second)',
+                                                              'symbol_block_size'    : 3200,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.thirtyseconds_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (8/32, 24/32),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 15,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
+                                                              'fft_filter'           : (-4, 4, -4, 4),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 32,
+                                                              'process_debug'        : False,
+                                                              'parameters'           : (600, 0.70, 0.94, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+#                                      'LB28-2.5-10I':        {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                      'LB28-16-2-10-I':        {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -201,7 +652,8 @@ class osModem(object):
                                                               'pulses_per_block'     : 16,
                                                               'process_debug'        : False,
                                                               'parameters'           : (600, 0.70, 0.9, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                             'LB28-10-20':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+#                                             'LB28-10-20':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                          'LB28-4-2-20-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -224,7 +676,8 @@ class osModem(object):
                                                               'fft_interpolate'      : (-3, 2, -2, 3),
                                                               'pulses_per_block'     : 4,
                                                               'parameters'           : (600, 0.75, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                              'LB28-5-10':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+#                                              'LB28-5-10':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                          'LB28-8-2-10-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -247,7 +700,33 @@ class osModem(object):
                                                               'fft_interpolate'      : (-3, 2, -2, 3),
                                                               'pulses_per_block'     : 8,
                                                               'parameters'           : (600, 0.8, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                              'LB28-10-40':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+
+                                      'LB28-320-8-2-50-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '25 characters per second, 150 baud (bits per second)',
+                                                              'extraction_points'    : (2/8, 6/8),
+                                                              'symbol_block_size'    : 320,
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.eighths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 50,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 8,
+                                                              'parameters'           : (600, 0.8, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+#                                              'LB28-10-40':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                           'LB28-4-2-40-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -270,7 +749,58 @@ class osModem(object):
                                                               'fft_interpolate'      : (-3, 2, -2, 3),
                                                               'pulses_per_block'     : 4,
                                                               'parameters'           : (600, 0.75, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                          'LB28-20-100':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+
+                                      'LB28-160-4-2-100-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '50 characters per second, 300 baud (bits per second)',
+                                                              'symbol_block_size'    : 160,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.fourths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (0/4, 2/4),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 100,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 4,
+                                                              'parameters'           : (600, 0.75, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                      'LB28-160-4-2-50-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
+                                                              'info'                 : '50 characters per second, 300 baud (bits per second)',
+                                                              'symbol_block_size'    : 160,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.fourths_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'extraction_points'    : (0/4, 2/4),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 50,
+                                                              'detector_function'    : 'mode',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 4,
+                                                              'parameters'           : (600, 0.75, 0.65, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+
+#                                          'LB28-20-100':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                       'LB28-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
                                                               'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
@@ -292,16 +822,95 @@ class osModem(object):
                                                               'fft_filter'           : (-20, 16, -16, 20),
                                                               'fft_interpolate'      : (-3, 2, -2, 3),
                                                               'pulses_per_block'     : 2,
+                                                              'parameters'           : (700, 0.8, 0.6, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-240-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
+                                                              'info'                 : '33.33 characters per second, 200 baud (bits per second)',
+                                                              'symbol_block_size'    : 240,
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.halves_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'extraction_points'    : (0.0, 0.5),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 100,
+                                                              'detector_function'    : 'median',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 2,
+                                                              'parameters'           : (700, 0.8, 0.6, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-160-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
+                                                              'info'                 : '50 characters per second, 300 baud (bits per second)',
+                                                              'symbol_block_size'    : 160,
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.halves_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'extraction_points'    : (0.0, 0.5),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 100,
+                                                              'detector_function'    : 'median',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 2,
+                                                              'parameters'           : (700, 0.8, 0.6, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+                                   'LB28-80-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
+                                                              'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
+                                                              'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
+                                                              'info'                 : '100 characters per second, 600 baud (bits per second)',
+                                                              'symbol_block_size'    : 80,
+                                                              'symbol_wave_function' : self.mod_2fsk8psk.halves_symbol_wave_function,
+                                                              'modulation_object'    : self.mod_2fsk8psk,
+                                                              'demodulation_object'  : self.demod_2fsk8psk,
+                                                              'symbols_per_block'    : 1,  # per carrier!
+                                                              'extraction_points'    : (0.0, 0.5),
+                                                              'sample_rate'          : 8000,
+                                                              'num_carriers'         : 2,
+                                                              'carrier_separation'   : 100,
+                                                              'detector_function'    : 'median',
+                                                              'baseband_conversion'  : 'costas_loop',
+                                                              'process_debug'        : False,
+                                                              'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'pulses_per_block'     : 2,
                                                               'parameters'           : (700, 0.8, 0.6, 10000, 2, 98) }}  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
 
+
     """ set some default values..."""
-    self.setInitializationBlock('LB28-10-40')
+    #self.setInitializationBlock('LB28-4-2-40-N')
 
 
   def setInitializationBlock(self, mode):
     self.debug.info_message("setInitializationBlock")
     try:
+      gc.collect()
+
+      self.has_invalid_decodes = False
+
+      self.info     = self.modulation_initialization_block[mode]['info']
+
       self.encoder_callback     = self.modulation_initialization_block[mode]['encoder_callback']
       self.decoder_callback     = self.modulation_initialization_block[mode]['decoder_callback']
       self.text_encoder         = self.modulation_initialization_block[mode]['text_encoder']
@@ -323,6 +932,9 @@ class osModem(object):
       self.modulation_object    = self.modulation_initialization_block[mode]['modulation_object']
       self.demodulation_object  = self.modulation_initialization_block[mode]['demodulation_object']
 
+      blocksize_override_checked = self.form_gui.window['cb_override_blocksize'].get()
+      if blocksize_override_checked:
+        self.symbol_block_size = int(self.form_gui.window['in_symbol_block_size'].get())
 
       self.sampling_frequency = self.sample_rate / self.symbol_block_size
 
@@ -458,7 +1070,10 @@ class osModem(object):
           self.filtRRC_twohundredfiftysixth_wave[i] = np.append(np.zeros(int((self.symbol_block_size*i)/divisor)), self.filtRRC_coef_main)
           self.filtRRC_twohundredfiftysixth_wave[i] = np.append(self.filtRRC_twohundredfiftysixth_wave[i], np.zeros(int((self.symbol_block_size*(divisor-i-1))/divisor)))
         self.filtRRC_twohundredfiftysixth_wave[divisor-1] = np.append(np.zeros(int((self.symbol_block_size*(divisor-1))/divisor)), self.filtRRC_coef_main)
-
+      else:
+        """ These modes are only available in C compiled code. Only need to create RRC shape."""
+        divisor = int(self.pulses_per_block)
+        self.filtRRC_coef_pre, self.filtRRC_coef_main, self.filtRRC_coef_post = self.demod_2fsk8psk.filterSpanRRC( int(self.symbol_block_size/divisor), self.parameters[1], self.parameters[2], self.sample_rate)
 
       """ initialize the sin cosine optimization lookup tables"""
       self.radTablesInitialize()
@@ -468,7 +1083,231 @@ class osModem(object):
       self.debug.error_message("Exception in setInitializationBlock: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def calcCarrierFrequencies(self, center_frequency):
+  def updateCachedSettings(self, values, form_gui):
+    try:
+      self.opd.main_settings = { 'params': {
+                             'LB28-2-2-100-N'         : self.getPersistentData('LB28-2-2-100-N',   values),
+                             'LB28-160-2-2-100-N'     : self.getPersistentData('LB28-160-2-2-100-N',   values),
+                             'LB28-240-2-2-100-N'     : self.getPersistentData('LB28-240-2-2-100-N',   values),
+                             'LB28-2-2-100-N'         : self.getPersistentData('LB28-2-2-100-N',   values),
+                             'LB28-160-4-2-100-N'      : self.getPersistentData('LB28-160-4-2-100-N',    values),
+                             'LB28-160-4-2-50-N'      : self.getPersistentData('LB28-160-4-2-50-N',    values),
+                             'LB28-4-2-40-N'          : self.getPersistentData('LB28-4-2-40-N',    values),
+                             'LB28-4-2-20-N'          : self.getPersistentData('LB28-4-2-20-N',    values),
+                             'LB28-320-8-2-50-N'          : self.getPersistentData('LB28-320-8-2-50-N',    values),
+                             'LB28-8-2-10-N'          : self.getPersistentData('LB28-8-2-10-N',    values),
+                             'LB28-16-2-10-I'         : self.getPersistentData('LB28-16-2-10-I',   values),
+                             'LB28-3200-32-2-15-I'    : self.getPersistentData('LB28-3200-32-2-15-I',   values),
+                             'LB28-32-2-10-I'         : self.getPersistentData('LB28-32-2-10-I',   values),
+                             'LB28-6400-64-2-15-I'    : self.getPersistentData('LB28-6400-64-2-15-I',   values),
+                             'LB28-64-2-15-I'         : self.getPersistentData('LB28-64-2-15-I',   values),
+                             'LB28-64-2-10-I'         : self.getPersistentData('LB28-64-2-10-I',   values),
+                             'LB28-128-2-15-I'        : self.getPersistentData('LB28-128-2-15-I',  values),
+                             'LB28-128-2-10-I'        : self.getPersistentData('LB28-128-2-10-I',  values),
+                             'LB28-25600-256-2-15-I'  : self.getPersistentData('LB28-25600-256-2-15-I',  values),
+                             'LB28-256-2-15-I'        : self.getPersistentData('LB28-256-2-15-I',  values),
+                             'LB28-256-2-10-I'        : self.getPersistentData('LB28-256-2-10-I',  values),
+                             'LB28-25600-512-2-15-I'        : self.getPersistentData('LB28-25600-512-2-15-I',  values),
+                             'LB28-51200-512-2-15-I'        : self.getPersistentData('LB28-51200-512-2-15-I',  values),
+                             'LB28-512-2-15-I'        : self.getPersistentData('LB28-512-2-15-I',  values),
+                             'LB28-512-2-10-I'        : self.getPersistentData('LB28-512-2-10-I',  values),
+                             'LB28-1024-2-15-I'       : self.getPersistentData('LB28-1024-2-15-I', values),
+                             'LB28-51200-1024-2-15-I'       : self.getPersistentData('LB28-51200-1024-2-15-I', values),
+                             'LB28-102400-1024-2-15-I'       : self.getPersistentData('LB28-102400-1024-2-15-I', values),
+                             'LB28-1024-2-10-I'       : self.getPersistentData('LB28-1024-2-10-I', values),
+                             'LB28-2048-2-15-I'       : self.getPersistentData('LB28-2048-2-15-I', values),
+                             'LB28-102400-2048-2-15-I'       : self.getPersistentData('LB28-102400-2048-2-15-I', values),
+                             'LB28-204800-2048-2-15-I'       : self.getPersistentData('LB28-204800-2048-2-15-I', values),
+                             'LB28-2048-2-10-I'       : self.getPersistentData('LB28-2048-2-10-I', values),
+                }           }
+      
+      self.debug.info_message("updateCachedSettings: " + str(self.opd.main_settings))
+ 
+    except:
+      self.debug.error_message("Exception in updateCachedSettings: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+ 
+ 
+  def getPersistentData(self, mode, values):
+
+    self.debug.info_message("getPersistentData mode: " + str(mode))
+
+    try:
+      selected_mode = values['combo_main_modem_modes']
+
+      """ Test to see if this mode is the one currently selected for on screen options """
+      if selected_mode == mode:
+        self.debug.info_message("getting data from screen for mode")
+        return_data = (
+          self.form_gui.window['cb_enable_awgn'].get(),
+          self.form_gui.window['combo_text_options'].get(),
+          self.form_gui.window['cb_override_blocksize'].get(),
+          self.form_gui.window['in_symbol_block_size'].get(),
+          self.form_gui.window['combo_chunk_options'].get(),
+          self.form_gui.window['cb_enable_align'].get(),
+          self.form_gui.window['option_carrier_alignment'].get(),
+          self.form_gui.window['cb_enable_separation_override'].get(),
+          self.form_gui.window['cb_display_phases'].get(),
+          self.form_gui.window['option_chart_options'].get(),
+          self.form_gui.window['cb_override_rrc_alpha'].get(),
+          self.form_gui.window['in_rrc_alpha'].get(),
+          self.form_gui.window['cb_override_rrc_t'].get(),
+          self.form_gui.window['in_rrc_t'].get(),
+          values['btn_slider_awgn'],
+          values['slider_amplitude'],
+          values['slider_carrier_separation']
+                        )
+      else:
+        self.debug.info_message("getting data from defaults")
+        main_settings = self.form_gui.osmod.opd.main_settings
+        params = main_settings.get('params')
+
+        if mode not in params:
+          """ perform automatic upgrade to new format """
+          self.setFromCodeDefaults(mode)
+
+        #if mode in params:
+        settings = params.get(mode)
+        self.debug.info_message("setScreenOptions retrieved data: " + str(settings))
+        return_data = settings
+        """
+        else:
+          return_data = (
+            False,
+            '3:peter piper',
+            False,
+            self.modulation_initialization_block[mode]['symbol_block_size'],
+            '30',
+            True,
+            '100',
+            True,
+            True,
+            'Both',
+            False,
+            '0.7',
+            False,
+            '0.9',
+            '8.0',
+            '1.0',
+            '15'
+                        )
+        """                 
+
+      return return_data
+
+    except:
+      self.debug.error_message("Exception in getPersistentData: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+    
+  def setScreenOptions(self, mode, form_gui, main_settings):    
+    self.debug.info_message("setScreenOptions")
+
+    try:
+
+      self.debug.info_message("setScreenOptions main_settings: " + str(main_settings))
+
+      params = main_settings.get('params')
+      if mode not in params:
+        """ perform automatic upgrade to new format """
+        self.setFromCodeDefaults(mode)
+
+      settings = params.get(mode)
+      self.debug.info_message("setScreenOptions retrieved data: " + str(settings))
+
+      form_gui.window['cb_enable_awgn'].update(settings[0])
+      form_gui.window['combo_text_options'].update(settings[1])
+      form_gui.window['cb_override_blocksize'].update(settings[2])
+      form_gui.window['in_symbol_block_size'].update(settings[3])
+      form_gui.window['combo_chunk_options'].update(settings[4])
+      form_gui.window['cb_enable_align'].update(settings[5])
+      form_gui.window['option_carrier_alignment'].update(settings[6])
+      form_gui.window['cb_enable_separation_override'].update(settings[7])
+      form_gui.window['cb_display_phases'].update(settings[8])
+      form_gui.window['option_chart_options'].update(settings[9])
+      form_gui.window['cb_override_rrc_alpha'].update(settings[10])
+      form_gui.window['in_rrc_alpha'].update(settings[11])
+      form_gui.window['cb_override_rrc_t'].update(settings[12])
+      form_gui.window['in_rrc_t'].update(settings[13])
+      form_gui.window['btn_slider_awgn'].update(settings[14])
+      form_gui.window['slider_amplitude'].update(settings[15])
+      form_gui.window['slider_carrier_separation'].update(settings[16])
+    except:
+      self.debug.error_message("Exception in setScreenOptions: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def resetMode(self, form_gui, mode):
+
+    form_gui.window['cb_enable_awgn'].update(True)
+    form_gui.window['combo_text_options'].update('3:peter piper')
+    form_gui.window['cb_override_blocksize'].update(False)
+    form_gui.window['in_symbol_block_size'].update(self.modulation_initialization_block[mode]['symbol_block_size'])
+    form_gui.window['combo_chunk_options'].update('30')
+    form_gui.window['cb_enable_align'].update(True)
+    form_gui.window['option_carrier_alignment'].update('100')
+    form_gui.window['cb_enable_separation_override'].update(True)
+    form_gui.window['cb_display_phases'].update(False)
+    form_gui.window['option_chart_options'].update('Both')
+    form_gui.window['cb_override_rrc_alpha'].update(False)
+    form_gui.window['in_rrc_alpha'].update(self.modulation_initialization_block[mode]['parameters'][1])
+    form_gui.window['cb_override_rrc_t'].update(False)
+    form_gui.window['in_rrc_t'].update(self.modulation_initialization_block[mode]['parameters'][2])
+    form_gui.window['btn_slider_awgn'].update(8)
+    form_gui.window['slider_amplitude'].update(1.0)
+    form_gui.window['slider_carrier_separation'].update(self.modulation_initialization_block[mode]['carrier_separation'])
+
+    self.setFromCodeDefaults(mode)
+
+
+  def setFromCodeDefaults(self, mode):
+
+    updated_data = (
+            True,
+            '3:peter piper',
+            False,
+            self.modulation_initialization_block[mode]['symbol_block_size'],
+            '30',
+            True,
+            '100',
+            True,
+            False,
+            'Both',
+            False,
+            self.modulation_initialization_block[mode]['parameters'][1],
+            False,
+            self.modulation_initialization_block[mode]['parameters'][2],
+            '8.0',
+            '1.0',
+            self.modulation_initialization_block[mode]['carrier_separation']
+                   )
+    self.opd.main_settings.get('params')[mode] = updated_data
+
+
+  def writeModeToCache(self, mode, form_gui, values):
+    updated_data = (
+          self.form_gui.window['cb_enable_awgn'].get(),
+          self.form_gui.window['combo_text_options'].get(),
+          self.form_gui.window['cb_override_blocksize'].get(),
+          self.form_gui.window['in_symbol_block_size'].get(),
+          self.form_gui.window['combo_chunk_options'].get(),
+          self.form_gui.window['cb_enable_align'].get(),
+          self.form_gui.window['option_carrier_alignment'].get(),
+          self.form_gui.window['cb_enable_separation_override'].get(),
+          self.form_gui.window['cb_display_phases'].get(),
+          self.form_gui.window['option_chart_options'].get(),
+          self.form_gui.window['cb_override_rrc_alpha'].get(),
+          self.form_gui.window['in_rrc_alpha'].get(),
+          self.form_gui.window['cb_override_rrc_t'].get(),
+          self.form_gui.window['in_rrc_t'].get(),
+          values['btn_slider_awgn'],
+          values['slider_amplitude'],
+          values['slider_carrier_separation']
+                        )
+
+    self.opd.main_settings.get('params')[mode] = updated_data
+
+
+  def calcCarrierFrequencies(self, center_frequency, separation_override):
     self.debug.info_message("calcCarrierFrequencies")
     try:
 
@@ -476,7 +1315,9 @@ class osModem(object):
       carrier_alignment = self.form_gui.window['option_carrier_alignment'].get()
 
       enable_separation_override_checked = self.form_gui.window['cb_enable_separation_override'].get()
-      separation_override = self.form_gui.window['option_separation_options'].get()
+      #separation_override = self.form_gui.window['option_separation_options'].get()
+      #separation_override = self.form_gui.window['slider_carrier_separation'].get()
+      self.debug.info_message("separation_override: " + str(separation_override))
 
       frequency = []
       span = (self.num_carriers-1) * self.carrier_separation

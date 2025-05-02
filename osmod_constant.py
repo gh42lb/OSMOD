@@ -44,3 +44,23 @@ OSMOD_MODEM_16QAM     = 6
 
 EXTRACT_NORMAL    = 0
 EXTRACT_INTERPOLATE   = 1
+
+DATA_MODE           = 0
+DATA_EBN0_DB        = 1
+DATA_SNR_EQUIV_DB   = 2
+DATA_BER            = 3
+DATA_CPS            = 4
+DATA_BPS            = 5
+DATA_NOISE_FACTOR   = 6
+DATA_AMPLITUDE      = 7
+DATA_CHUNK_SIZE     = 8
+DATA_CALC_1         = 9
+DATA_CALC_2         = 10
+
+
+
+
+
+
+
+

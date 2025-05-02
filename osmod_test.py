@@ -115,18 +115,18 @@ class OsmodTest(object):
     self.window = form_gui.window
     self.test_double_carrier_8psk(mode)
 
-  def testRoutine2(self, mode, form_gui, noise_mode, text_num, chunk_num):
+  def testRoutine2(self, mode, form_gui, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude):
     self.debug.info_message("testRoutine2")
     self.window = form_gui.window
-    self.test1(mode, noise_mode, text_num, chunk_num)
+    self.test1(mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude)
 
   def modDemod(self, mode, form_gui):
     self.debug.info_message("modDemod")
     self.window = form_gui.window
-    self.test1('LB28-TURBOx2.5-10', 0, 30)
+    self.test1('LB28-TURBOx2.5-10', 0, 30, 0, 1.0)
 
 
-  def test1(self, mode, noise_mode, text_num, chunk_num):
+  def test1(self, mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude):
     self.debug.info_message("test1")
 
     try:
@@ -138,25 +138,28 @@ class OsmodTest(object):
 
       """ figure out the carrier frequencies"""
       center_frequency = 1400
-      frequency = self.osmod.calcCarrierFrequencies(center_frequency)
+      frequency = self.osmod.calcCarrierFrequencies(center_frequency, carrier_separation_override)
       self.debug.info_message("center frequency: " + str(center_frequency))
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
       """ convert text to bits"""
-      text_examples = [0] * 13
-      text_examples[0]  = " peter piper picked a peck of pickled pepper corn "
-      text_examples[1]  = "jack be nimble jack be quick jack jump over the candlestick"
-      text_examples[2]  = "row row row your boat gently down the stream merrily merrily merrily merrily life is but a dream"
-      text_examples[3]  = "hickory dickory dock the mouse ran up the clock the clock struch one the mouse ran down hickory dicory dock"
-      text_examples[4]  = "its raining its pouring the old man is snoring he bumped his head and went to bed and he couldnt get up in the morning"
-      text_examples[5]  = "jack and jill went up the hill to fetch a pail of water jack fell down and broke his crown and jill came tumbling after"
-      text_examples[6]  = "humpty dumpty dat on a wall humpty dumpty had a great fall all the kings forses and all the kings men coudnt put humpty together again"
-      text_examples[7]  = "a wise old owl sat in an oak the more he heard the less he spoke the less he spoke the more he heard why arent we all like that wise old bird"
-      text_examples[8]  = "hey diddle diddle the cat and the fiddle the cow jumped over the moon the little dog laughed to see such fun and the dish ran away with the spoon"
-      text_examples[9]  = "baa baa black sheep have you any wool yes sir yes sir three bags full one for the master and one for the dame and one for the little boy who lives down the lane"
-      text_examples[10] = "twinkle twinkle little bat how i wonder what youre at up above the world you fly like a tea tray in the sky twinkle twinkle little bat how i wonder what youre at"
-      text_examples[11] = "i can read on a boat i can read with a goat i can read on a train i can read in the rain i can read with a fox i can read in a box i can read with a mouse i can read in a house i can read here or there i can read anywhere"
-      text_examples[12] = "the queen of hearts she made some tarts all on a summers day the knave of hearts he stole the tarts and took them clean away the king of hearts called for the tarts and beat the knave full sore the knave of hearts brought back the tarts and vowed hed steal no more"
+      text_examples = [0] * 16
+      text_examples[0]  = " cq wh6ggo "
+      text_examples[1]  = " cqcqcqcqcqcq wh6ggo "
+      text_examples[2]  = " cqcqcqcqcqcqcqcqcqcqcq wh6ggo "
+      text_examples[3]  = " peter piper picked a peck of pickled pepper corn "
+      text_examples[4]  = "jack be nimble jack be quick jack jump over the candlestick"
+      text_examples[5]  = "row row row your boat gently down the stream merrily merrily merrily merrily life is but a dream"
+      text_examples[6]  = "hickory dickory dock the mouse ran up the clock the clock struch one the mouse ran down hickory dicory dock"
+      text_examples[7]  = "its raining its pouring the old man is snoring he bumped his head and went to bed and he couldnt get up in the morning"
+      text_examples[8]  = "jack and jill went up the hill to fetch a pail of water jack fell down and broke his crown and jill came tumbling after"
+      text_examples[9]  = "humpty dumpty dat on a wall humpty dumpty had a great fall all the kings forses and all the kings men coudnt put humpty together again"
+      text_examples[10]  = "a wise old owl sat in an oak the more he heard the less he spoke the less he spoke the more he heard why arent we all like that wise old bird"
+      text_examples[11]  = "hey diddle diddle the cat and the fiddle the cow jumped over the moon the little dog laughed to see such fun and the dish ran away with the spoon"
+      text_examples[12]  = "baa baa black sheep have you any wool yes sir yes sir three bags full one for the master and one for the dame and one for the little boy who lives down the lane"
+      text_examples[13] = "twinkle twinkle little bat how i wonder what youre at up above the world you fly like a tea tray in the sky twinkle twinkle little bat how i wonder what youre at"
+      text_examples[14] = "i can read on a boat i can read with a goat i can read on a train i can read in the rain i can read with a fox i can read in a box i can read with a mouse i can read in a house i can read here or there i can read anywhere"
+      text_examples[15] = "the queen of hearts she made some tarts all on a summers day the knave of hearts he stole the tarts and took them clean away the king of hearts called for the tarts and beat the knave full sore the knave of hearts brought back the tarts and vowed hed steal no more"
 
       text = text_examples[int(text_num)] + ' '
  
@@ -166,26 +169,34 @@ class OsmodTest(object):
       data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
 
       """ write to file """
-      self.osmod.modulation_object.writeFileWav('8psktest11.wav', data2)
+      self.debug.info_message("size of signal data: " + str(len(data2)))
+      #if len(data2) < 10000000:
+      self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
 
       """ read file """
-      audio_array = self.osmod.modulation_object.readFileWav('8psktest11.wav')
+      audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav") #'8psktest11.wav')
       self.debug.info_message("audio data type: " + str(audio_array.dtype))
       self.debug.info_message("demodulating")
       total_audio_length = len(audio_array)
 
       """ add noise for testing..."""
-      noise_free_signal = audio_array*0.00001
+      #noise_free_signal = audio_array*0.00001
+      noise_free_signal = audio_array*0.00001 * float(amplitude)   #* 0.7
 
       self.debug.info_message("noise mode: " + str(noise_mode))
       value = float(noise_mode)
 
-      if  self.window['cb_enable_awgn'].get():
-        audio_array = self.osmod.modulation_object.addAWGN(noise_free_signal, value, frequency)
-      audio_array = self.osmod.modulation_object.addTimingNoise(audio_array)
-      audio_array = self.osmod.modulation_object.addPhaseNoise2(audio_array)
+      audio_array = noise_free_signal
+      if self.window['cb_enable_awgn'].get():
+        audio_array = self.osmod.modulation_object.addAWGN(audio_array, value, frequency)
+      if self.window['cb_enable_timing_noise'].get():
+        audio_array = self.osmod.modulation_object.addTimingNoise(audio_array)
+      if self.window['cb_enable_phase_noise'].get():
+        audio_array = self.osmod.modulation_object.addPhaseNoise2(audio_array)
 
-      self.osmod.modulation_object.writeFileWav('withnoise.wav', audio_array)
+      self.debug.info_message("size of noise data: " + str(len(audio_array)))
+      if len(audio_array) < 10000000:
+        self.osmod.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
 
       """ reset the remainder"""
       self.osmod.demod_2fsk8psk.remainder = np.array([])
@@ -253,6 +264,16 @@ class OsmodTest(object):
       self.osmod.form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
 
       self.osmod.getSummary()
+
+      if self.window['cb_enable_awgn'].get():
+        noise_factor = float(noise_mode)
+      else:
+        noise_factor = 0.0
+
+      chunk_size = self.window['combo_chunk_options'].get()
+
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, float(amplitude), chunk_size]
+      self.osmod.analysis.writeDataToFile(csv_data)
 
 
     except:

@@ -7,11 +7,16 @@ import debug as db
 import constant as cn
 import osmod_constant as ocn
 import matplotlib.pyplot as plt
+import gc
+
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin
 from modem_core_utils import ModemCoreUtils
 from modulators import ModulatorPSK
 from demodulators import DemodulatorPSK
+
+
+
 """
 MIT License
 
@@ -125,6 +130,8 @@ class mod_2FSK8PSK(ModulatorPSK):
     self.debug.info_message("modulate: ")
 
     try:
+      gc.collect()
+
       """ modulate the signal """
       data2 = np.array([])
       for triplet1, triplet2 in zip(bit_triplets[0], bit_triplets[1]):
@@ -148,6 +155,8 @@ class demod_2FSK8PSK(DemodulatorPSK):
 
   def demodulate_2fsk_8psk(self, audio_block, frequency):
     self.debug.info_message("demodulate_2fsk_8psk")
+
+    gc.collect()
 
     """ reset the block_start index for each set of plocks sent for processing i.e. here!"""
     self.block_start_candidates = []
@@ -207,6 +216,8 @@ class demod_2FSK8PSK(DemodulatorPSK):
           recovered_signal1, error_1 = self.recoverBasebandSignalOptimized(frequency[0], audio_array1)
           recovered_signal2, error_2 = self.recoverBasebandSignalOptimized(frequency[1], audio_array2)
 
+          phase_data_before_averaging1 = recovered_signal1[0].copy()
+          phase_data_before_averaging2 = recovered_signal1[1].copy()
           self.osmod.getDurationAndReset('recoverBasebandSignalOptimized')
 
           self.debug.info_message("averaging the phases")
@@ -282,14 +293,23 @@ class demod_2FSK8PSK(DemodulatorPSK):
 
       self.osmod.getDurationAndReset('displayTextResults')
 
-      if display:
+      enable_display = self.osmod.form_gui.window['cb_display_phases'].get()
+      if enable_display:
         """ display baseband signals """
         self.debug.info_message("charting data")
         if self.osmod.phase_extraction == ocn.EXTRACT_NORMAL:
           self.displayChartResults(recovered_signal1[0], recovered_signal1[1])
         elif self.osmod.phase_extraction == ocn.EXTRACT_INTERPOLATE:
           self.debug.info_message("phase error history: " + str(error_1))
-          self.displayChartResults(recovered_signal1[0], recovered_signal1[1])
+
+          chart_type = self.osmod.form_gui.window['option_chart_options'].get()
+          if chart_type == 'Before Mean Average':
+            self.displayChartResults(phase_data_before_averaging1, phase_data_before_averaging2)
+          elif chart_type == 'After Mean Average':
+            self.displayChartResults(recovered_signal1a, recovered_signal1b)
+          elif chart_type == 'Both':
+            self.displayChartResults(phase_data_before_averaging1, recovered_signal1a)
+
 
       return decoded_bitstring_1, decoded_bitstring_2
 
