@@ -8,7 +8,7 @@ import numpy as np
 import debug as db
 import constant as cn
 import osmod_constant as ocn
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, TransferFunction, lfilter, lfiltic
 from modem_core_utils import ModemCoreUtils

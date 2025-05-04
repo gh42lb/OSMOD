@@ -6,7 +6,7 @@ import constant as cn
 import osmod_constant as ocn
 import sounddevice as sd
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import threading
 import wave
 import sys

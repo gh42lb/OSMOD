@@ -8,10 +8,11 @@ import numpy as np
 import debug as db
 import constant as cn
 import osmod_constant as ocn
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import scipy as sp
 import gc
 import FreeSimpleGUI as sg
+import random
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, sosfiltfilt
@@ -381,15 +382,19 @@ class ModemCoreUtils(object):
 
   def drawPhaseCharts(self, data, chart_type, window, form_gui, canvas_name):
 
-    self.debug.info_message("drawPhaseCharts")
+    self.debug.info_message("drawPhaseCharts. data: " + str(data))
     try:
       graph = self.osmod.form_gui.window[canvas_name]
       graph.erase()
+      graph.erase()
+      graph.erase()
+      graph.erase()
+      graph.erase()
 
-      x_max = 1300
-      y_max = 400
-      x_chart_offset = 130
-      y_chart_offset = 60
+      x_max = 850
+      y_max = 150
+      x_chart_offset = 90
+      y_chart_offset = 40
       twiddle = 5
 
       box_color = 'cyan'
@@ -399,6 +404,52 @@ class ModemCoreUtils(object):
       graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
       graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
 
+      graph.draw_text('Time', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text('Amplitude', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+
+
+      data_x_max = -1000000000
+      data_x_min = 1000000000
+      data_y_max = -1000000000
+      data_y_min = 1000000000
+
+      data_x_max = len(data)
+      data_x_min = 0
+      for point in range(0, len(data)): 
+        data_y_max = max(data_y_max, float(data[point]))
+        data_y_min = min(data_y_min, float(data[point]))
+
+      graph.draw_text("{:.2f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+      graph.draw_text("{:.2f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+
+      self.debug.info_message("data_x_max: " + str(data_x_max))
+      self.debug.info_message("data_y_max: " + str(data_y_max))
+
+      if (data_x_max - data_x_min) == 0 and data_x_max > 0:
+        data_x_min = 0
+      if (data_x_max - data_x_min) == 0 and data_x_max < 0:
+        data_x_max = 0
+      if (data_y_max - data_y_min) == 0 and data_y_max > 0:
+        data_y_min = 0
+      if (data_y_max - data_y_min) == 0 and data_y_max < 0:
+        data_y_max = 0
+
+      x_scaling = x_max / (data_x_max - data_x_min)
+      y_scaling = y_max / (data_y_max - data_y_min)
+      
+      plot_color = 'black'
+      x_last = (float(0) - data_x_min) * x_scaling
+      y_last = (float(data[0]) - data_y_min) * y_scaling
+      #for point in range(1, len(data),500): 
+      for point in range(1, len(data), int((len(data) / x_max)/20)): 
+        x_point = (float(point) - data_x_min) * x_scaling
+        y_point = (float(data[point]) - data_y_min) * y_scaling
+        #graph.draw_line(point_from=(x_chart_offset + x_last, y_chart_offset + y_last), point_to=(x_chart_offset + x_point, y_chart_offset + y_point), width=4, color=plot_color)
+        graph.draw_point((x_chart_offset + x_point, y_chart_offset + y_point), size=2, color=plot_color)
+        #x_last = x_point
+        #y_last = y_point
     except:
       self.debug.error_message("Exception in drawPhaseCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
@@ -436,7 +487,16 @@ DATA_CHUNK_SIZE     = 8
 
     self.debug.info_message("drawDotPlotCharts")
     try:
-      colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'cyan', 'black', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray']
+      #colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'cyan', 'black', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray']
+      colors = []
+
+      for count in range(0,30):
+        rand_rgb_color = [random.randint(0,255) for _ in range(3)]
+        rand_color_hex = "#{:02x}{:02x}{:02x}".format(*rand_rgb_color)
+        colors.append(rand_color_hex)
+
+      self.debug.info_message("colors: " + str(colors))
+
       dict_name_colors = {}
       color_count = 0
       dict_lookup = {'Eb/N0': ocn.DATA_EBN0_DB, 'BER':ocn.DATA_BER ,'BPS':ocn.DATA_BPS ,'CPS':ocn.DATA_CPS ,'Chunk Size':ocn.DATA_CHUNK_SIZE ,'SNR':ocn.DATA_SNR_EQUIV_DB, 'Noise Factor':ocn.DATA_NOISE_FACTOR, 'Amplitude':ocn.DATA_AMPLITUDE }

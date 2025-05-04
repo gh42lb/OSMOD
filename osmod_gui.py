@@ -11,7 +11,7 @@ import threading
 import debug as db
 import FreeSimpleGUI as sg
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import ctypes
 import platform
 import os
@@ -98,9 +98,9 @@ class FormGui(object):
   def createMainTabbedWindow(self, text, js):
 
     combo_server_or_client = 'Server Listen,Client Connect'.split(',')
-    combo_modem_modes  = 'LB28-2-2-100-N,LB28-160-2-2-100-N,LB28-240-2-2-100-N,LB28-2-2-100-N,LB28-160-4-2-100-N,LB28-160-4-2-50-N,LB28-4-2-40-N,LB28-4-2-20-N,LB28-320-8-2-50-N,LB28-8-2-10-N,LB28-16-2-10-I,LB28-3200-32-2-15-I,\
-LB28-32-2-10-I,LB28-6400-64-2-15-I,LB28-64-2-15-I,LB28-64-2-10-I,LB28-128-2-15-I,LB28-128-2-10-I,LB28-256-2-15-I,LB28-256-2-10-I,\
-LB28-25600-256-2-15-I,LB28-25600-512-2-15-I,LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28-51200-1024-2-15-I,LB28-102400-1024-2-15-I,LB28-1024-2-15-I,LB28-1024-2-10-I,LB28-102400-2048-2-15-I,LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
+    combo_modem_modes  = 'LB28-2-2-100-N,LB28-160-2-2-100-N,LB28-240-2-2-100-N,LB28-2-2-100-N,LB28-160-4-2-100-N,LB28-160-4-2-50-N,LB28-4-2-40-N,LB28-4-2-20-N,LB28-320-8-2-50-N,LB28-8-2-10-N,LB28-16-2-15-I,LB28-16-2-10-I,LB28-3200-32-2-15-I,\
+LB28-32-2-10-I,LB28-6400-64-2-15-I,LB28-64-2-15-I,LB28-64-2-10-I,LB28-6400-128-2-15-I,LB28-128-2-15-I,LB28-128-2-10-I,LB28-25600-256-2-15-I,LB28-256-2-15-I,LB28-256-2-10-I,\
+LB28-25600-512-2-15-I,LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28-51200-1024-2-15-I,LB28-102400-1024-2-15-I,LB28-1024-2-15-I,LB28-1024-2-10-I,LB28-102400-2048-2-15-I,LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
 
     combo_analysis_chart_options = 'X:BER Y:Eb/N0,X:Eb/N0 Y:BER,X:CPS Y:Eb/No,X:ChunkSize Y:Eb/N0,X:CPS Y:BER,X:CPS Y:Eb/N0+ABS(Eb/N0)*BER'.split(',')
 
@@ -172,7 +172,7 @@ LB28-25600-256-2-15-I,LB28-25600-512-2-15-I,LB28-51200-512-2-15-I,LB28-512-2-15-
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.0.4 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.0.5 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -205,15 +205,17 @@ SOFTWARE.\n\
     self.layout_phase_charts = [
 
 
-                        [sg.Frame('Chart 1', [
+                        [sg.Frame('Phase Chart 1', [
 
-                          [sg.Canvas(key='canvas_waveform', size=(100, 50), expand_x=True, expand_y=False)],
+                          #[sg.Canvas(key='canvas_waveform', size=(100, 50), expand_x=True, expand_y=False)],
+                          [sg.Graph(key='canvas_waveform', canvas_size = (1200, 200), graph_bottom_left=(0,0), graph_top_right = (1000, 250), background_color='white', expand_x=False, expand_y=False)],
 
                         ], size=(1200, 250) )],
 
-                        [sg.Frame('Chart 2', [
+                        [sg.Frame('Phase Chart 2', [
 
-                          [sg.Canvas(key='canvas_second_waveform', size=(11, 100), expand_x=True, expand_y=False)],
+                          #[sg.Canvas(key='canvas_second_waveform', size=(11, 100), expand_x=True, expand_y=False)],
+                          [sg.Graph(key='canvas_second_waveform', canvas_size = (1200, 200), graph_bottom_left=(0,0), graph_top_right = (1000, 250), background_color='white', expand_x=False, expand_y=False)],
 
                         ], size=(1200, 250) )],
 
@@ -401,7 +403,7 @@ SOFTWARE.\n\
                        tab_location='centertop',
                        title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1200, 550), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.0.4 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.0.5 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
     return (self.window)
 
@@ -668,10 +670,11 @@ def main():
       tuple_data = form_gui.plotQueue.get_nowait()
       data = tuple_data[0]
       canvas_name = tuple_data[1]
-      fig = form_gui.plotWaveCanvasPrepare(len(data), data, None)
-      form_gui.drawitQueue.put((fig, canvas_name))
 
-      #form_gui.osmod.demodulation_object.drawPhaseCharts(data, chart_type, window, form_gui, canvas_name)
+      #fig = form_gui.plotWaveCanvasPrepare(len(data), data, None)
+      #form_gui.drawitQueue.put((fig, canvas_name))
+
+      form_gui.osmod.demodulation_object.drawPhaseCharts(data, 'phase', window, form_gui, canvas_name)
 
     time.sleep(2)
 
