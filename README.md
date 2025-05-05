@@ -1,8 +1,8 @@
-# OSMOD v0.0.5 alpha
+# OSMOD v0.0.6 alpha
 
 edit compile.sh and update name of .so for your OS and CPU architecture
 
-run compile.sh to generate .so file
+run compile.sh or compile_linux_x86.sh to generate .so file
 
 run osmod:- python3 ./osmod_gui.py
 
