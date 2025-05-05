@@ -6,3 +6,5 @@ run osmod:- python3 ./osmod_gui.py
 
 view the console debug info to check compiled code loads correctly
 
+testing confirms successfull run on raspberry pi 4b and Linux Mint x86 platforms
+
