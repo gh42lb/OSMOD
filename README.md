@@ -1,6 +1,9 @@
 # OSMOD v0.0.6 alpha
 
-edit compile.sh or compile_linux_x86.sh and update name of .so for your OS and CPU architecture then run it to generate the .so file
+either:-
+
+1) use pre-built .so shared object for linux x86 or raspberry pi or
+2) edit compile.sh or compile_linux_x86.sh and update name of .so for your OS and CPU architecture then run it to generate the .so file
 
 run osmod:- python3 ./osmod_gui.py
 
