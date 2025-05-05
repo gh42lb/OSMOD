@@ -379,6 +379,25 @@ int modulate_phases(double* modulated_block_signal, int symbol_block_size, doubl
 }
 
 
+int find_mode(int* list, int n){
+    printf("calculating mode in c code\n");
+
+    int maxValue = 0, maxCount = 0;
+    
+    for(int i=0; i < n; i++) { 
+      int count = 0;
+      for(int j=0; j < n; j++) {
+        if(list[j] == list[i])
+          count ++;
+      }
+      if (count > maxCount) {
+        maxCount  = count;
+        maxValue = list[i];
+      }
+    }
+    printf("calculating mode complete. mode: %d\n", maxValue);
+    return maxValue;
+}
 
 
 
