@@ -107,8 +107,9 @@ class ModemCoreUtils(object):
 
     signal = np.frombuffer(audio_data, dtype=np.float32)
 
-    #return signal.astype(np.float64)
-    return signal.astype(np.longdouble)
+    return signal.astype(np.float64)
+    """ long double breaks on some platforms as precision varies from one platform to the next"""
+    #return signal.astype(np.longdouble)
     #return np.frombuffer(audio_data, dtype=np.float32)
     #return np.frombuffer(audio_data, dtype=np.float64)
 

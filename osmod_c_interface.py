@@ -5,6 +5,14 @@ import sys
 import ctypes
 import numpy as np
 
+""" convert numpy int array to ctypes pointer """
+def ptoc_int_array(numpy_array):
+    ctypes_array = (ctypes.c_int * len(numpy_array))(*numpy_array)
+    #pointer = numpy_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
+    #array_size = numpy_array.size * numpy_array.itemsize
+    #ctypes_array = (ctypes.c_int * numpy_array.size).from_buffer(numpy_array)
+    return ctypes_array
+
 
 """ convert numpy float32 array to ctypes pointer """
 def ptoc_float_array(numpy_array):
@@ -13,7 +21,7 @@ def ptoc_float_array(numpy_array):
     ctypes_array = (ctypes.c_float * numpy_array.size).from_buffer(numpy_array)
     return ctypes_array
 
-""" convert numpy float32 array to ctypes pointer """
+""" convert numpy double array to ctypes pointer """
 def ptoc_double_array(numpy_array):
     pointer = numpy_array.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
     array_size = numpy_array.size * numpy_array.itemsize

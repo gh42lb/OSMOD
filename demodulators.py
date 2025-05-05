@@ -17,7 +17,7 @@ from scipy.fft import fft, fftfreq
 from collections import Counter
 import ctypes
 
-from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, ctop_int
+from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, ctop_int, ptoc_int_array
 
 """
 MIT License
@@ -137,6 +137,30 @@ class DemodulatorPSK(ModemCoreUtils):
     self.osmod.form_gui.plotQueue.put((signal_b, 'canvas_second_waveform'))
 
 
+  def getMode(self, int_array):
+    self.debug.info_message("getMode")
+
+    try:
+      if self.osmod.use_compiled_c_code == True:
+        self.debug.info_message("calling compiled C code")
+
+        c_int_array = ptoc_int_array(int_array)
+
+        self.osmod.compiled_lib.find_mode.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+        self.osmod.compiled_lib.find_mode.restype = ctypes.c_int
+        mode = self.osmod.compiled_lib.find_mode(c_int_array, len(int_array))
+
+        return mode
+
+      else:
+        return int(np.argmax(np.bincount(int_array)))
+        """ stats.mode is inconsistant"""
+        #return int(stats.mode(int_array).mode[0])
+
+    except:
+      self.debug.error_message("Exception in getMode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
   def detectSampleOffset(self, signal):
     self.debug.info_message("detectSampleOffset" )
     try:
@@ -146,35 +170,40 @@ class DemodulatorPSK(ModemCoreUtils):
       for i in range(0, int(len(signal) // self.osmod.symbol_block_size)): 
         test_peak = signal[i*self.osmod.symbol_block_size:(i*self.osmod.symbol_block_size) + self.osmod.symbol_block_size]
         test_max = np.max(test_peak)
-        test_min = np.min(test_peak)
+        #test_min = np.min(test_peak)
         max_indices = np.where(test_peak == test_max)
-        min_indices = np.where(test_peak == test_min)
+        #min_indices = np.where(test_peak == test_min)
         self.debug.info_message("max indices: " + str(max_indices[0]))
-        self.debug.info_message("min indices: " + str(min_indices[0]))
+        #self.debug.info_message("min indices: " + str(min_indices[0]))
 
-        for item in list(max_indices[0]):
-          max_list.append(item)
-          all_list.append(item)
-        for item in list(min_indices[0]):
-          min_list.append(item)
-          all_list.append(item)
+        for x in range(0, len(max_indices[0]) ):
+          max_list.append(int(max_indices[0][x]))
+
+        #for item in list(max_indices[0]):
+        #  max_list.append(item)
+        #  all_list.append(item)
+        #for item in list(min_indices[0]):
+        #  min_list.append(item)
+        #  all_list.append(item)
 
       self.debug.info_message("max_list: " + str(list(max_list)))
-      self.debug.info_message("min_list: " + str(list(min_list)))
-      self.debug.info_message("all_list: " + str(list(all_list)))
+      #self.debug.info_message("min_list: " + str(list(min_list)))
+      #self.debug.info_message("all_list: " + str(list(all_list)))
       if self.osmod.detector_function == 'median':
         self.debug.info_message("calculating median" )
         median_index_max = int(np.median(np.array(max_list)))
-        median_index_min = int(np.median(np.array(min_list)))
-        median_index_all = int(np.median(np.array(all_list)))
+        #median_index_min = int(np.median(np.array(min_list)))
+        #median_index_all = int(np.median(np.array(all_list)))
       elif self.osmod.detector_function == 'mode':
         self.debug.info_message("calculating mode" )
-        median_index_max = int(stats.mode(max_list).mode[0])
-        median_index_min = int(stats.mode(min_list).mode[0])
-        median_index_all = int(stats.mode(all_list).mode[0])
+        #median_index_max = int(stats.mode(max_list).mode[0])
+        median_index_max = self.getMode(max_list)
+        #median_index_max = int(np.argmax(np.bincount(max_list)))
+        #median_index_min = int(stats.mode(min_list).mode[0])
+        #median_index_all = int(stats.mode(all_list).mode[0])
       self.debug.info_message("mean max index: " + str(median_index_max))
-      self.debug.info_message("mean min index: " + str(median_index_min))
-      self.debug.info_message("mean all index: " + str(median_index_all))
+      #self.debug.info_message("mean min index: " + str(median_index_min))
+      #self.debug.info_message("mean all index: " + str(median_index_all))
 
       pulse_size = (self.osmod.symbol_block_size*2)/self.osmod.pulses_per_block
       half_pulse_size = pulse_size / 2

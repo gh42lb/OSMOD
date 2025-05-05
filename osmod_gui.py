@@ -172,7 +172,7 @@ LB28-25600-512-2-15-I,LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.0.5 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.0.6 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -403,7 +403,7 @@ SOFTWARE.\n\
                        tab_location='centertop',
                        title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1200, 550), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.0.5 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.0.6 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
     return (self.window)
 
