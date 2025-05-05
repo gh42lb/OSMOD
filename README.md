@@ -11,3 +11,8 @@ view the console debug info to check compiled code loads correctly
 
 testing confirms successful run on raspberry pi 4b and Linux Mint x86 platforms
 
+
+
+![osmod](https://github.com/user-attachments/assets/f6667647-c3f6-4164-a8b0-b78694e6ce0a)
+
+
