@@ -1,4 +1,4 @@
-# OSMOD v0.0.6 alpha
+# OSMOD v0.1.0 alpha
 
 either:-
 
