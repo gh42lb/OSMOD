@@ -199,6 +199,7 @@ class ModulatorPSK(ModemCoreUtils):
   
 
   def modulatePhases(self, sequences, frequency, n_sections):
+    self.debug.info_message("modulatePhases")
     try:
       #if False:
       if self.osmod.use_compiled_c_code == True:
@@ -217,15 +218,24 @@ class ModulatorPSK(ModemCoreUtils):
         c_phases2                = ptoc_float_list(sequences[1])
         c_phases3                = c_phases2 #ptoc_double_array(sequences[2])
         c_filtRRC_coef_main      = ptoc_double_array(self.osmod.filtRRC_coef_main)
-        
-        #params....(double* modulated_block_signal, int symbol_block_size, double* modulated_wave_signal, int multi_block_size,
-        #           double* phases1, double* phases2, double* phases3, double* filtRRC_coef_main, double* time, int num_phases,
-        #           int pulses_per_block, float* frequency, int n_sections)
 
-        #self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-        self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-        self.osmod.compiled_lib.modulate_phases.restype = ctypes.c_int
-        self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
+        c_filtRRC_coef_pre       = ptoc_double_array(self.osmod.filtRRC_coef_pre)
+        c_filtRRC_coef_post      = ptoc_double_array(self.osmod.filtRRC_coef_post)
+
+        c_offsets                = ptoc_float_list(self.osmod.i3_offsets)
+
+        self.debug.info_message("i3_offsets: " + str(self.osmod.i3_offsets))
+       
+        if self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_SINGLE:
+          self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+          self.osmod.compiled_lib.modulate_phases.restype = ctypes.c_int
+          self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
+        elif self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_TRIPLE:
+          self.osmod.compiled_lib.modulate_phases_intra_three.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
+          #self.osmod.compiled_lib.modulate_phases_intra_three.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
+          self.osmod.compiled_lib.modulate_phases_intra_three.restype = ctypes.c_int
+          self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_filtRRC_coef_main, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
+          #self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
 
         return modulated_wave_signal
       else:

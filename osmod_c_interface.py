@@ -5,12 +5,17 @@ import sys
 import ctypes
 import numpy as np
 
-""" convert numpy int array to ctypes pointer """
+""" convert int array to ctypes pointer """
 def ptoc_int_array(numpy_array):
     ctypes_array = (ctypes.c_int * len(numpy_array))(*numpy_array)
     #pointer = numpy_array.ctypes.data_as(ctypes.POINTER(ctypes.c_int))
     #array_size = numpy_array.size * numpy_array.itemsize
     #ctypes_array = (ctypes.c_int * numpy_array.size).from_buffer(numpy_array)
+    return ctypes_array
+
+def ptoc_numpy_int_array(numpy_array):
+    array_size = numpy_array.size * numpy_array.itemsize
+    ctypes_array = (ctypes.c_int  * numpy_array.size).from_buffer(numpy_array)
     return ctypes_array
 
 
@@ -35,16 +40,19 @@ def ptoc_float_list(float_list):
 def ptoc_float(float_var):
     return ctypes.c_float(float_var)
 
+""" convert double to ctypes double """
+def ptoc_double(double_var):
+    return ctypes.c_double(double_var)
+
 """ convert ctypes int to int """
 def ctop_int(int_var):
     return int_var.value
 
 
 """ convert numpy complex128 array to ctypes pointer """
-#complex can be passed directly to C
-#def ptoc_complex_array(numpy_array):
-#    lib.my_func_with_complex_data.argtypes = [np.ctypeslib.ndpointer(np.complex128, flags='C_CONTIGUOUS'), ctypes.c_int]
-#    lib.my_func_with_complex_data(numpy_array, numpy_array.size)
+#def ptoc_complex_array(complex_array):
+#    ctypes_array = (ctypes.c_double * complex_array.size * 2).from_buffer(complex_array)
+#    return ctypes_array
 
 
 

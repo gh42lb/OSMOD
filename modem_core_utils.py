@@ -8,7 +8,6 @@ import numpy as np
 import debug as db
 import constant as cn
 import osmod_constant as ocn
-#import matplotlib.pyplot as plt
 import scipy as sp
 import gc
 import FreeSimpleGUI as sg
@@ -22,6 +21,9 @@ from datetime import datetime, timedelta
 from scipy.fft import fft
 from numpy.fft import ifft
 from scipy.signal import periodogram
+from numpy.polynomial import Chebyshev as T
+from scipy import stats
+from scipy.interpolate import CubicSpline, splrep, splev, PchipInterpolator, UnivariateSpline
 
 """
 MIT License
@@ -61,6 +63,9 @@ class ModemCoreUtils(object):
   encoding_normal  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}|[]\\:\";\'<>?,./\n '
 
   amplitude = 2.0
+
+  chart_data_dict = {}
+
 
 
   def __init__(self, osmod):  
@@ -132,6 +137,186 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in writeFileWav: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+  def writeFileWav2(self, filename, multi_block):
+    self.debug.info_message("writeFileWav2")
+    self.debug.info_message("multi_block data type: " + str(multi_block.dtype))
+    try:
+      #self.debug.info_message("test1")
+      #test1 = np.max(np.abs(multi_block))
+      #self.debug.info_message("test2")
+      #test2 = multi_block * (2**15 - 1)
+
+      #multi_block = multi_block * (2**15 - 1) / np.max(np.abs(multi_block))
+
+      self.debug.info_message("writing audio file")
+      multi_block = multi_block.astype(np.float32)
+      #multi_block = multi_block.astype(np.float64)
+      write(filename, 48000, multi_block)
+    except:
+      self.debug.error_message("Exception in writeFileWav: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """ average an array of angles """
+  def averageAngles(self, angle_array):
+    #self.debug.info_message("averageAngles")
+    try:
+      """ convert to cartesian """
+      sin_sum = np.sum(np.sin(angle_array))
+      cos_sum = np.sum(np.cos(angle_array))
+
+      return np.arctan2(sin_sum, cos_sum)
+
+    except:
+      self.debug.error_message("Exception in averageAngles: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def averageAngles2(self, angle_array, std_threshold = 1.5):
+    self.debug.info_message("averageAngles2")
+    return self.averageAngles3(angle_array, 0.1, std_threshold)
+
+  """ average an array of angles after removing outliers in the data"""
+  def averageAngles3(self, angle_array, num_items_ratio, std_threshold = 1.5):
+    #self.debug.info_message("averageAngles3")
+    try:
+      std_threshold_inc = std_threshold
+      num_items = len(angle_array) * num_items_ratio
+      mean_angle = stats.circmean(angle_array)
+      #self.debug.info_message("mean_angle: " + str(mean_angle))
+
+      if len(angle_array) <= num_items:
+        return mean_angle
+
+      std_dev = stats.circstd(angle_array)
+      #self.debug.info_message("std_dev: " + str(std_dev))
+      filtered_angles = [angle for angle in angle_array if abs(angle - mean_angle) <= std_threshold * std_dev]
+      while len(filtered_angles) < num_items:
+        std_threshold = std_threshold + std_threshold_inc
+        std_dev = stats.circstd(angle_array)
+        filtered_angles = [angle for angle in angle_array if abs(angle - mean_angle) <= std_threshold * std_dev]
+
+      #self.debug.info_message("std_threshold: " + str(std_threshold))
+      mean_filtered_angle = stats.circmean(filtered_angles)
+      #self.debug.info_message("mean_filtered_angle: " + str(mean_filtered_angle))
+      return mean_filtered_angle
+    except:
+      self.debug.error_message("Exception in averageAngles2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  """ filter data and get max. can be used with wave data"""
+  def filteredSum(self, array, num_items_ratio, std_threshold = 1.5):
+    #self.debug.info_message("filteredSum")
+    try:
+      std_threshold_inc = std_threshold
+      num_items = len(array) * num_items_ratio
+      #self.debug.info_message("num_items: " + str(num_items))
+      #self.debug.info_message("len(array): " + str(len(array)))
+      if len(array) <= num_items:
+        return np.sum(array) / len(array)
+
+      mean = np.mean(array)
+      #self.debug.info_message("mean: " + str(mean))
+
+      std_dev = np.std(array)
+      #self.debug.info_message("std_dev: " + str(std_dev))
+      filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+      while len(filtered_items) < num_items:
+        std_threshold = std_threshold + std_threshold_inc
+        #self.debug.info_message("filtered_items: " + str(filtered_items))
+        #self.debug.info_message("len(filtered_items): " + str(len(filtered_items)))
+        std_dev = np.std(filtered_items)
+        mean = (np.mean(filtered_items) + mean) / 2
+        filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+
+      #self.debug.info_message("std_threshold: " + str(std_threshold))
+      sum_filtered = np.sum(filtered_items) / len(filtered_items)
+      #self.debug.info_message("sum_filtered: " + str(sum_filtered))
+      return sum_filtered
+    except:
+      self.debug.error_message("Exception in filteredSum: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """ filter data and get max. can be used with wave data"""
+  def filteredMax(self, array, num_items_ratio, std_threshold = 1.5):
+    self.debug.info_message("filteredMax")
+    try:
+      num_items = len(array) * num_items_ratio
+
+      if len(array) <= num_items:
+        return np.max(array)
+
+      mean = np.mean(array)
+      self.debug.info_message("mean: " + str(mean))
+
+      std_dev = np.std(array)
+      self.debug.info_message("std_dev: " + str(std_dev))
+      filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+      while len(filtered_items) < num_items:
+        std_threshold = std_threshold + 2
+        std_dev = np.std(filtered_items)
+        filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+
+      self.debug.info_message("std_threshold: " + str(std_threshold))
+      max_filtered = np.max(filtered_items)
+      self.debug.info_message("max_filtered: " + str(max_filtered))
+      return max_filtered
+    except:
+      self.debug.error_message("Exception in filteredMax: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """ filter data and get min. can be used with wave data"""
+  def filteredMin(self, array, num_items_ratio, std_threshold = 1.5):
+    self.debug.info_message("filteredMin")
+    try:
+      num_items = len(array) * num_items_ratio
+      if len(array) <= num_items:
+        return np.min(array)
+
+      mean = np.mean(array)
+      self.debug.info_message("mean: " + str(mean))
+
+      std_dev = np.std(array)
+      self.debug.info_message("std_dev: " + str(std_dev))
+      filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+      while len(filtered_items) < num_items:
+        std_threshold = std_threshold + 2
+        std_dev = np.std(filtered_items)
+        filtered_items = [item for item in array if abs(item - mean) <= std_threshold * std_dev]
+
+      self.debug.info_message("std_threshold: " + str(std_threshold))
+      min_filtered = np.min(filtered_items)
+      self.debug.info_message("min_filtered: " + str(min_filtered))
+      return min_filtered
+    except:
+      self.debug.error_message("Exception in filteredMin: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def getSmallestAngle(self, angle):
+    #self.debug.info_message("getSmallestAngle")
+    try:
+      smallest_angle = min(abs(angle % (2*np.pi)), (2*np.pi) - abs(angle % (2*np.pi))) 
+      return smallest_angle
+    except:
+      self.debug.error_message("Exception in getSmallestAngle: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  """ normalize the angle to zero based in radians i.e. 0 to 2*pi rad"""
+  def normalizeAngle(self, angle):
+    #self.debug.info_message("normalizeAngle")
+    try:
+      normalized_angle = (angle + (2*np.pi)) % (2*np.pi)
+      return normalized_angle
+    except:
+      self.debug.error_message("Exception in normalizeAngle: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  def normalizeAngleArray(self, angle_array):
+    self.debug.info_message("normalizeAngleArray")
+    try:
+      normalized_angle_array = (angle_array + (2*np.pi)) % (2*np.pi)
+      return normalized_angle_array
+    except:
+      self.debug.error_message("Exception in normalizeAngleArray: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
   """ noise methods"""
 
   def addTimingNoise(self, signal):
@@ -171,7 +356,7 @@ class ModemCoreUtils(object):
 
   """ This method works well """
   def filter_common(self, signal, cutoff_freq, filter_type):
-    self.debug.info_message("filter_low_pass_2")
+    #self.debug.info_message("filter_low_pass_2")
     try:
       nyquist_frequency = 0.5 * self.osmod.sample_rate
       normalized_cutoff = cutoff_freq / nyquist_frequency
@@ -182,8 +367,8 @@ class ModemCoreUtils(object):
 
     except:
       self.debug.error_message("Exception in filter_low_pass_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-    finally:
-      self.debug.info_message("Completed filter_low_pass_2: ")
+    #finally:
+    #  self.debug.info_message("Completed filter_low_pass_2: ")
 
     return return_value
 
@@ -329,6 +514,7 @@ class ModemCoreUtils(object):
     self.debug.info_message("stringToTriplet")
 
     try:
+      binary_array_pre_fec = []
       bit_triplets1 = []
       bit_triplets2 = []
 
@@ -337,13 +523,15 @@ class ModemCoreUtils(object):
 
       for char in string:
         self.debug.info_message("processing char: " + str(char) )
-
         self.osmod.form_gui.txwindowQueue.put(str(char))
 
+        """ decimal index of character """
         index = self.b64_indexfromchar_dict[char]
+
         self.debug.info_message("index: " + str(index) )
         binary = format(index, "06b")[0:6]
         self.debug.info_message("binary : " + str(binary) )
+
         for i in range(0, len(binary), 6):
           triplet1 = binary[i:i + 3]
           triplet2 = binary[i+3:i + 6]
@@ -364,7 +552,86 @@ class ModemCoreUtils(object):
     except:
       sys.stdout.write("Exception in stringToTriplet: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-    return [bit_triplets1, bit_triplets2], [sent_triplets_1, sent_triplets_2]
+    return [bit_triplets1, bit_triplets2], [sent_triplets_1, sent_triplets_2], binary_array_pre_fec
+
+
+  def stringToTripletFEC(self, string):
+    self.debug.info_message("stringToTripletFEC")
+
+    try:
+      bit_triplets1 = []
+      bit_triplets2 = []
+
+      sent_triplets_1 = []
+      sent_triplets_2 = []
+
+      binary_string = ''
+
+      for char in string:
+        self.debug.info_message("processing char: " + str(char) )
+        self.osmod.form_gui.txwindowQueue.put(str(char))
+
+        """ decimal index of character """
+        index = self.b64_indexfromchar_dict[char]
+
+        """ char to numpy array of binary values. numpy array to binary triplets"""
+        binary = format(index, "06b")[0:6]
+        self.debug.info_message("binary : " + str(binary) )
+
+        #sub_string = np.binary_repr(index)
+        #self.debug.info_message("sub_string : " + str(sub_string) )
+        binary_string = binary_string + binary
+
+
+      self.debug.info_message("binary_string : " + str(binary_string) )
+      binary_array_pre_fec = np.fromstring(binary_string, 'u1') - ord('0')
+      self.debug.info_message("binary_array_pre_fec : " + str(binary_array_pre_fec) )
+      """LDPC code goes here """
+      #binary_array_post_ldpc = binary_array_pre_ldpc
+
+      if self.osmod.chunk_num == 0:
+        binary_array_post_fec = self.osmod.fec.encodeFEC(binary_array_pre_fec[self.osmod.extrapolate_seqlen * 6:])
+        binary_array_post_fec = np.append(binary_array_pre_fec[:self.osmod.extrapolate_seqlen * 6], binary_array_post_fec)
+      else:
+        binary_array_post_fec = self.osmod.fec.encodeFEC(binary_array_pre_fec)
+
+
+      self.debug.info_message("binary_array_post_fec : " + str(binary_array_post_fec) )
+      post_binary_string = "".join(binary_array_post_fec.astype(str))
+      self.debug.info_message("post_binary_string : " + str(post_binary_string) )
+      #decimal_value = int(binary_string, 2)
+
+      padding_count = (6 - (len(post_binary_string) % 6)) % 6
+      self.debug.info_message("padding_count : " + str(padding_count) )
+      post_binary_string = post_binary_string + '0' * padding_count
+
+      for six_bit_seq in range(0, len(post_binary_string), 6):
+        binary = post_binary_string[six_bit_seq:six_bit_seq+6]
+        self.debug.info_message("binary : " + str(binary) )
+
+        for i in range(0, len(binary), 6):
+          triplet1 = binary[i:i + 3]
+          triplet2 = binary[i+3:i + 6]
+          self.debug.info_message("appending triplet1: " + str(triplet1) )
+          sent_triplets_1.append(triplet1)
+          self.debug.info_message("appending triplet2: " + str(triplet2) )
+          sent_triplets_2.append(triplet2)
+          row1 = [int(binary[i]), int(binary[i+1]), int(binary[i+2])]
+          row2 = [int(binary[i+3]), int(binary[i+4]), int(binary[i+5])]
+          self.debug.info_message("row: " + str(row1) )
+          self.debug.info_message("row: " + str(row2) )
+          bit_triplets1.append(row1)
+          bit_triplets2.append(row2)
+          if self.osmod.process_debug == True:
+            self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row1), end="", text_color='green', background_color = 'white')
+            self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row2), end="", text_color='green', background_color = 'white')
+
+    except:
+      sys.stdout.write("Exception in stringToTripletFEC: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+    return [bit_triplets1, bit_triplets2], [sent_triplets_1, sent_triplets_2], binary_array_pre_fec
+
+
 
 
   def stringToDoubletQuad(self, string):
@@ -381,361 +648,249 @@ class ModemCoreUtils(object):
     return bit_doublets, quad_array
 
 
-  def drawPhaseCharts(self, data, chart_type, window, form_gui, canvas_name):
 
-    self.debug.info_message("drawPhaseCharts. data: " + str(data))
+  def PchipCurveInterpolation(self, x_points, x_smooth, y_points, smoothing):
+    self.debug.info_message("PchipCurveInterpolation")
     try:
-      graph = self.osmod.form_gui.window[canvas_name]
-      graph.erase()
-      graph.erase()
-      graph.erase()
-      graph.erase()
-      graph.erase()
+      self.debug.info_message("PchipCurveInterpolation")
 
-      x_max = 850
-      y_max = 150
-      x_chart_offset = 90
-      y_chart_offset = 40
-      twiddle = 5
+      smoothing_spline = UnivariateSpline(x_points, y_points, s=smoothing)
+      y_smoothed = smoothing_spline(x_points)
 
-      box_color = 'cyan'
+      pchip_interp = PchipInterpolator(x_points, y_smoothed)
+      y_smooth = pchip_interp(x_smooth)
 
-      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), point_to=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
-
-      graph.draw_text('Time', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text('Amplitude', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-
-
-      data_x_max = -1000000000
-      data_x_min = 1000000000
-      data_y_max = -1000000000
-      data_y_min = 1000000000
-
-      data_x_max = len(data)
-      data_x_min = 0
-      for point in range(0, len(data)): 
-        data_y_max = max(data_y_max, float(data[point]))
-        data_y_min = min(data_y_min, float(data[point]))
-
-      graph.draw_text("{:.2f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-
-      self.debug.info_message("data_x_max: " + str(data_x_max))
-      self.debug.info_message("data_y_max: " + str(data_y_max))
-
-      if (data_x_max - data_x_min) == 0 and data_x_max > 0:
-        data_x_min = 0
-      if (data_x_max - data_x_min) == 0 and data_x_max < 0:
-        data_x_max = 0
-      if (data_y_max - data_y_min) == 0 and data_y_max > 0:
-        data_y_min = 0
-      if (data_y_max - data_y_min) == 0 and data_y_max < 0:
-        data_y_max = 0
-
-      x_scaling = x_max / (data_x_max - data_x_min)
-      y_scaling = y_max / (data_y_max - data_y_min)
-      
-      plot_color = 'black'
-      x_last = (float(0) - data_x_min) * x_scaling
-      y_last = (float(data[0]) - data_y_min) * y_scaling
-      #for point in range(1, len(data),500): 
-      for point in range(1, len(data), int((len(data) / x_max)/20)): 
-        x_point = (float(point) - data_x_min) * x_scaling
-        y_point = (float(data[point]) - data_y_min) * y_scaling
-        #graph.draw_line(point_from=(x_chart_offset + x_last, y_chart_offset + y_last), point_to=(x_chart_offset + x_point, y_chart_offset + y_point), width=4, color=plot_color)
-        graph.draw_point((x_chart_offset + x_point, y_chart_offset + y_point), size=2, color=plot_color)
-        #x_last = x_point
-        #y_last = y_point
-    except:
-      self.debug.error_message("Exception in drawPhaseCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
-
-  """
-DATA_MODE           = 0
-DATA_EBN0_DB        = 1
-DATA_SNR_EQUIV_DB   = 2
-DATA_BER            = 3
-DATA_CPS            = 4
-DATA_BPS            = 5
-DATA_NOISE_FACTOR   = 6
-DATA_AMPLITUDE      = 7
-DATA_CHUNK_SIZE     = 8
-  """
-  def compare_a_equals_b(self, a, b):
-    if a == b:
-      return True
-    else:
-      return False
-
-  def compare_a_greater_than_b(self, a, b):
-    if a > b:
-      return True
-    else:
-      return False
-
-  def compare_a_less_than_b(self, a, b):
-    if a < b:
-      return True
-    else:
-      return False
-
-  def drawDotPlotCharts(self, data, chart_type, window, values, form_gui):
-
-    self.debug.info_message("drawDotPlotCharts")
-    try:
-      #colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'cyan', 'black', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray', 'gray']
-      colors = []
-
-      for count in range(0,30):
-        rand_rgb_color = [random.randint(0,255) for _ in range(3)]
-        rand_color_hex = "#{:02x}{:02x}{:02x}".format(*rand_rgb_color)
-        colors.append(rand_color_hex)
-
-      self.debug.info_message("colors: " + str(colors))
-
-      dict_name_colors = {}
-      color_count = 0
-      dict_lookup = {'Eb/N0': ocn.DATA_EBN0_DB, 'BER':ocn.DATA_BER ,'BPS':ocn.DATA_BPS ,'CPS':ocn.DATA_CPS ,'Chunk Size':ocn.DATA_CHUNK_SIZE ,'SNR':ocn.DATA_SNR_EQUIV_DB, 'Noise Factor':ocn.DATA_NOISE_FACTOR, 'Amplitude':ocn.DATA_AMPLITUDE }
-
-      filter_1 = window['cb_analysis_filter1'].get()
-      filter_2 = window['cb_analysis_filter2'].get()
-      mode_to_match = window['combo_analysis_modes'].get()
-      item_to_compare_index = dict_lookup[window['combo_analysis_itemtocompare'].get()]
-      compare_operator = window['combo_analysis_campare_operator'].get()
-      if filter_2:
-        compare_value = float(window['in_analysis_comparewithvalue'].get())
-      compare_func = None
-      if compare_operator == '=':
-        compare_func = self.compare_a_equals_b
-      elif compare_operator == '>':
-        compare_func = self.compare_a_greater_than_b
-      elif compare_operator == '<':
-        compare_func = self.compare_a_less_than_b
-
-      graph = self.osmod.form_gui.window['graph_dotplotdata']
-      graph.erase()
-
-      x_max = 1300
-      y_max = 400
-      x_chart_offset = 130
-      y_chart_offset = 60
-      twiddle = 5
-
-      box_color = 'cyan'
-
-      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), point_to=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
-      graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
-
-
-      if chart_type == 'X:Eb/N0 Y:BER':
-        x_index = ocn.DATA_EBN0_DB
-        y_index = ocn.DATA_BER
-        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-      elif chart_type == 'X:CPS Y:Eb/No':
-        x_index = ocn.DATA_CPS
-        y_index = ocn.DATA_EBN0_DB
-        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-      elif chart_type == 'X:ChunkSize Y:Eb/N0':
-        x_index = ocn.DATA_CHUNK_SIZE
-        y_index = ocn.DATA_EBN0_DB
-        graph.draw_text('Chunk Size', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-      elif chart_type == 'X:CPS Y:BER':
-        x_index = ocn.DATA_CPS
-        y_index = ocn.DATA_BER
-        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-      elif chart_type == 'X:BER Y:Eb/N0':
-        x_index = ocn.DATA_BER
-        y_index = ocn.DATA_EBN0_DB
-        graph.draw_text('Bit Error Rate', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-      elif chart_type == 'X:CPS Y:Eb/N0+ABS(Eb/N0)*BER':
-        x_index = ocn.DATA_CPS
-        y_index = ocn.DATA_CALC_1
-        for point in range(0, len(data)):
-          calculated_value = float(data[point][ocn.DATA_EBN0_DB]) + (abs(float(data[point][ocn.DATA_EBN0_DB]) * float(data[point][ocn.DATA_BER] )))
-          data[point].append(calculated_value)
-          self.debug.info_message("data[point]: " + str(data[point]))
-        graph.draw_text('Characters Per Second', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Eb/N0+ABS(Eb/N0)*BER', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
-
-
-
-
-      data_x_max = -1000000000
-      data_x_min = 1000000000
-      data_y_max = -1000000000
-      data_y_min = 1000000000
-      for point in range(0, len(data)): 
-        include = False
-        if filter_1:
-          if data[point][ocn.DATA_MODE] == mode_to_match:
-            if filter_2:
-              if compare_func(float(data[point][item_to_compare_index]), compare_value):
-                include = True
-              else:
-                include = False
-            else:
-              include = True
-        elif filter_2:
-          if compare_func(float(data[point][item_to_compare_index]), compare_value):
-            include = True
-          else:
-            include = False
-        else:
-          include = True
-
-        if include:
-          self.debug.info_message("data_x: " + str(float(data[point][x_index])))
-          data_x_max = max(data_x_max, float(data[point][x_index]))
-          data_x_min = min(data_x_min, float(data[point][x_index]))
-          self.debug.info_message("data_y: " + str(float(data[point][y_index])))
-          data_y_max = max(data_y_max, float(data[point][y_index]))
-          data_y_min = min(data_y_min, float(data[point][y_index]))
-          if data[point][ocn.DATA_MODE] not in dict_name_colors:
-            dict_name_colors[data[point][ocn.DATA_MODE]] = color_count
-            color_count = color_count + 1
-
-      graph.draw_text("{:.2f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.2f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-
-
-      self.debug.info_message("data_x_max: " + str(data_x_max))
-      self.debug.info_message("data_y_max: " + str(data_y_max))
-
-      if (data_x_max - data_x_min) == 0 and data_x_max > 0:
-        data_x_min = 0
-      if (data_x_max - data_x_min) == 0 and data_x_max < 0:
-        data_x_max = 0
-      if (data_y_max - data_y_min) == 0 and data_y_max > 0:
-        data_y_min = 0
-      if (data_y_max - data_y_min) == 0 and data_y_max < 0:
-        data_y_max = 0
-
-      x_scaling = x_max / (data_x_max - data_x_min)
-      y_scaling = y_max / (data_y_max - data_y_min)
-      
-      for point in range(0, len(data)): 
-        include = False
-        if filter_1:
-          if data[point][ocn.DATA_MODE] == mode_to_match:
-            if filter_2:
-              if compare_func(float(data[point][item_to_compare_index]), compare_value):
-                include = True
-              else:
-                include = False
-            else:
-              include = True
-        elif filter_2:
-          if compare_func(float(data[point][item_to_compare_index]), compare_value):
-            include = True
-          else:
-            include = False
-        else:
-          include = True
-
-        if include:
-          x_point = (float(data[point][x_index]) - data_x_min) * x_scaling
-          y_point = (float(data[point][y_index]) - data_y_min) * y_scaling
-          self.debug.info_message("x_point: " + str(x_point))
-          self.debug.info_message("y_point: " + str(y_point))
-          plot_color_index = dict_name_colors[data[point][ocn.DATA_MODE]]
-          self.debug.info_message("plot_color_index: " + str(plot_color_index))
-          plot_color = colors[plot_color_index]
-          self.debug.info_message("plot_color: " + str(plot_color))
-          graph.draw_point((x_chart_offset + x_point,y_chart_offset + y_point), size=8, color=plot_color)
-
-      count = 0
-      for mode_name, color_index in dict_name_colors.items():
-        plot_color = colors[color_index]
-        graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*20)), size=16, color=plot_color)
-        graph.draw_text(mode_name, location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*20)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
-        count = count + 1
+      return np.clip(y_smooth, a_min = min(y_points), a_max = max(y_points))
 
     except:
-      self.debug.error_message("Exception in drawDotPlotCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in PchipCurveInterpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def re_drawWaveCharts(self, x_magnifier1, x_magnifier2, y_magnifier1, y_magnifier2):
-    self.drawWaveCharts(self.saved_data_for_chart_1, self.saved_data_for_chart_2, x_magnifier1, x_magnifier2, y_magnifier1, y_magnifier2)
+  def CubicSplineCurveInterpolation(self, x_points, x_smooth, y_points, smoothing):
+    self.debug.info_message("CubicSplineCurveInterpolation")
+    try:
+      self.debug.info_message("CubicSplineCurveInterpolation")
+
+      smoothing_spline = UnivariateSpline(x_points, y_points, s=smoothing)
+      y_smoothed = smoothing_spline(x_points)
+
+      cs = CubicSpline(x_points, y_smoothed)
+      y_smooth = cs(x_smooth)
+
+      return np.clip(y_smooth, a_min = min(y_points), a_max = max(y_points))
+
+    except:
+      self.debug.error_message("Exception in CubicSplineCurveInterpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def BetaSplineCurveInterpolation(self, x_points, x_smooth, y_points, smoothing):
+    self.debug.info_message("BetaSplineCurveInterpolation")
+    try:
+      self.debug.info_message("BetaSplineCurveInterpolation")
+      tck = splrep(x_points, y_points, s=smoothing)
+      y_smooth = splev(x_smooth, tck)
+
+      return np.clip(y_smooth, a_min = min(y_points), a_max = max(y_points))
+
+    except:
+      self.debug.error_message("Exception in BetaSplineCurveInterpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def chebyshevCurveInterpolation(self, x_points, x_smooth, y_points, smoothing):
+    self.debug.info_message("chebyshevCurveInterpolation")
+    try:
+      self.debug.info_message("x_points: " + str(x_points))
+      self.debug.info_message("y_points: " + str(y_points))
+      self.debug.info_message("len(x_points): " + str(len(x_points)))
+      self.debug.info_message("len(y_points): " + str(len(y_points)))
+      deg = int(smoothing)   # 10
+      cheby_fit = T.fit(x_points, y_points, deg)
+      minx = min(x_points)
+      maxx = max(x_points)
+
+      #x_smooth = np.linspace(minx, maxx, int(maxx-minx))
+      y_cheby = cheby_fit(x_smooth)
+      self.debug.info_message("x_smooth: " + str(x_smooth))
+      self.debug.info_message("y_cheby: " + str(y_cheby))
+      return y_cheby
+
+    except:
+      self.debug.error_message("Exception in chebyshevCurveInterpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def interpolatePhaseDrift(self, signal, median_block_offset, frequency, where, calc_type):
+    self.debug.info_message("interpolatePhaseDrift")
+    try:
+      interpolated_signal = np.zeros(len(signal), dtype=float)
+      wrap_around_signal = np.zeros(len(signal), dtype=int)
+      signal_angle = np.angle(signal)
+
+      num_waves    = self.osmod.parameters[4]
+      num_points = int(self.osmod.sample_rate / frequency)
+      term1 = num_points*num_waves
+
+      two_times_pi = np.pi * 2
+      max_phase_value = two_times_pi / 8
+      wrap_around = 0
+      gradient = 0
+
+      num_values   = int((len(signal_angle) - median_block_offset) // self.osmod.symbol_block_size)
+      original_phase_values = [0]*num_values
+      error_values = [0]*num_values
+      wrap_values  = [0]*num_values
+      x_values     = [0]*num_values
+      self.debug.info_message("num_values: " + str(num_values))
+      for x in range(median_block_offset, len(signal_angle), self.osmod.symbol_block_size):
+        if x <= len(signal_angle) - self.osmod.symbol_block_size:
+          middle_this  = x + where
+          middle_last  = x + where - self.osmod.symbol_block_size
+          #original_phase_values[x] = ((sum(signal_angle[middle_this-(term1):middle_this+(term1)-1]) / (2*term1)) + np.pi) % max_phase_value
+          original_value = sum(signal_angle[middle_this-(term1):middle_this+(term1)-1]) / (2*term1)
+          this_block_phase = ((sum(signal_angle[middle_this-(term1):middle_this+(term1)-1]) / (2*term1)) + np.pi) % max_phase_value
+          last_block_phase = ((sum(signal_angle[middle_last-(term1):middle_last+(term1)-1]) / (2*term1)) + np.pi) % max_phase_value
+          interpolated_signal[middle_this] = this_block_phase
+
+          self.debug.info_message("x: " + str(x))
+          self.debug.info_message("block: " + str(int((x-median_block_offset)//self.osmod.symbol_block_size)))
+
+          original_phase_values[int((x-median_block_offset)//self.osmod.symbol_block_size)] = original_value
+          error_values[int((x-median_block_offset)//self.osmod.symbol_block_size)] = this_block_phase
+          x_values[int((x-median_block_offset)//self.osmod.symbol_block_size)] = x
+
+          """ stays in same plane """
+          min_diff_1 = (this_block_phase - last_block_phase)
+          """ wrap around +1 """
+          min_diff_2 = (this_block_phase + max_phase_value) - last_block_phase
+          """ wrap around -1 """
+          min_diff_3 = (last_block_phase + max_phase_value) - this_block_phase
+
+          if x < median_block_offset + self.osmod.symbol_block_size:
+            wrap_around_signal[middle_this] = 0
+          else:      
+            self.debug.info_message("this last diff 1 diff2 diff 3: " + str(this_block_phase) + ", " + str(last_block_phase) + ", " + str(min_diff_1) + ", " + str(min_diff_2) + ", " + str(min_diff_3))
+            if abs(min_diff_1) < max_phase_value/2:
+              self.debug.info_message("stays in same plane")
+              #gradient = this_block_phase - last_block_phase
+            elif abs(min_diff_2) < abs(min_diff_3) and abs(min_diff_2) < max_phase_value/2:
+              self.debug.info_message("wrap around +1")
+              wrap_around = wrap_around + 1
+              #gradient = (this_block_phase + max_phase_value) - last_block_phase
+            elif abs(min_diff_3) < abs(min_diff_2) and abs(min_diff_3) < max_phase_value/2:
+              self.debug.info_message("wrap around -1")
+              wrap_around = wrap_around - 1
+              #gradient = (last_block_phase + max_phase_value) - this_block_phase
+            else:
+              self.debug.info_message("unknown")
+
+            wrap_around_signal[middle_this] = wrap_around
+            wrap_values[int((x-median_block_offset)//self.osmod.symbol_block_size)] = wrap_around
+
+
+      last_value  = 0
+      wrap_around = 0
+      points_x = []
+      points_y = []
+
+      self.debug.info_message("creating interpolated")
+      self.debug.info_message("error_values: " + str(error_values))
+      self.debug.info_message("wrap_values: " + str(wrap_values))
+
+      """ normalize. wrap values already cumulative"""
+      #rolling_wrap = 0
+      for i in range (0, len(error_values)):
+        #rolling_wrap = rolling_wrap + wrap_values[i]
+        #error_values[i] = error_values[i] + (rolling_wrap * max_phase_value)
+        error_values[i] = error_values[i] + (wrap_values[i] * max_phase_value)
+
+      self.debug.info_message("original_phase_values: " + str(original_phase_values))
+      self.debug.info_message("error_values: " + str(error_values))
+      self.debug.info_message("original + error: " + str(original_phase_values + error_values))
+      for i in range (0, len(original_phase_values)):
+        corrected_phase_value = original_phase_values[i] + error_values[i]
+        adjusted_phase_value = (corrected_phase_value + two_times_pi) / two_times_pi
+        adjusted_for_eighths = int((adjusted_phase_value * 8) % 8)
+        self.debug.info_message("character code: " + str(adjusted_for_eighths))
+
+      #for i in range (1, len(error_values)):
+      #  gradient    = error_values[i] - error_values[i-1]
+      #  anticipated = error_values[i] + gradient
+      #  if error_values[i] - anticipated < max_phase_value / 2:
+      #    self.debug.info_message("all is good")
+
+
+      index_count = 0
+      for x in range(0, len(signal_angle)):
+        if (x - median_block_offset) % self.osmod.symbol_block_size == 0:
+          if index_count < num_values and x_values[index_count] == x:
+            self.debug.info_message("processing: " + str(x))
+            self.debug.info_message("index_count: " + str(index_count))
+            last_value  = error_values[index_count]
+            interpolated_signal[x] = last_value
+            index_count = index_count + 1
+          else:
+            interpolated_signal[x] = last_value
+        else:
+          interpolated_signal[x] = last_value
+
+      if calc_type == ocn.PHASE_ERROR_ROUGH:
+        return interpolated_signal
+
+      if calc_type == ocn.PHASE_ERROR_SMOOTH:
+
+        minx = min(x_values)
+        maxx = max(x_values)
+        x_smooth = np.linspace(minx, maxx, int(maxx-minx))
+        cheby = self.chebyshevCurveInterpolation(x_values, x_smooth, error_values, 10)
+        interpolated_signal[min(x_values):max(x_values)] = cheby
+        return interpolated_signal
+
+    except:
+      self.debug.error_message("Exception in interpolatePhaseDrift: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def getStrongestFrequencies(self, data, N, lo, high):
+    self.debug.info_message("getStrongestFrequencies")
+    try:
+      fft_output = np.fft.fft(data)
+      frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
+      positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+      fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      frequencies = frequencies[positive_frequency_indices]
+
+      top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      strongest_frequencies = frequencies[top_n_indices]
+      strongest_magnitudes  = fft_magnitudes[top_n_indices]
+
+      self.debug.info_message("strongest_frequencies: " + str(strongest_frequencies))
+      self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
+    except:
+      self.debug.error_message("Exception in getStrongestFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
 
   """ This method works fine"""
-  def drawWaveCharts(self, chart_1_data, chart_2_data, x_magnifier1, x_magnifier2, y_magnifier1, y_magnifier2):
-
-    self.debug.info_message("drawWaveCharts")
-
-    self.saved_data_for_chart_1 = chart_1_data
-    self.saved_data_for_chart_2 = chart_2_data
-
-    try:
-      peak_y = 2
-      y_offset = 0.5
-      #y_offset = 0.0
-      self.debug.info_message("peak y: " + str(peak_y))
-      last_y1 = 0
-      last_y2 = 0
-      last_x = 0
-      len_chart_1_data = len(chart_1_data)
-      self.debug.info_message("len_chart_1_data: " + str(len_chart_1_data))
-      max_x_index = int(len(chart_1_data)/x_magnifier1)
-      min_x_index = max_x_index * (x_magnifier2 / 100)
-      self.debug.info_message("max_x_index: " + str(max_x_index))
-
-      step_increment = int(1000 / (max_x_index - min_x_index))
-      self.debug.info_message("step_increment: " + str(step_increment))
-
-      graph1 = self.osmod.form_gui.window['graph_wavedata1']
-      graph2 = self.osmod.form_gui.window['graph_wavedata2']
-
-      graph1.erase()
-      graph2.erase()
-
-      for x in range (0,1000, max(step_increment, 1) ):
-        x_value = x 
-        x_index  = int((((x + (x_magnifier2 *10))/1000) * len(chart_1_data))/x_magnifier1)
-        y1_value = (((chart_1_data[ x_index ] / peak_y)*y_magnifier1) + y_offset) * 250 
-        y2_value = (((chart_2_data[ x_index ] / peak_y)*y_magnifier2) + y_offset) * 250 
-
-        self.osmod.form_gui.window['graph_wavedata1'].draw_line(point_from=(last_x,last_y1), point_to=(x_value,y1_value), width=2, color='black')
-        self.osmod.form_gui.window['graph_wavedata2'].draw_line(point_from=(last_x,last_y2), point_to=(x_value,y2_value), width=2, color='black')
-
-        last_y1 = y1_value
-        last_y2 = y2_value
-        last_x = x_value
-
-    except:
-      self.debug.error_message("Exception in drawWaveCharts: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-    finally:
-      self.debug.info_message("Completed drawWaveCharts: ")
-
-  """ This method works fine"""
-  def getStrongestFrequency(self, data):
+  def getStrongestFrequency(self, data, lo, high):
     self.debug.info_message("getStrongestFrequency")
     try:
       fft_output = np.fft.fft(data)
       frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
-      positive_frequency_indices = np.where((frequencies > 0) & (frequencies < 3000))[0]
+      positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
       fft_magnitude = np.abs(fft_output)[positive_frequency_indices]
 
       frequencies = frequencies[positive_frequency_indices]
       strongest_index = np.argmax(fft_magnitude)
+
+      """ calculated interpolated frequency """
+      fft_data = np.abs(fft_output)
+      interpolated_peak_index = self.fft_parabolic_interpolation(fft_data, np.argmax(fft_data[:len(fft_data)//2]) )
+      interpolated_frequency = interpolated_peak_index * self.osmod.sample_rate / len(data)
+
       strong_freqs = frequencies[strongest_index]
       strong_magnitudes = fft_magnitude[strongest_index]
 
       sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
-      sys.stdout.write("strong_freqs: " + str(strong_freqs) + "\n")
+      sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
+      sys.stdout.write("strongest interpolated frequency: " + str(interpolated_frequency) + "\n")
       sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
   
     except:
@@ -744,6 +899,19 @@ DATA_CHUNK_SIZE     = 8
       self.debug.info_message("Completed getStrongestFrequency: ")
 
     return strong_freqs
+
+
+  def fft_parabolic_interpolation(self, data, peak_index):
+    self.debug.info_message("fft_parabolic_interpolation")
+    try:
+      y1,y2,y3 = np.log(data[peak_index-1:peak_index+2])    
+      interpolated_peak_index = peak_index + (y1 - y3) / (2 * (y1 - 2 * y2 + y3))
+      return interpolated_peak_index
+
+    except:
+      self.debug.error_message("Exception in fft_parabolic_interpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
 
   """ calculate the noise of the entire passband"""
   def calculateNoisePowerSNR(self, signal):
@@ -798,7 +966,7 @@ DATA_CHUNK_SIZE     = 8
       freq_high_signal_lo = signal_frequency[1] - 2
       freq_indices = np.where(((frequencies >= freq_low_signal) & (frequencies <= freq_low_signal_hi)) | ((frequencies >= freq_high_signal_lo) & (frequencies <= freq_high_signal)) )[0]
       signal_psd = np.abs(fft_output[freq_indices])**2
-      self.debug.info_message("signal_psd: " + str(signal_psd) )
+      #self.debug.info_message("signal_psd: " + str(signal_psd) )
 
       fft_output = np.fft.fft(signal)
       psd = np.abs(fft_output)**2
@@ -854,9 +1022,9 @@ DATA_CHUNK_SIZE     = 8
       filtered_signal = np.fft.ifft(fft_filtered)
 
     except:
-      self.debug.error_message("Exception in getStrongestFrequency: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in bandpass_filter_fft2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-    return filtered_signal
+    return filtered_signal, fft_signal[mask]
 
 
   """ bandpass filter fft"""
@@ -870,8 +1038,28 @@ DATA_CHUNK_SIZE     = 8
       fft_filtered = fft_signal * mask
       filtered_signal = sp.fft.ifft(fft_filtered)
     except:
-      self.debug.error_message("Exception in getStrongestFrequency: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in bandpass_filter_fft: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-    return filtered_signal
+    self.debug.info_message("fft signal data type: " + str(filtered_signal.dtype))
+
+    return filtered_signal, fft_signal[mask]
+
+
+  """ lowpass filter fft ????????????????????"""
+  def lowpass_filter_fft(self, signal, freq_hi):
+    self.debug.info_message("lowpass_filter_fft")
+
+    try:
+      fft_signal  = sp.fft.fft(signal)
+      frequencies = sp.fft.fftfreq(len(signal), 1/self.osmod.sample_rate)
+      mask         = (np.abs(frequencies) <= freq_hi)
+      fft_filtered = fft_signal * mask
+      filtered_signal = sp.fft.ifft(fft_filtered)
+    except:
+      self.debug.error_message("Exception in lowpass_filter_fft: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    self.debug.info_message("fft signal data type: " + str(filtered_signal.dtype))
+
+    return filtered_signal, fft_signal[mask]
 
 

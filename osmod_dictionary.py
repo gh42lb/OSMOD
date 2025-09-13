@@ -112,6 +112,20 @@ class PersistentData(object):
                              'LB28-3200-32-2-15-I'    : self.osmod.getPersistentData('LB28-3200-32-2-15-I',   values),
                              'LB28-32-2-10-I'         : self.osmod.getPersistentData('LB28-32-2-10-I',   values),
                              'LB28-6400-64-2-15-I'    : self.osmod.getPersistentData('LB28-6400-64-2-15-I',   values),
+                             'LB28-6400-64-2-15-I3S3'   : self.osmod.getPersistentData('LB28-6400-64-2-15-I3S3',   values),
+                             'LB28-6400-64-2-15-I3F'   : self.osmod.getPersistentData('LB28-6400-64-2-15-I3F',   values),
+                             'LB28-6400-64-2-15-I3E8'  : self.osmod.getPersistentData('LB28-6400-64-2-15-I3E8',   values),
+                             'LB28-6400-64-2-37-I3E8'  : self.osmod.getPersistentData('LB28-6400-64-2-37-I3E8',   values),
+                             'LB28-6400-64-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-6400-64-2-37-I3E8-FEC',   values),
+                             'LB28-25600-256-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-25600-256-2-37-I3E8-FEC',   values),
+                             'LB28-51200-512-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-51200-512-2-37-I3E8-FEC',   values),
+                             'LB28-102400-1024-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-102400-1024-2-37-I3E8-FEC',   values),
+
+                             'LB28-12800-128-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-12800-128-2-37-I3E8-FEC',   values),
+                             'LB28-3200-32-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-3200-32-2-37-I3E8-FEC',   values),
+                             'LB28-1600-16-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-1600-16-2-37-I3E8-FEC',   values),
+                             'LB28-800-8-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-800-8-2-37-I3E8-FEC',   values),
+
                              'LB28-64-2-15-I'         : self.osmod.getPersistentData('LB28-64-2-15-I',   values),
                              'LB28-64-2-10-I'         : self.osmod.getPersistentData('LB28-64-2-10-I',   values),
                              'LB28-6400-128-2-15-I'        : self.osmod.getPersistentData('LB28-6400-128-2-15-I',  values),
@@ -140,6 +154,39 @@ class PersistentData(object):
 
     except:
       self.debug.error_message("Exception in test1: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+
+  def writeRotationTablesToFile(self, mode, dict_rotation_table):
+    self.debug.info_message("writeRotationTablesToFile")
+
+    try:
+      filename = mode + ".rta"
+
+      with open(filename, 'w') as convert_file:
+                convert_file.write(json.dumps(dict_rotation_table))
+      return()
+
+    except:
+      self.debug.error_message("Exception in writeRotationTablesToFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def readRotationTablesFromFile(self, mode):
+    self.debug.info_message("readRotationTablesFromFile")
+
+    try:
+      filename = mode + ".rta"
+      with open(filename) as f:
+        data = f.read()
+ 
+      settings = json.loads(data)
+
+      return settings
+
+    except:
+      self.debug.error_message("Exception in readRotationTablesFromFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      return None
 
 
 

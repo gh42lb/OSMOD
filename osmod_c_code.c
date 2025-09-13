@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
+#include <stdlib.h>
+
+
+int count_max_occurrences(int* data, int size, int* items_to_ignore, int size2);
+
 
 /*
 MIT License
@@ -38,20 +43,32 @@ int my_func_with_complex_data(complex double *arr, int size) {
 }
 
 
-int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recovered_signal1b, float frequency, double* t, int size) {
+int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recovered_signal1b, float frequency, double* t, int size, double damping_factor, double loop_bandwidth, double K1, double K2) {
     printf("Costas Loop\n");
+
+    /* debug code to monitor phase lock*/
+    int trigger1 = 0;
+    int trigger2 = size*0.25;
+    int trigger3 = size*0.5;
+    int trigger4 = size*0.75;
+    int trigger_count = 0;
+    int trigger_count_max=200;
+    int triggered = 0;
 
     double complex recovered_signal2a;
     double complex recovered_signal2b;
     double complex recovered_signal2;
     double I45;
     double Q45;
+    double I45b;
+    double Q45b;
     double I0;
     double Q0;
     double max1=0.0;
     double max2=0.0;
     double phase_normal;
     double phase_45;
+    double phase_45b;
     double phase_error;
     double ratio;
 
@@ -62,17 +79,32 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
     double term5;
     double term6;
 
+    double lock_indicator = 0.0;
+    int lock_acquired = 0;
+
     double frequency_estimate = 0.0;
     double phase_estimate = 0.0;
-    double damping_factor = 1.0 / sqrt(2.0);
-    double loop_bandwidth = 10.0;
-    double K1 = 2.0 * damping_factor * loop_bandwidth ;
-    double K2 = pow(loop_bandwidth, 2.0) ;
+
+    printf("Damping Factor %f, Loop Bandwidth %f, K1 %f, K2 %f\n", damping_factor, loop_bandwidth, K1, K2);
+
+    //damping factor 1.0 works well....0.7072     
+    //double damping_factor = 1.0 / sqrt(2.0);
+
+    //0.001 is good for nomal modes. 0.1 is good for interpolated modes...0.1
+    //double loop_bandwidth = 0.1;
+
+    //2.0 works well....0.1414
+    //double K1 = 2.0 * damping_factor * loop_bandwidth ;
+
+    //k2 power 3 works best....0.01
+    //double K2 = pow(loop_bandwidth, 2.0) ;
+    //double K2 = pow(loop_bandwidth, 3.0) ;
 
     term5 = M_PI * 2 / 8;
     term6 = 2 * M_PI;
     for(int i = 0; i < size; i++) {
-      term1 = term6 * (frequency + frequency_estimate) * t[i];
+      //term1 = term6 * (frequency + frequency_estimate) * t[i];
+      term1 = term6 * (frequency) * t[i];
       term3 = term1 + phase_estimate;
       term4 = term3 + term5;
       recovered_signal1a[i] = signal[i] * cos(term3);
@@ -85,19 +117,57 @@ int costas_loop_8psk(double* signal, double* recovered_signal1a, double* recover
       Q0   = recovered_signal1b[i];
       I45 = creal(recovered_signal2);
       Q45 = cimag(recovered_signal2);
+      I45b = recovered_signal2a;
+      Q45b = recovered_signal2b;
 
       phase_normal = I0 * Q0;
       phase_45     = I45 * Q45;
-      if (abs(phase_normal) < abs(phase_45))
-        phase_error  = phase_normal;
-      else
-        phase_error  = phase_45;
+      phase_45b     = I45b * Q45b;
+      //if (abs(phase_normal) < abs(phase_45))
+      //if (abs(phase_normal) < abs(phase_45b))
+      //if (abs(phase_normal) > abs(phase_45b))
+      //  phase_error  = phase_normal;
+      //else
+        //phase_error  = phase_45;
+      //  phase_error  = phase_45b;
+      phase_error  = phase_normal * phase_45b;
+      //phase_error  = phase_normal ;
 
       frequency_estimate += K2 * phase_error ;
       phase_estimate += (K1 * phase_error) + frequency_estimate;
 
       max1 = fmax(max1, fabs(recovered_signal1a[i]));
       max2 = fmax(max2, fabs(recovered_signal1b[i]));
+
+      /* debug code to monitor phase lock*/
+      lock_indicator = 0.0;
+      //if(lock_acquired == 0){
+      //  recovered_signal1a[i] = 0.0;
+      //  recovered_signal1b[i] = 0.0;
+   	  //}
+      //recovered_signal1a[i] = frequency_estimate;
+      //recovered_signal1b[i] = frequency_estimate;
+      if(phase_error > 0.0){
+        lock_indicator = fabs(frequency_estimate / phase_error);
+        if(lock_indicator > 1000000.0 && lock_acquired == 0){
+          lock_acquired = 1;
+          printf("locked at %i\n", i);
+        }
+      }
+      if(i == trigger1 || i == trigger2 || i == trigger3 || i==trigger4) {
+        triggered = 1;
+      }
+      if(triggered == 1){
+        trigger_count = trigger_count + 1;
+
+        //printf("costas lock:- %d %.20f %.20f %.20f %.20f %.20f %.20f\n", i, frequency_estimate, phase_estimate, phase_error, phase_normal, phase_45b, lock_indicator);
+        if (trigger_count > trigger_count_max){
+          triggered = 0;
+          trigger_count = 0;
+	    }
+      }
+
+
     }
 
     ratio = fmax(max1, max2) / 10000.0;
@@ -378,6 +448,141 @@ int modulate_phases(double* modulated_block_signal, int symbol_block_size, doubl
     return 0;
 }
 
+//                          a            a           a           b           b           f           g           g           i           j           k           l
+//                        test1        test2       test3       test4       test5       test6       test7       test8       test9       test10      test11      test12      test13      test14      test15      test16      test17
+//float test_phases_a[17] = {M_PI*(2/4), M_PI*(1/4), M_PI*(2/4), M_PI*(1/4), M_PI*(2/4), M_PI*(1/4), M_PI*(2/4), M_PI*(3/4), M_PI*(1/4), M_PI*(2/4), M_PI*(3/4), M_PI*(4/4), M_PI*(5/4), M_PI*(7/4), M_PI*(7/4), M_PI*(7/4), M_PI*(7/4)   };
+//float test_phases_b[17] = {M_PI*(4/4), M_PI*(2/4), M_PI*(1/4), M_PI*(3/4), M_PI*(3/4), M_PI*(5/4), M_PI*(5/4), M_PI*(5/4), M_PI*(7/4), M_PI*(7/4), M_PI*(7/4), M_PI*(7/4), M_PI*(7/4), M_PI*(5/4), M_PI*(4/4), M_PI*(3/4), M_PI*(2/4)  };
+
+//                                                                                                                                                                                                                                                                       0.3,0.5,0.2 0.3,0.5,0.2 0.3,0.5,0.2         
+//                             0            1          2           3           4           5           6           7           8           9           10          11          12          13          14          15          16          17        18          19          20          21          22          23          24          25          26          27          28          29          30          31
+//                             A            B          C           D           E           F           G           H           I           J           K           L           M           N           O           P           Q           R         S           T           U           V           W           X           Y           Z           %           ^           &           @           #           !
+//                           0-1-2        0-2-1      0-1-3       0-3-1       0-2-3       0-3-2       0-1-4       0-4-1       0-2-4       0-4-2       0-3-4       0-4-3       0-1-5       0-5-1       0-2-5       0-5-2       0-1-6       0-6-1
+float test_phases_a[32] = {M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(0/4), M_PI*(1/4), M_PI*(2/4), M_PI*(1/4), M_PI*(3/4), M_PI*(2/4), M_PI*(3/4), M_PI*(1/4), M_PI*(4/4), M_PI*(2/4), M_PI*(4/4), M_PI*(3/4), M_PI*(4/4), M_PI*(1/4), M_PI*(5/4), M_PI*(2/4), M_PI*(5/4), M_PI*(3/4), M_PI*(5/4), M_PI*(1/4), M_PI*(6/4), M_PI*(2/4), M_PI*(6/4), M_PI*(1/4), M_PI*(7/4)};
+float test_phases_b[32] = {M_PI*(0/4), M_PI*(1/4), M_PI*(2/4), M_PI*(3/4), M_PI*(4/4), M_PI*(5/4), M_PI*(6/4), M_PI*(7/4), M_PI*(2/4), M_PI*(1/4), M_PI*(3/4), M_PI*(1/4), M_PI*(3/4), M_PI*(2/4), M_PI*(4/4), M_PI*(1/4), M_PI*(4/4), M_PI*(2/4), M_PI*(4/4), M_PI*(3/4), M_PI*(5/4), M_PI*(1/4), M_PI*(5/4), M_PI*(2/4), M_PI*(5/4), M_PI*(3/4), M_PI*(6/4), M_PI*(1/4), M_PI*(6/4), M_PI*(2/4), M_PI*(7/4), M_PI*(1/4)};
+
+
+int modulate_phases_intra_three(double* modulated_block_signal, int symbol_block_size, double* modulated_wave_signal, int multi_block_size, float* phases1, float* phases2, float* phases3, double* filtRRC_coef_pre, double* filtRRC_coef_main, double* filtRRC_coef_post, double* time, int num_phases, int pulses_per_block, float* frequency, int n_sections, float* offsets) {
+//int modulate_phases_intra_three(double* modulated_block_signal, int symbol_block_size, double* modulated_wave_signal, int multi_block_size, float* phases1, float* phases2, float* phases3, double* filtRRC_coef_main, double* time, int num_phases, int pulses_per_block, float* frequency, int n_sections, float* offsets) {
+
+    double amplitude = 0.7;
+
+    int     pulse_length = symbol_block_size / pulses_per_block;
+    double  term5;
+    double  term6;
+    double  term7;
+    double  term8a;
+    double  term8b;
+    double  term8c;
+    double  term9a;
+    double  term9b;
+    double  term9c;
+    double  term10a;
+    double  term10b;
+    double  term10c;
+    double  term11a;
+    double  term11b;
+    double  term11c;
+    double  pulses_wave1;
+    double  pulses_wave2;
+    int     intra_pulse_a;
+    int     intra_pulse_b;
+    int     intra_pulse_c;
+
+    int     pulse_type;
+
+    // test 1: 0, (M_PI / 2), (M_PI / 1).....1/4, 1/4, 1/2
+    // test 2: 0, (M_PI / 4), (M_PI / 2).....1/6, 1/3, 1/2
+    // test 3: 0, (M_PI / 2), (M_PI / 4).....2,2,-4
+    // test 4: 0, ((M_PI *1) / 4), ((M_PI * 3) / 4).....
+    // test 5: 0, ((M_PI *2) / 4), ((M_PI * 3) / 4).....
+    // test 6: 0, ((M_PI *1) / 4), ((M_PI * 5) / 4).....
+    // test 7: 0, ((M_PI *2) / 4), ((M_PI * 5) / 4).....
+    // test 8: 0, ((M_PI *3) / 4), ((M_PI * 5) / 4).....
+    // test 9: 0, ((M_PI *1) / 4), ((M_PI * 7) / 4).....
+    // test 10: 0, ((M_PI *2) / 4), ((M_PI * 7) / 4).....
+    // test 11: 0, ((M_PI *3) / 4), ((M_PI * 7) / 4).....
+    // test 12: 0, ((M_PI *4) / 4), ((M_PI * 7) / 4).....
+    // test 13: 0, ((M_PI *5) / 4), ((M_PI * 7) / 4).....
+    // test 14: 0, ((M_PI *7) / 4), ((M_PI * 5) / 4).....
+    // test 15: 0, ((M_PI *7) / 4), ((M_PI * 4) / 4).....
+    // test 16: 0, ((M_PI *7) / 4), ((M_PI * 3) / 4).....
+    // test 17: 0, ((M_PI *7) / 4), ((M_PI * 2) / 4).....
+
+    for(int i = 0; i < num_phases; i++) {
+        for(int k = 0; k < symbol_block_size; k++) {
+          term5 = 2 * M_PI * time[k];
+          //term5 = 2 * M_PI * time[k % pulse_length];
+
+          term6 = term5 * frequency[0];
+          term7 = term5 * frequency[1];
+          /* frequency 0 */
+          term8a = term6 + phases1[i];
+          term8b = term6 + phases1[i] + (2*M_PI*offsets[0]);   //0.625);   //test_phases_a[12];
+          term8c = term6 + phases1[i] + (2*M_PI*offsets[1]);   //0.875); //test_phases_b[12];
+          //term8c = term6 + ((M_PI * 2.66666666) / 4);  // reference pulse    + phases1[i] + test_phases_b[((int)(i/3)) % 32];   //((M_PI * 2) / 4);   //test phase values
+          //term8c = term6 + ((M_PI * 3) / 4);  // reference pulse    + phases1[i] + test_phases_b[((int)(i/3)) % 32];   //((M_PI * 2) / 4);   //test phase values
+          /* frequency 1 */
+          term9a = term7 + phases2[i];
+          term9b = term7 + phases2[i] + (2*M_PI*offsets[2]);    //0.09375);  //test_phases_a[12];
+          term9c = term7 + phases2[i] + (2*M_PI*offsets[3]);    //0.78125); //test_phases_b[12];
+          //term9c = term7 + ((M_PI * 2.66666666) / 4);  // reference pulse     + phases2[i] + test_phases_b[(16+(int)(i/3)) % 32];   //((M_PI * 2) / 4);   //test phase values
+          //term9c = term7 + ((M_PI * 3) / 4);  // reference pulse     + phases2[i] + test_phases_b[(16+(int)(i/3)) % 32];   //((M_PI * 2) / 4);   //test phase values
+          pulses_wave1 = (double)symbol_wave_1_of_2[(int)(log2(pulses_per_block))-1][(int)(k / pulse_length)];
+          pulses_wave2 = (double)symbol_wave_2_of_2[(int)(log2(pulses_per_block))-1][(int)(k / pulse_length)];
+
+          //pulse_type = ((int)(k / pulse_length)) % 3;
+          //intra_pulse_a = (3 - ((pulse_type+3) % 3)) / 3;
+          //intra_pulse_b = (3 - ((pulse_type+2) % 3)) / 3;
+          //intra_pulse_c = (3 - ((pulse_type+1) % 3)) / 3;
+
+          intra_pulse_a = (3 - ((k+3) % 3)) / 3;
+          intra_pulse_b = (3 - ((k+2) % 3)) / 3;
+          intra_pulse_c = (3 - ((k+1) % 3)) / 3;
+
+
+          //printf("modulating intra pulses %d, %d, %d\n", intra_pulse_a, intra_pulse_b, intra_pulse_c);
+/*
+          term10a = (amplitude * cos(term8a) + amplitude * sin(term8a)) * (intra_pulse_a * pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+          term10b = (amplitude * cos(term8b) + amplitude * sin(term8b)) * (intra_pulse_b * pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+          term10c = (amplitude * cos(term8c) + amplitude * sin(term8c)) * (intra_pulse_c * pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+          term11a = (amplitude * cos(term9a) + amplitude * sin(term9a)) * (intra_pulse_a * pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+          term11b = (amplitude * cos(term9b) + amplitude * sin(term9b)) * (intra_pulse_b * pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+          term11c = (amplitude * cos(term9c) + amplitude * sin(term9c)) * (intra_pulse_c * pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+*/
+
+          if (intra_pulse_a == 1) {
+            term10a = (amplitude * cos(term8a) + amplitude * sin(term8a)) * (pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+            term11a = (amplitude * cos(term9a) + amplitude * sin(term9a)) * (pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+            term10b = (amplitude * cos(term8b) + amplitude * sin(term8b)) * (pulses_wave1 * filtRRC_coef_pre[k % pulse_length]);
+            term11b = (amplitude * cos(term9b) + amplitude * sin(term9b)) * (pulses_wave2 * filtRRC_coef_pre[k % pulse_length]);
+            term10c = (amplitude * cos(term8c) + amplitude * sin(term8c)) * (pulses_wave1 * filtRRC_coef_post[k % pulse_length]);
+            term11c = (amplitude * cos(term9c) + amplitude * sin(term9c)) * (pulses_wave2 * filtRRC_coef_post[k % pulse_length]);
+	      }
+          else if(intra_pulse_b == 1 ){
+            term10b = (amplitude * cos(term8b) + amplitude * sin(term8b)) * (pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+            term11b = (amplitude * cos(term9b) + amplitude * sin(term9b)) * (pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+            term10c = (amplitude * cos(term8c) + amplitude * sin(term8c)) * (pulses_wave1 * filtRRC_coef_pre[k % pulse_length]);
+            term11c = (amplitude * cos(term9c) + amplitude * sin(term9c)) * (pulses_wave2 * filtRRC_coef_pre[k % pulse_length]);
+            term10a = (amplitude * cos(term8a) + amplitude * sin(term8a)) * (pulses_wave1 * filtRRC_coef_post[k % pulse_length]);
+            term11a = (amplitude * cos(term9a) + amplitude * sin(term9a)) * (pulses_wave2 * filtRRC_coef_post[k % pulse_length]);
+          }
+          else if(intra_pulse_c == 1){
+            term10c = (amplitude * cos(term8c) + amplitude * sin(term8c)) * (pulses_wave1 * filtRRC_coef_main[k % pulse_length]);
+            term11c = (amplitude * cos(term9c) + amplitude * sin(term9c)) * (pulses_wave2 * filtRRC_coef_main[k % pulse_length]);
+            term10a = (amplitude * cos(term8a) + amplitude * sin(term8a)) * (pulses_wave1 * filtRRC_coef_pre[k % pulse_length]);
+            term11a = (amplitude * cos(term9a) + amplitude * sin(term9a)) * (pulses_wave2 * filtRRC_coef_pre[k % pulse_length]);
+            term10b = (amplitude * cos(term8b) + amplitude * sin(term8b)) * (pulses_wave1 * filtRRC_coef_post[k % pulse_length]);
+            term11b = (amplitude * cos(term9b) + amplitude * sin(term9b)) * (pulses_wave2 * filtRRC_coef_post[k % pulse_length]);
+          }
+
+          modulated_wave_signal[(i * symbol_block_size) + k] = term10a + term11a + term10b + term11b + term10c + term11c;
+        }
+    }
+    return 0;
+}
+
+
+
 
 int find_mode(int* list, int n){
     printf("calculating mode in c code\n");
@@ -400,8 +605,132 @@ int find_mode(int* list, int n){
 }
 
 
+typedef struct {
+    int count;
+    int value;
+} CountValue;
+
+//int compare_struct (const void* a, const void* b){
+//    return ((*(struct count_value*)a).count - (*(struct count_value*)b).count);
+//}
+
+int compare_struct (const void* a, const void* b){
+    return ((CountValue*)a)->count - ((CountValue*)b)->count;
+}
 
 
+//complex double cmax(complex double a, complex double b){
+//    return (cabs(a) >= cabs(b)) ? a : b;	
+//}
+
+/* a is complex b is existing max magnitude returns max magnitude */
+double cmax(complex double a, double existing_max){
+    return (cabs(a) >= existing_max) ? cabs(a) : existing_max;	
+}
+
+int test_code_get_frequency_section_start(complex double* signal, int size, int percent, int symbol_block_size, int pulses_per_block, int pulse_start_index, int* results) {
+    printf("test_code_get_frequency_section_start\n");
+
+    int* all_list = (int*)malloc(10000 * sizeof(int));
+    int all_list_item_count = 0;
+ 
+    int item_to_add;
+    //for(int i = symbol_block_size; i + symbol_block_size <= size; i+=symbol_block_size) {
+    for(int i = pulse_start_index + symbol_block_size; i + pulse_start_index + symbol_block_size <= size; i+=symbol_block_size) {
+        int last_added = -1;
+        double running_max = cabs(signal[i-symbol_block_size]);
+        for(int j = i-symbol_block_size; j<i && j<size; j++){
+          running_max = cmax(signal[j], running_max);
+        }
+        for(int j = i-symbol_block_size; j<i && j<size; j++){
+          if(cabs(signal[j]) * ((double)100.0/running_max) > percent){
+            //item_to_add = (int)((j % symbol_block_size) / (symbol_block_size/pulses_per_block));
+            item_to_add = (int)(((j - pulse_start_index) % symbol_block_size) / (symbol_block_size/pulses_per_block));
+            all_list[all_list_item_count] = item_to_add;
+            all_list_item_count ++;
+            if( all_list_item_count % 10000 == 0){    
+              all_list = (int*)realloc(all_list, (all_list_item_count + 10000) * sizeof(int));
+            }
+          }
+        }
+    }
+
+    // slow routine to find indices...
+    printf("starting slow routine\n");
+    int results_count = 0;
+    int half = pulses_per_block / 2;
+    for(int i = 0; i < half; i++) {
+      if(count_max_occurrences(all_list, all_list_item_count, results, results_count) == 1) {
+        printf("correct result: %d\n", results[results_count]);
+        results_count ++;
+      }
+    }  
+
+    /*
+    // fast routine to find indices...
+    printf("starting fast routine\n");
+    CountValue indices[pulses_per_block];
+    qsort(all_list, all_list_item_count, sizeof(int), compare);
+    int current_item = all_list[0];
+    int index_count = 0;
+    indices[index_count].value = all_list[0];
+    indices[index_count].count = 1;
+    for(int i=1;i<all_list_item_count;i++){
+      if(all_list[i] == current_item){
+        indices[index_count].count = indices[index_count].count + 1;
+      }
+      else {        
+        //printf("abc result: %d\n", all_list[i]);
+        current_item = all_list[i];
+        index_count = index_count + 1;
+        indices[index_count].value = all_list[i];
+        indices[index_count].count = 1;
+      }		  
+    }
+    index_count = index_count+1;
+    qsort(indices, index_count, sizeof(CountValue), compare_struct);
+    //int half = pulses_per_block / 2;
+    results_count = 0;
+    for(int i = 0; i < half && results_count < index_count; i++) {
+      results[i] = indices[index_count - i - 1].value;
+      printf("new result: %d\n", results[i]);
+      results_count ++;
+    }
+    */
+
+    free(all_list);
+
+    printf("Completed test_code_get_frequency_section_start\n");
+
+    return results_count;
+}
+
+int count_max_occurrences(int* data, int size, int* items_to_ignore, int size2) {
+    int max_count = 0;
+    int value_detected = 0;
+    for(int i = 0; i < size; i++) {
+      int ignore = 0;
+      for(int j = 0; j < size2 && ignore == 0; j++) {
+        if( data[i] == items_to_ignore[j] ) {
+          ignore = 1;
+        }
+      }
+      if(ignore == 0) {
+        int counter = 1;
+        for(int k = i+1; k < size; k++) {
+          if( data[i] == data[k]) { 
+            counter = counter + 1;
+          }
+        }
+        if( counter > max_count) {
+          max_count = counter;
+          items_to_ignore[size2] = data[i];
+          value_detected = 1;
+        }
+      } 
+    }
+    return value_detected;
+}
 
 
 
