@@ -334,13 +334,17 @@ class OsmodInterpolator(object):
   def derivePersistentLists(self, pulse_start_index, fft_filtered, frequency):
     self.debug.info_message("derivePersistentLists")
     try:
-      #max_metric = 0
-      #best_list_factor = 0
+      max_metric = 0
+      best_list_factor = 0
       # 0.936 is best or 0.93
       #"""
 
       #for list_factor in np.arange(0.936,0.92,-0.004):
-      for list_factor in np.arange(0.89,0.5,-0.1):
+      #for list_factor in np.arange(0.89,0.5,-0.1):
+
+      for list_factor in np.arange(self.osmod.persistent_search[0], self.osmod.persistent_search[1], self.osmod.persistent_search[2]):
+        self.debug.info_message("list_factor: " + str(list_factor))
+
         self.test_list_factor = list_factor
 
         ret_values = self.osmod.detector.detectStandingWavePulseNew(fft_filtered, frequency, pulse_start_index, 0, ocn.LOCATE_PULSE_TRAIN)
@@ -362,15 +366,24 @@ class OsmodInterpolator(object):
         metric_upper = (len(persistent_higher) - len(in_both_lists))
         metric = metric_lower + metric_upper
 
-        #if metric > max_metric:
-        #  best_list_factor = list_factor
-        #  max_metric = metric
-        if metric_lower >= 5 and metric_upper >= 5:
-          break
+        if self.osmod.persistent_search[3] == "no":
+          if metric_lower >= 5 and metric_upper >= 5:
+            break
+        elif self.osmod.persistent_search[3] == "yes":
+          if metric > max_metric:
+            best_list_factor = list_factor
+            max_metric = metric
 
-      #self.debug.info_message("best_list_factor: " + str(best_list_factor))
 
-      #self.osmod.test_list_factor = best_list_factor
+      if self.osmod.persistent_search[3] == "yes":
+        self.debug.info_message("best_list_factor: " + str(best_list_factor))
+        self.test_list_factor = best_list_factor
+        ret_values = self.osmod.detector.detectStandingWavePulseNew(fft_filtered, frequency, pulse_start_index, 0, ocn.LOCATE_PULSE_TRAIN)
+        persistent_lower  = ret_values[1]
+        ret_values = self.osmod.detector.detectStandingWavePulseNew(fft_filtered, frequency, pulse_start_index, 1, ocn.LOCATE_PULSE_TRAIN)
+        persistent_higher = ret_values[1]
+
+      
       #"""
       #self.test_list_factor = 0.936
 

@@ -44,6 +44,13 @@ def ptoc_float(float_var):
 def ptoc_double(double_var):
     return ctypes.c_double(double_var)
 
+
+def ptoc_double_pointer_array(rows):
+    return (ctypes.POINTER(ctypes.c_double) * rows)()
+
+
+
+
 """ convert ctypes int to int """
 def ctop_int(int_var):
     return int_var.value
@@ -87,10 +94,8 @@ def main():
 
     sys.stdout.write("Hello from Python\n")
 
-    #os.chdir('/home/lawrence/mypython/liquiddsp/')
     #sys.stdout.write("current directory: " + str(os.getcwd()) + "\n")
 
-    #lib = ctypes.CDLL("/home/lawrence/mypython/liquiddsp/mytest.dll")
     lib = ctypes.CDLL("/home/pi/mypython/osmod/src/c_code/mytest.dll")
 
 

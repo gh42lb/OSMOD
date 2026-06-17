@@ -829,13 +829,14 @@ class DemodulatorPSK(ModemCoreUtils):
 
         self.debug.info_message("character_count" + str(character_count))
        
-        for adjustment in np.arange(0, np.pi / 4, (np.pi / 4) / 40):
-          if self.osmod.sample_rate == 48000:
+        #for adjustment in np.arange(0, np.pi / 4, (np.pi / 4) / 40):
+        for adjustment in np.arange(0, np.pi / 4, (np.pi / 4) / self.osmod.rotation_increments):
+          if True: #self.osmod.sample_rate == 48000:
             for i in range(0, character_count):
               rotation_char_phase[i] = int((self.normalizeAngle(np_angles[i] - adjustment- residuals[low_high][i]) / (2 * np.pi)) * 8)
-          else:
-            for i in range(0, character_count):
-              rotation_char_phase[i] = int((self.normalizeAngle(np_angles[i] - adjustment) / (2 * np.pi)) * 8)
+          #else:
+          #  for i in range(0, character_count):
+          #    rotation_char_phase[i] = int((self.normalizeAngle(np_angles[i] - adjustment) / (2 * np.pi)) * 8)
 
           bincount_array = np.bincount(rotation_char_phase)
           prevalent_count = max(bincount_array)
@@ -929,13 +930,18 @@ class DemodulatorPSK(ModemCoreUtils):
           if self.osmod.post_extrapolate_calibrate == "yes":
             autoRotate()
           else:
+            center_frequency = self.osmod.getCenterFrequency()
             rotation_dict = self.osmod.rotation_tables
             if rotation_dict != None:
               self.debug.info_message("extrapolate fixed rotation")
               half = int(self.osmod.pulses_per_block / 2)
-              active_table = rotation_dict[str(half)]
+
+              #active_table = rotation_dict[str(half)]
+              active_table = rotation_dict[str(int(center_frequency)) + "_" + str(half)]
+
               rotation_phase_eighth = 0
               adjustment = active_table[0][low_high]
+              #adjustment = active_table[0][low_high] + (np.pi / 8)
             else:
               autoRotate() # fail safe use auto rotate
           
@@ -946,11 +952,12 @@ class DemodulatorPSK(ModemCoreUtils):
         #term1 = (angle - adjustment + (2*np.pi)) % (2*np.pi)
         #index = int((term1 / (2 * np.pi)) * 8)
 
-        if self.osmod.sample_rate == 48000:
+        if True: #self.osmod.sample_rate == 48000:
           residual_amount = residuals[low_high][block_count]
 
         #index = int((int((self.normalizeAngle(angle - adjustment) / (2 * np.pi)) * 8) - rotation_phase_eighth + 8) % 8)
         index = int((int((self.normalizeAngle(angle - adjustment - residual_amount) / (2 * np.pi)) * 8) - rotation_phase_eighth + 8) % 8)
+
         intlist.append(index)
         binary = format(index, "06b")[0:6]
         for i in range(0, len(binary), 6):
@@ -1031,10 +1038,14 @@ class DemodulatorPSK(ModemCoreUtils):
 
       else:
         self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded: ", end="", text_color='black', background_color = 'white')
+        message_text = ""
         for int_low, int_high in zip(decoded_intlist_1, decoded_intlist_2):
           char = self.b64_charfromindex_list[(int_low*8) + (int_high)]
           self.debug.info_message("found char: " + str(char))
           self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='black', background_color = 'white')
+          message_text = message_text + str(char)
+        self.osmod.modulation_object.appendTableRow(message_text)
+
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlist: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
@@ -2801,7 +2812,10 @@ class DemodulatorPSK(ModemCoreUtils):
       audio_block1[0:pulse_start_index] = np.zeros(pulse_start_index)
       audio_block2[0:pulse_start_index] = np.zeros(pulse_start_index)
 
-      selected_type = self.osmod.form_gui.window['combo_intra_combine_type'].get()
+      #selected_type = self.osmod.form_gui.window['combo_intra_combine_type'].get()
+      combine_type = self.osmod.I3_combine
+
+      """
       if selected_type == 'Type 1':
         combine_type = ocn.INTRA_COMBINE_TYPE1
       elif selected_type == 'Type 2':
@@ -2822,6 +2836,7 @@ class DemodulatorPSK(ModemCoreUtils):
         combine_type = ocn.INTRA_COMBINE_TYPE9
       elif selected_type == 'Type 10':
         combine_type = ocn.INTRA_COMBINE_TYPE10
+      """
 
       def deriveCombinationPulses(block, fine_tune_pulse_start_index):
         nonlocal pulse_all_real

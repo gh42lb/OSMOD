@@ -11,6 +11,7 @@ import threading
 import debug as db
 import FreeSimpleGUI as sg
 import numpy as np
+import sounddevice as sd
 #import matplotlib.pyplot as plt
 import ctypes
 import platform
@@ -99,10 +100,19 @@ class FormGui(object):
   def createMainTabbedWindow(self, text, js):
 
     combo_server_or_client = 'Server Listen,Client Connect'.split(',')
-    combo_modem_modes  = 'LB28-2-2-100-N,LB28-160-2-2-100-N,LB28-240-2-2-100-N,LB28-2-2-100-N,LB28-160-4-2-100-N,LB28-160-4-2-50-N,LB28-4-2-40-N,LB28-4-2-20-N,LB28-320-8-2-50-N,LB28-8-2-10-N,LB28-16-2-15-I,LB28-16-2-10-I,LB28-3200-32-2-15-I,\
-LB28-32-2-10-I,LB28-6400-64-2-15-I,LB28-6400-64-2-15-I3S3,LB28-6400-64-2-15-I3F,LB28-6400-64-2-15-I3E8,LB28-12800-128-2-37-I3E8-FEC,LB28-3200-32-2-37-I3E8-FEC,LB28-1600-16-2-37-I3E8-FEC,LB28-800-8-2-37-I3E8-FEC,LB28-6400-64-2-37-I3E8,LB28-6400-64-2-37-I3E8-FEC,LB28-25600-256-2-37-I3E8-FEC,LB28-51200-512-2-37-I3E8-FEC,LB28-102400-1024-2-37-I3E8-FEC,LB28-64-2-15-I,LB28-64-2-10-I,LB28-6400-128-2-15-I,LB28-128-2-15-I,LB28-128-2-10-I,LB28-25600-256-2-15-I,LB28-256-2-15-I,LB28-256-2-10-I,\
-LB28-25600-512-2-15-I,LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28-51200-1024-2-15-I,LB28-102400-1024-2-15-I,LB28-1024-2-15-I,LB28-1024-2-10-I,LB28-102400-2048-2-15-I,LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
+    combo_modem_modes  = 'LB28-2-2-100-N,LB28-160-2-2-100-N,LB28-240-2-2-100-N,LB28-2-2-100-N,LB28-160-4-2-100-N,LB28-160-4-2-50-N,LB28-4-2-40-N,LB28-4-2-20-N,LB28-320-8-2-50-N,\
+LB28-8-2-10-N,LB28-16-2-15-I,LB28-16-2-10-I,LB28-3200-32-2-15-I,LB28-32-2-10-I,LB28-6400-64-2-15-I,LB28-6400-64-2-15-I3S3,LB28-6400-64-2-15-I3F,LB28-6400-64-2-15-I3E8,\
+LB28-12800-128-2-37-I3E8-FEC,LB28-3200-32-2-37-I3E8-FEC,LB28-1600-16-2-37-I3E8-FEC,LB28-2560-8-2-37-I3E8-FEC,LB28-400-8-2-37-I3E8-FEC,LB28-320-8-2-37-I3E8-FEC,\
+LB28-800-8-2-37-I3E8-FEC,LB28-6400-64-2-37-I3E8,LB28-6400-64-2-37-I3E8-FEC,LB28-25600-256-2-37-I3E8-FEC,LB28-51200-512-2-37-I3E8-FEC,LB28-102400-1024-2-37-I3E8-FEC,\
+LB28-320-8-2-37-I3E8-FEC-FDM,LB28-400-8-2-37-I3E8-FEC-FDM,\
+LB28-64-2-15-I,LB28-64-2-10-I,LB28-6400-128-2-15-I,LB28-128-2-15-I,LB28-128-2-10-I,LB28-25600-256-2-15-I,LB28-256-2-15-I,LB28-256-2-10-I,LB28-25600-512-2-15-I,\
+LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28-51200-1024-2-15-I,LB28-102400-1024-2-15-I,LB28-1024-2-15-I,LB28-1024-2-10-I,LB28-102400-2048-2-15-I,\
+LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     self.combo_modem_modes = combo_modem_modes
+
+    combo_modem_prod_modes  = 'LB28-400-I3,LB28-800-I3,LB28-800-I3-HFM,LB28-800-I3-FEC,LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3E,LB28-25600-I3,LB28-25600-I3E,LB28-51200-I3'.split(',')
+    self.combo_modem_prod_modes = combo_modem_prod_modes
+
 
     combo_analysis_chart_options = 'X:BER Y:Eb/N0,X:Eb/N0 Y:BER,X:CPS Y:Eb/No,X:ChunkSize Y:Eb/N0,X:CPS Y:BER,X:CPS Y:Eb/N0+ABS(Eb/N0)*BER,X:AWGN Y:BER,X:Rotation Y:Pulse Train Length,X:Rotation Lo Y:Rotation Hi,X:BER Y:Pulse Train Sigma,X:Pulse Train Sigma Y:Pulse Train Length,X:Eb / N0 (dB) Y:Pulse Train Sigma,X:Pulse Train Length Y:Disposition,X:BER Y:Disposition,X:DC Shift Y:BER'.split(',')
 
@@ -121,18 +131,20 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     self.combo_standingwave_patterns = combo_standingwave_patterns
 
-    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,BER Range,BER Range All,DC Shift,Generator Polynomials'.split(',')
+    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
 
     combo_filter1_matchtypes = 'Mode Name ==,Pattern Type ==,Preset Pattern ==,AWGN ==,Pulse Shape ==,Pulse Train Length ==,Disposition =='.split(',')
 
     #combo_plotpulsetraintypes = 'Test,Smoothed Signal,Block Offsets,Block Offsets Half,Block Offsets Fourth,Block Offsets Fourth b,Interpolated Pulse Offsets,Dominant Series 1'.split(',')
     combo_plotpulsetraintypes = 'Refresh'.split(',')
 
-    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables'.split(',')
+    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes'.split(',')
 
     combo_analysis_compare_operator = '=,>,<'.split(',')
 
     combo_chart_options = 'Before Mean Average,After Mean Average,Both,FFT,EXP,Phase Error,Frequency & EXP,EXP Intra Triple,Chart Data Dictionary'.split(',')
+
+    combo_audio_sample_options = 'audio_sample_1.wav,audio_sample_2.wav,audio_sample_3.wav,audio_sample_4.wav,audio_sample_5.wav,audio_sample_6.wav,audio_sample_7.wav,audio_sample_8.wav,audio_sample_9.wav,audio_sample_10.wav,audio_sample_11.wav,audio_sample_12.wav,audio_sample_13.wav,audio_sample_14.wav,audio_sample_15.wav'.split(',')
 
     combo_splinecharttypes = 'B-Spline,Cubic-Spline,Pchip,Chebyshev'.split(',')
 
@@ -154,7 +166,33 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts'.split(',')
 
-    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials'.split(',')
+    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+
+    combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
+
+    #combo_modem_devices = 'tes1,tes2,tes3'.split(',')
+
+    devices_string = ""
+    devices = sd.query_devices()
+    default_input_device_index = 0
+    default_output_device_index = 0
+    index_counter = 0
+    for device in devices:
+      if devices_string != "":
+        devices_string = devices_string + ","
+      device_name = str(device['name'])
+      devices_string = devices_string + device_name
+
+      if "Output" in device_name or "Speaker" in device_name:
+        default_output_device_index = index_counter
+      elif "Input" in device_name or "Microphone" in device_name:
+        default_input_device_index = index_counter
+
+      index_counter = index_counter + 1
+
+    combo_modem_devices = devices_string.split(',')
+
+
 
     sg.theme('DarkGrey8')
 
@@ -206,7 +244,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.1.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.2.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -355,6 +393,7 @@ SOFTWARE.\n\
                            sg.Combo(combo_analysis_compare_operator, key='combo_analysis_campare_operator', default_value=combo_analysis_compare_operator[0], enable_events=True),
                            sg.InputText('', key='in_analysis_comparewithvalue', size=(20, 1), enable_events=True)],
                            ], size=(380, 50) ),
+                           sg.InputText('5', key='in_analysislegendoccurences', size=(10, 1), enable_events=True),
                            sg.Text('Filter 1 Values: ', key='text_analysisfilter1values')],
 
 
@@ -408,26 +447,32 @@ SOFTWARE.\n\
 
 
     self.layout_rxtx = [
-                          [
-                           sg.Button('Start Decoder', size=(11, 1), key='btn_8pskdecoder'),
-                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder'),
-                           sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
-                           sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
-                           sg.Button('START', size=(5, 1), key='btn_init_test'),
-                           sg.Button('TEST', size=(5, 1), key='btn_testit'),
-                           sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False ),
-                           sg.InputText('sampled.wav', key='in_sampledsignalname', size=(15, 1)),
-                           sg.Button('Load and Process', size=(15, 1), key='btn_loadandprocesssampledsignal')],
 
-                        [  sg.Text('Indices Lower: -----', size=(170, 1), key='text_indices_lower')],
-                        [  sg.Text('Indices Higher: -----', size=(170, 1), key='text_indices_higher')],
+
+                        #[  sg.Text('Indices Lower: -----', size=(170, 1), key='text_indices_lower')],
+                        #[  sg.Text('Indices Higher: -----', size=(170, 1), key='text_indices_higher')],
+
+                        [
+                        sg.CBox('40Hz Increments', key='cb_frequency_slider_resolution', enable_events = True, default=True ),
+
+                        sg.Text('FFT Frequency:')  ,
+                        sg.Text('-----', key='text_info_fftfreq'),
+                        sg.Text('Low Frequency:')  ,
+                        sg.Text('-----', key='text_info_freq1'),
+                        sg.Text('High Frequency:')  ,
+                        sg.Text('-----', key='text_info_freq2'),
+                        sg.Text('Mode Info:')  ,
+                        sg.Text('-----', key='text_info_description')],
+
+
+
 
 
                         [ sg.Frame('Density plot', [
 
-                          [ sg.Text('0   100   200   300   400   500   600   700   800  900 1000 1100 1200 1300 1400 1500  1600 1700 1800 1900 2000 2100 2200 2300  2400 2500 2600 2700 2800 2900 3000' )] ,
+                          [ sg.Text('0        100        200       300       400      500       600        700       800       900      1000      1100     1200     1300     1400     1500      1600     1700     1800      1900     2000     2100     2200     2300      2400     2500     2600     2700     2800     2900     3000' )] ,
 
-                          [sg.Graph(key='graph_density', canvas_size = (970, 200), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
+                          [sg.Graph(key='graph_density', canvas_size = (1170, 250), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
 
                         ], size=(1200, 400))],
 
@@ -438,6 +483,7 @@ SOFTWARE.\n\
     self.layout_I3_test = [
 
                            [sg.Text('Intra Combine and Extract: '),
+                            sg.CBox('Override Combine', key='cb_overridecombine', default=False ),
                             sg.Combo(combo_intra_combine_options, key='combo_intra_combine_type', default_value=combo_intra_combine_options[8], enable_events=True),
                             sg.Combo(combo_intra_extract_options, key='combo_intra_extract_type', default_value=combo_intra_extract_options[4], enable_events=True),
                             sg.InputText('1', key='in_intra_extract_factor', size=(10, 1), enable_events=True)],
@@ -481,12 +527,54 @@ SOFTWARE.\n\
                            [sg.CBox('Override FEC Generator Polynomials', key='cb_overridegeneratorpolynomials', default=False ),
                             sg.InputText('13', key='in_fecgeneratorpolynomialdepth', size=(10, 1), enable_events=True),
                             sg.InputText('0o171', key='in_fecgeneratorpolynomial1', size=(10, 1), enable_events=True),
-                            sg.InputText('0o123', key='in_fecgeneratorpolynomial2', size=(10, 1), enable_events=True)],
+                            sg.InputText('0o123', key='in_fecgeneratorpolynomial2', size=(10, 1), enable_events=True),
+                            sg.CBox('Override FDM Separation', key='cb_overridefdmseparation', default=False ),
+                            sg.Text('FDM pairing: '),
+                            sg.Combo(combo_fdmpairlevel_options, key='combo_fdmpairlevel', default_value=combo_fdmpairlevel_options[0], enable_events=True),
+                            sg.InputText('92', key='in_fdmseparation', size=(10, 1), enable_events=True)],
 
                           ] 
 
 
     self.layout_test = [
+
+                          [sg.Text('Eb/N0 (dB): -----', size=(30, 1), key='text_ebn0db_value' ) ,
+                           sg.Text('BER: -----', size=(30, 1), key='text_ber_value')  ,
+                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value' )] ,
+
+
+                        [   sg.Button('Run Test', size=(11, 1), key='btn_testit2'),
+                            sg.CBox('Use Prod Modes', key='cb_use_prod_modes', default=False ),
+                            sg.Button('Test Routine', size=(11, 1), key='btn_testit'),
+                            sg.Combo(combo_test_routines, key='combo_test_routine_options', default_value=combo_test_routines[0], enable_events=True),
+
+                            sg.Text('Sequential Test Count: '),
+                            sg.Text('0', key='text_sequential_test_counter'),
+                            sg.Button('Reset Test Counter', size=(11, 1), key='btn_resettestcounter'),
+
+                            sg.Text('', expand_x = True),
+                            sg.Button('Reset Mode', size=(8, 1), key='btn_reset')],
+
+
+                       [
+                           sg.Combo(combo_modem_modes, key='combo_main_modem_modes', default_value=combo_modem_modes[8], enable_events=True),
+                           sg.CBox('Display Phases', key='cb_display_phases', default=True ),
+                           sg.Text('Chart Type: '),
+                           sg.Combo(combo_chart_options, key='option_chart_options', default_value=combo_chart_options[1] ),
+                           sg.Text('Chunk Size: ')  ,
+                           sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True),
+                           sg.CBox('Align 1st Carrier', key='cb_enable_align', default=True ),
+                           sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[10] )],
+                          [sg.CBox('Override Sample Rate', key='cb_enable_sample_rate_override', default=False),
+                           sg.InputText('', key='in_sample_rate_override', size=(8, 1), enable_events=True),
+                           sg.CBox('Override Block Size: ', key='cb_override_blocksize', default=False ),
+                           sg.InputText('51200', key='in_symbol_block_size', size=(20, 1), enable_events=True),
+                           sg.CBox('48kHz sampling', key='cb_override_standard48k', default=False, enable_events=True ),
+                           sg.CBox('16kHz sampling', key='cb_override_sampling16k', default=False, enable_events=True ),
+                           sg.CBox('RX Frequency Delta', key='cb_enable_rxfrequencydelta', default=False, enable_events=True ),
+                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(20, 1), enable_events=True)],
+
+
                           [
                            #sg.Combo(combo_modem_modes, key='combo_main_modem_modes', default_value=combo_modem_modes[8], enable_events=True),
                            #sg.Button('CW encoder', size=(11, 1), key='btn_cw_start', visible = False),
@@ -526,12 +614,16 @@ SOFTWARE.\n\
 
                           [
                            sg.Combo(combo_random_choice_options, key='option_random_choices', default_value=combo_random_choice_options[0] ),
+
+                           sg.CBox('Use Audio Sample', key='cb_test_routine_use_audio_sample', default=False, enable_events=True ),
+                           sg.Combo(combo_audio_sample_options, key='combo_audio_sample_name', default_value=combo_audio_sample_options[0], enable_events=True),
+
                            sg.Text('Random Values + \\ - : '),
                            sg.InputText('0.2', key='in_random_plus_minus', size=(8, 1), enable_events=True),
                            sg.Text('Increments: '),
                            sg.InputText('1000', key='in_random_increments', size=(8, 1), enable_events=True),
                            sg.Text('Num Cycles: '),
-                           sg.InputText('5', key='in_random_numcycles', size=(8, 1), enable_events=True),
+                           sg.InputText('100', key='in_random_numcycles', size=(8, 1), enable_events=True),
                            sg.Button('Generate', size=(10, 1), key='btn_generate_test_data')],
                           [sg.InputText('osmod_v0-1-0_results_data.csv', key='in_resultsdatafilename', size=(50, 1), enable_events=True),
                            sg.FileBrowse('Select File', file_types=(('CSV Files', '*.csv'), ('All Files', '*.*')))],
@@ -580,76 +672,131 @@ SOFTWARE.\n\
                        [
                         #sg.Button('Reset All Modes', size=(8, 1), key='btn_reset_all'),
 
-                       
-                        sg.Text('FFT Frequency:')  ,
-                        sg.Text('-----', key='text_info_fftfreq'),
-                        sg.Text('Low Frequency:')  ,
-                        sg.Text('-----', key='text_info_freq1'),
-                        sg.Text('High Frequency:')  ,
-                        sg.Text('-----', key='text_info_freq2'),
-                        sg.Text('Mode Info:')  ,
-                        sg.Text('-----', key='text_info_description'),
+                        sg.Frame('Mode', [
+                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[0], enable_events=True)],
+
+                        ], size=(140, 60)),
+
+
+                        sg.Frame('Frequency Shift', [
+                           [sg.Slider(range=(-2, 2), default_value = 0, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_freq_fine_tune'),
+                            sg.CBox('Enable', key='cb_enable_fine_tune_frequency', default=False, enable_events=True ),
+                            sg.CBox('Auto Correct', key='cb_enable_frequency_shift_auto_correct', default=False, enable_events=True )],
+
+                        ], size=(340, 60)),
+
+                        sg.Frame('Linear Doppler Shift', [
+                           [sg.Slider(range=(0.5, 2), default_value = 1, orientation='h', resolution=0.000001, expand_x = False, expand_y = True, enable_events = True, key='slider_resample_fine_tune'),
+                            sg.CBox('Enable', key='cb_enable_fine_tune_resample', default=True, enable_events=True ),
+                            sg.CBox('Auto Correct', key='cb_enable_resample_auto_correct', default=True, enable_events=True )],
+
+                        ], size=(340, 60)),
+
+                        sg.Frame('Curved Doppler Shift', [
+                           [sg.CBox('Auto Correct', key='cb_enable_block_level_resample_auto_correct', default=False, enable_events=True, disabled=True )],
+
+                        ], size=(140, 60)),
+
+
 
                         sg.Text('', expand_x = True),
                         sg.Button('Save', size=(8, 1), key='btn_save'),
                         sg.Button('Exit', size=(8, 1))],
 
-                          [sg.Text('Eb/N0 (dB): -----', size=(30, 1), key='text_ebn0db_value' ) ,
-                           sg.Text('BER: -----', size=(30, 1), key='text_ber_value')  ,
-                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value' ) ,
-                           sg.Text('SNR (dB): -----', size=(30, 1), key='text_snr_value' )] ,
+                       
 
 
-                       [
-                           sg.Combo(combo_modem_modes, key='combo_main_modem_modes', default_value=combo_modem_modes[8], enable_events=True),
-                           sg.CBox('Display Phases', key='cb_display_phases', default=True ),
-                           sg.Text('Chart Type: '),
-                           sg.Combo(combo_chart_options, key='option_chart_options', default_value=combo_chart_options[1] ),
-                           sg.Text('Chunk Size: ')  ,
-                           sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True),
-                           sg.CBox('Align 1st Carrier', key='cb_enable_align', default=True ),
-                           sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[10] )],
-                          [sg.CBox('Override Sample Rate', key='cb_enable_sample_rate_override', default=False),
-                           sg.InputText('', key='in_sample_rate_override', size=(8, 1), enable_events=True),
-                           sg.CBox('Override Block Size: ', key='cb_override_blocksize', default=False ),
-                           sg.InputText('51200', key='in_symbol_block_size', size=(20, 1), enable_events=True),
-                           sg.CBox('48kHz sampling', key='cb_override_standard48k', default=False, enable_events=True ),
-                           sg.CBox('16kHz sampling', key='cb_override_sampling16k', default=False, enable_events=True ),
-                           sg.CBox('RX Frequency Delta', key='cb_enable_rxfrequencydelta', default=False, enable_events=True ),
-                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(20, 1), enable_events=True)],
+                          [
+
+                        #sg.Frame('SNR dB', [
+                        #[sg.Text('', expand_x = True)],
+                        #   [sg.Graph(key='snr_graph', canvas_size = (150, 30), graph_bottom_left=(0,0), graph_top_right = (10, 100), background_color='white', expand_x=False, expand_y=False)],
+                        #], size=(250, 70)),
+
+
+                           #sg.Slider(range=(1, 999), default_value = 40, orientation='v', resolution=1, expand_x = False, expand_y = True, enable_events = True, key='slider_gain'),
+
+                        #sg.Frame('Squelch', [
+                        #[sg.Text('', expand_x = True)],
+                           sg.Text('Squelch:', font=("Helvetica", 12), expand_x = False),
+                           sg.Slider(range=(0, 10),size=(30, 25),  default_value = 0.25, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch'),
+                           sg.Text('Passband Magnitude: ', size=(16, 1), font=("Helvetica", 12) ) ,
+                           sg.Text('-----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband' ) ,
+
+                           sg.Text('Input Gain:', font=("Helvetica", 12), expand_x = False),
+                           sg.Slider(range=(0, 10),size=(30, 25),  default_value = 1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_ingain'),
+
+                           sg.Text('Output Gain:', font=("Helvetica", 12), expand_x = False),
+                           sg.Slider(range=(0, 1),size=(30, 25),  default_value = 1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
+                        #], size=(240, 60))],
+
+                           [sg.Table(values='', headings=['Frequency', 'Mode', 'Timestamp', 'Message'],
+                            max_col_width=150,
+                            col_widths=[7, 15, 10, 100],
+                            auto_size_columns=False,
+                            justification='left',
+                            enable_events=True,
+                            expand_x = True,
+                            expand_y = True,
+                            font=("Helvetica", 12),
+                            select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
+                            num_rows=6, key='tbl_tmplt_templates')],
+
+                           #sg.MLine("some text goes in here", size=(150, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True), 
+                           #sg.MLine("some more text goes in here", size=(50, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True)], 
+
 
 
                         [sg.Frame('Frequency', [
 
                           [
-                           sg.Slider(range=(0,3000), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
+                           sg.Slider(range=(0,3050), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
+                           #sg.Slider(range=(0,3050), default_value = 1480, orientation='h', resolution=37, expand_x = True, enable_events = True, key='slider_frequency')],
  
                         ], size=(1200, 60) )],
 
 
+
+
                         [
-                            sg.MLine('', size=(64, 8), font=("Courier New", 9), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
+                            sg.MLine('', size=(64, 4), font=("Courier New", 9), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
+
+                          [
+                           sg.Button('Rx / Decode', size=(11, 1), key='btn_8pskdecoder'),
+                           sg.CBox('Continuous', key='cb_continuous_decode', default=False ),
+                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder'),
+                           #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
+                           #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
+                           sg.Button('Tx / Send', size=(11, 1), key='btn_init_test'),
+                           sg.Button('Stop Tx', size=(11, 1), key='btn_stop_tx'),
+                           sg.CBox('Preset Message', key='cb_use_preset_message', default=True ),
+
+                           sg.Text('SNR dB: --------', size=(30, 1), key='text_snr_value' ) ,
+
+                           sg.Text('Input: ', size=(5, 1) ) ,
+                           sg.Combo(combo_modem_devices, key='combo_main_modem_input_device', size=(20, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_input_device_index], enable_events=True),
+                           sg.Text('Output: ', size=(5, 1) ) ,
+                           sg.Combo(combo_modem_devices, key='combo_main_modem_output_device', size=(20, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_output_device_index], enable_events=True),
+
+
+                           #sg.Button('TEST', size=(5, 1), key='btn_testit'),
+                           sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
+                           #sg.InputText('sampled.wav', key='in_sampledsignalname', size=(15, 1)),
+                           #sg.Button('Load and Process', size=(15, 1), key='btn_loadandprocesssampledsignal')],
+
+
                         [
-                            sg.MLine('', size=(64, 8), font=("Courier New", 9), key='ml_txrx_recvtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
+                            sg.MLine('', size=(64, 6), font=("Courier New", 9), key='ml_txrx_recvtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
 
-                        [   sg.Button('Run Test', size=(11, 1), key='btn_testit2'),
-                            sg.Button('Test Routine', size=(11, 1), key='btn_testit'),
-                            sg.Combo(combo_test_routines, key='combo_test_routine_options', default_value=combo_test_routines[0], enable_events=True),
-
-                            sg.Text('Sequential Test Count: '),
-                            sg.Text('0', key='text_sequential_test_counter'),
-                            sg.Button('Reset Test Counter', size=(11, 1), key='btn_resettestcounter'),
-
-                            sg.Text('', expand_x = True),
-                            sg.Button('Reset Mode', size=(8, 1), key='btn_reset')],
 
 
                        [sg.TabGroup([[
+                             sg.Tab('Tx Rx', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' ),
                              sg.Tab('General Test Options', self.layout_test, title_color='Blue',border_width =10, background_color='Gray' ),
-                             sg.Tab('I3 Test Options', self.layout_I3_test, title_color='Blue',border_width =10, background_color='Gray' ),
-                             sg.Tab('Audio TxRx', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' )]],
+                             sg.Tab('I3 Test Options', self.layout_I3_test, title_color='Blue',border_width =10, background_color='Gray' )]],
+                             #sg.Tab('Audio TxRx', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' )]],
                        tab_location='centertop',
-                       title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1200, 400), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
+                       title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1200, 500), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
 
 
 
@@ -681,7 +828,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.1.0 Alpha - Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.2.0 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
 
     #self.window = sg.Window("OSMOD de WH6GGO v0.0.6 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
@@ -721,6 +868,35 @@ class ReceiveControlsProc(object):
 
   def event_catchall(self, window, values, form_gui):
 
+    def calcSNR(signal):
+      sys.stdout.write("calcSNR\n")
+
+      fft_output = np.fft.fft(signal)
+      frequencies = np.fft.fftfreq(len(fft_output), 1/form_gui.osmod.sample_rate)
+
+      signal_width = form_gui.osmod.rx_filter[2]
+      center_frequency = form_gui.osmod.getCenterFrequency()
+      freq_low_signal  = center_frequency - (signal_width / 2) # 1462
+      freq_high_signal = center_frequency + (signal_width / 2) #1499
+      freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
+      signal_psd = np.abs(fft_output[freq_indices])**2
+      signal_energy = np.sum(signal_psd)
+
+      freq_low_noise = 250
+      freq_high_noise = 2750
+      freq_indices = np.where((frequencies >= freq_low_noise) & (frequencies <= freq_high_noise))
+      noise_psd = np.abs(fft_output[freq_indices])**2
+      noise_energy = np.sum(noise_psd) - signal_energy
+      #SNR_equiv_db = noise_energy
+      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
+
+      #SNR_equiv_db = noise_energy
+      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
+      snr = 10 * np.log10( signal_energy / noise_energy)
+      form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(snr))
+      #self.debug.info_message("SNR: " + "{:.2f}".format(snr) + "dB")
+
+
     if(self.window_initialized == False and form_gui.window != None):
       self.window_initialized = True		
       """ set some default values..."""
@@ -731,23 +907,32 @@ class ReceiveControlsProc(object):
 
     if self.window_initialized == True:
 
-      if False:
-        if (self.chart_timer % 5) == 0:
+      #if False:
+      if True:
+        if (self.chart_timer % 10) == 0:
+          #window['snr_graph'].draw_line(point_from=(5,0), point_to=(5,80), width=30, color='green')
+
           window['graph_density'].Move(0,1)
           if (self.chart_timer) == 0:
+            for y in range(0,101):
+              window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=4, color='blue')
             for x in range(0,3000, 100):
               window['graph_density'].draw_line(point_from=(x,0), point_to=(x,100), width=2, color='black')
             for y in range(0,100, 20):
               window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=2, color='black')
-          elif (self.chart_timer % 100) == 0:
+          elif (self.chart_timer % 200) == 0:
             window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=2, color='black')
           else:
+            window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=4, color='blue')
             for x in range(0,3000, 100):
               window['graph_density'].draw_line(point_from=(x,0), point_to=(x,1), width=2, color='black')
 
           while form_gui.txwindowQueue.empty() == False:
+          #if self.osmod.process_debug == True and self.osmod.form_gui.window['cb_use_preset_message'].get() == True:
+            #if window['cb_use_preset_message'].get() == True:
             txdata = form_gui.txwindowQueue.get_nowait()
-            window['ml_txrx_sendtext'].print(str(txdata), end="", text_color='black', background_color = 'white')
+            if window['cb_use_preset_message'].get() == True:
+              window['ml_txrx_sendtext'].print(str(txdata), end="", text_color='black', background_color = 'white')
 
           if form_gui.spectralDensityQueue.empty() == False:
             while form_gui.spectralDensityQueue.empty() == False:
@@ -755,8 +940,25 @@ class ReceiveControlsProc(object):
 
             #strong_freqs = form_gui.osmod.mod_psk.getStrongestFrequency(data)
             #strong_freqs = form_gui.osmod.modulation_object.getStrongestFrequency(data)
-            strong_freqs = form_gui.osmod.detector.getStrongestFrequencyOverRange(data)
-            window['graph_density'].draw_line(point_from=(int(strong_freqs),0), point_to=(int(strong_freqs),1), width=5, color='blue')
+
+            strong_freqs = form_gui.osmod.modulation_object.getStrongestFrequency(data, 500, 2500)
+            num_points = 1000
+            strongest_frequencies, strongest_magnitudes = form_gui.osmod.modulation_object.getStrongestFrequencies(data, num_points, 250, 2750)
+            self.debug.info_message("spectralDensityQueue strongest frequencies: " + str(strong_freqs))
+            for point_count in range(0,num_points):
+              if strongest_magnitudes[point_count] > 4:
+                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='yellow')
+              elif strongest_magnitudes[point_count] > 2:
+                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='red')
+              elif strongest_magnitudes[point_count] > 1.5:
+                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='green')
+              elif strongest_magnitudes[point_count] > 1:
+                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='lightgray')
+
+            calcSNR(data)
+
+            #strong_freqs = form_gui.osmod.detector.getStrongestFrequencyOverRange(data)
+            #window['graph_density'].draw_line(point_from=(int(strong_freqs),0), point_to=(int(strong_freqs),1), width=5, color='blue')
 
         self.chart_timer = self.chart_timer + 1
 
@@ -782,11 +984,23 @@ class ReceiveControlsProc(object):
   def event_8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_8pskdecoder\n")
 
+    form_gui.window['cb_use_prod_modes'].update(True)
+
     form_gui.osmod.startTimer('init')
 
     mode = values['combo_main_modem_modes']
 
     form_gui.osmod.startDecoder(mode, window, values)
+
+
+  def event_stoptx(self, window, values, form_gui):
+    sys.stdout.write("event_stoptx\n")
+    form_gui.osmod.stopEncoder()
+    while form_gui.osmod.isDataQueueEmpty() == False:
+      form_gui.osmod.popDataQueue()
+
+    #form_gui.osmod.stopDecoder()
+
 
   def event_stop8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_stop8pskdecoder\n")
@@ -812,6 +1026,15 @@ class ReceiveControlsProc(object):
     carrier_separation_override = values['slider_carrier_separation']
 
     routine_type = values['combo_test_routine_options']
+
+    if values['cb_use_prod_modes'] == True:
+      form_gui.osmod.useProdMode()
+      mode = values['combo_main_modem_prod_modes']
+    else:
+      form_gui.osmod.useTestMode()
+      mode = values['combo_main_modem_modes']
+
+
     test.testRoutines(values, mode, routine_type, chunk_num, carrier_separation_override, amplitude)
 
     form_gui.osmod.test_counter = form_gui.osmod.test_counter + 1
@@ -827,6 +1050,7 @@ class ReceiveControlsProc(object):
   def event_testit2(self, window, values, form_gui):
     sys.stdout.write("event_testit\n")
 
+
     form_gui.osmod.test_counter = form_gui.osmod.test_counter + 1
     form_gui.window['text_sequential_test_counter'].update(str(form_gui.osmod.test_counter))
 
@@ -840,6 +1064,15 @@ class ReceiveControlsProc(object):
     carrier_separation_override = values['slider_carrier_separation']
 
     form_gui.osmod.writeModeToCache(mode, form_gui, values)
+
+    if values['cb_use_prod_modes'] == True:
+      form_gui.osmod.useProdMode()
+      mode = values['combo_main_modem_prod_modes']
+    else:
+      form_gui.osmod.useTestMode()
+      mode = values['combo_main_modem_modes']
+
+
 
     test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
@@ -859,9 +1092,9 @@ class ReceiveControlsProc(object):
 
     try:
       mode = values['combo_main_modem_modes']
-      #sample_rate = int(form_gui.osmod.modulation_initialization_block[mode]['sample_rate'])
+      #sample_rate = int(form_gui.osmod.getInitBlockParam(mode, 'sample_rate'])
       sample_rate = form_gui.osmod.getParam(mode, 'sample_rate')
-      #block_size  = int(form_gui.osmod.modulation_initialization_block[mode]['symbol_block_size'])
+      #block_size  = int(form_gui.osmod.getInitBlockParam(mode, 'symbol_block_size'])
       block_size  = form_gui.osmod.getParam(mode, 'symbol_block_size')
       if values['cb_override_sampling16k'] == True:
         form_gui.window['cb_enable_sample_rate_override'].update(True)
@@ -885,9 +1118,9 @@ class ReceiveControlsProc(object):
 
     try:
       mode = values['combo_main_modem_modes']
-      #sample_rate = int(form_gui.osmod.modulation_initialization_block[mode]['sample_rate'])
+      #sample_rate = int(form_gui.osmod.getInitBlockParam(mode, 'sample_rate'])
       sample_rate = form_gui.osmod.getParam(mode, 'sample_rate')
-      #block_size  = int(form_gui.osmod.modulation_initialization_block[mode]['symbol_block_size'])
+      #block_size  = int(form_gui.osmod.getInitBlockParam(mode, 'symbol_block_size'])
       block_size  = form_gui.osmod.getParam(mode, 'symbol_block_size')
 
       if values['cb_override_standard48k'] == True:
@@ -916,8 +1149,28 @@ class ReceiveControlsProc(object):
     form_gui.osmod.updateCachedSettings(values, form_gui)
 
 
+  def event_combomainmodemprodmodes(self, window, values, form_gui):
+    sys.stdout.write("event_combomainmodemprodmodes\n")
+
+    form_gui.osmod.useProdMode()
+
+    form_gui.window['cb_use_prod_modes'].update(True)
+
+    mode = values['combo_main_modem_prod_modes']
+
+    form_gui.osmod.setInitializationBlock(mode)
+
+    #form_gui.osmod.setScreenOptions(mode, form_gui, form_gui.osmod.opd.main_settings)
+
+    form_gui.window['text_info_description'].update(str(form_gui.osmod.getInitBlockParam(mode, 'info')))
+
+
   def event_mainmodemmodes(self, window, values, form_gui):
     sys.stdout.write("event_mainmodemmodes\n")
+
+    form_gui.osmod.useTestMode()
+
+    form_gui.window['cb_use_prod_modes'].update(False)
 
     mode = values['combo_main_modem_modes']
 
@@ -925,7 +1178,7 @@ class ReceiveControlsProc(object):
 
     form_gui.osmod.setScreenOptions(mode, form_gui, form_gui.osmod.opd.main_settings)
 
-    form_gui.window['text_info_description'].update(str(form_gui.osmod.modulation_initialization_block[mode]['info']))
+    form_gui.window['text_info_description'].update(str(form_gui.osmod.getInitBlockParam(mode, 'info')))
 
   def event_randomstandingwaveoffset(self, window, values, form_gui):
     sys.stdout.write("event_randomstandingwaveoffset\n")
@@ -1000,10 +1253,10 @@ class ReceiveControlsProc(object):
     mode = values['combo_main_modem_modes']
 
     if values['cb_override_costasloop'] == False and form_gui.window['in_costasloop_dampingfactor'].get().strip()=='':
-      form_gui.window['in_costasloop_dampingfactor'].update(str(form_gui.osmod.modulation_initialization_block[mode]['parameters'][6]))
-      form_gui.window['in_costasloop_loopbandwidth'].update(str(form_gui.osmod.modulation_initialization_block[mode]['parameters'][7]))
-      form_gui.window['in_costasloop_K1'].update(str(form_gui.osmod.modulation_initialization_block[mode]['parameters'][8]))
-      form_gui.window['in_costasloop_K2'].update(str(form_gui.osmod.modulation_initialization_block[mode]['parameters'][9]))
+      form_gui.window['in_costasloop_dampingfactor'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[6]))
+      form_gui.window['in_costasloop_loopbandwidth'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[7]))
+      form_gui.window['in_costasloop_K1'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[8]))
+      form_gui.window['in_costasloop_K2'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[9]))
 
 
   def event_plotsplinechart(self, window, values, form_gui):
@@ -1106,9 +1359,23 @@ class ReceiveControlsProc(object):
 
   def event_sliderfrequency(self, window, values, form_gui):
     sys.stdout.write("event_sliderfrequency\n")
-    center_frequency = values['slider_frequency']
-    separation_override = values['slider_carrier_separation']
-    form_gui.osmod.calcCarrierFrequencies(center_frequency, separation_override)
+
+    #previous_slider_value = values['slider_frequency']
+    fixed_increments_enabled = form_gui.window['cb_frequency_slider_resolution'].get()
+    if fixed_increments_enabled:
+      new_value = int(round(values['slider_frequency'] / 40) * 40)
+      form_gui.window['slider_frequency'].update(new_value)
+      #form_gui.window['slider_frequency'].refresh()
+    else:
+      new_value = values['slider_frequency']
+
+    if True: #values['slider_frequency'] != previous_slider_value:
+      center_frequency = new_value #values['slider_frequency']
+      separation_override = values['slider_carrier_separation']
+      form_gui.osmod.setCenterFrequency(center_frequency)
+      form_gui.osmod.calcCarrierFrequencies(center_frequency, separation_override)
+
+    form_gui.osmod.setCenterFrequency(center_frequency)
 
 
   def event_plotresults(self, window, values, form_gui):
@@ -1167,6 +1434,26 @@ class ReceiveControlsProc(object):
     form_gui.osmod.decoder_callback(audio_array, frequency)
 
 
+  def event_slidersignalsquelch(self, window, values, form_gui):
+    sys.stdout.write("event_slidersignalsquelch\n")
+    new_squelch = values['slider_signal_squelch']
+    form_gui.osmod.setSignalSquelch(new_squelch)
+
+  def event_frequencysliderresolution(self, window, values, form_gui):
+    sys.stdout.write("event_frequencysliderresolution\n")
+
+    fixed_increments_enabled = form_gui.window['cb_frequency_slider_resolution'].get()
+
+    if fixed_increments_enabled:
+      new_value = int(round(values['slider_frequency'] / 40) * 40)
+      form_gui.window['slider_frequency'].update(value=new_value)
+      center_frequency = new_value 
+      separation_override = values['slider_carrier_separation']
+      form_gui.osmod.setCenterFrequency(center_frequency)
+      form_gui.osmod.calcCarrierFrequencies(center_frequency, separation_override)
+      #form_gui.osmod.setCenterFrequency(center_frequency)
+
+
   def event_codeoptions(self, window, values, form_gui):
     sys.stdout.write("event_codeoptions\n")
     temp = values['combo_code_options']
@@ -1182,13 +1469,15 @@ class ReceiveControlsProc(object):
   def event_inittest(self, window, values, form_gui):
     sys.stdout.write("event_inittest\n")
 
+    form_gui.window['cb_use_prod_modes'].update(True)
+    
     """ start encoder / modulator """
-    form_gui.osmod.startEncoder("HELLO!", "8psk")
+    form_gui.osmod.startEncoder(values, "HELLO!", "8psk")
 
-    mode = values['combo_main_modem_modes']
+    #mode = values['combo_main_modem_modes']
 
     """ start decoder / demodulator """
-    form_gui.osmod.startDecoder(mode, window, values)
+    #form_gui.osmod.startDecoder(mode, window, values)
 
 
   def event_initostream(self, window, values, form_gui):
@@ -1199,7 +1488,7 @@ class ReceiveControlsProc(object):
       symbols = 32
       freq_sep = bandwidth/symbols
       tone_sep = int(np.ceil(sample_rate/freq_sep))
-      form_gui.osmod.initOutputStream(sample_rate, tone_sep)
+      form_gui.osmod.initOutputStream(values, sample_rate, tone_sep)
     except:
       sys.stdout.write("Exception in event_initostream: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
@@ -1232,6 +1521,7 @@ class ReceiveControlsProc(object):
       'slider_chart2_ymag' :  event_sliderchart1xmag,
       'combo_code_options' :  event_codeoptions,
       'combo_main_modem_modes' : event_mainmodemmodes,
+      'combo_main_modem_prod_modes' : event_combomainmodemprodmodes,
       'btn_save'           : event_save,
       'btn_reset'          : event_reset,
       'btn_reset_all'          : event_reset_all,
@@ -1252,6 +1542,9 @@ class ReceiveControlsProc(object):
       'btn_savedotplotsubset'     : event_savedotplotsubset,
       'btn_analysisaddmatchtable' : event_analysisaddmatchtable,
       'btn_analysisclearmatchtable' : event_analysisclearmatchtable,
+      'cb_frequency_slider_resolution': event_frequencysliderresolution,
+      'slider_signal_squelch'     : event_slidersignalsquelch,
+      'btn_stop_tx'               : event_stoptx,
   }
   
   

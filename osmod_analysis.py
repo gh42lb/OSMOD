@@ -131,7 +131,17 @@ class OsmodAnalysis(object):
 
     try:
       test = OsmodTest(form_gui.osmod, window)
-      mode = values['combo_main_modem_modes']
+
+      if values['cb_use_prod_modes'] == True:
+        form_gui.osmod.useProdMode()
+        mode = values['combo_main_modem_prod_modes']
+      else:
+        form_gui.osmod.useTestMode()
+        mode = values['combo_main_modem_modes']
+
+
+      #mode = values['combo_main_modem_modes']
+
       text_num = values['combo_text_options'].split(':')[0]
       chunk_num = values['combo_chunk_options'].split(':')[0]
       amplitude = values['slider_amplitude']
@@ -294,6 +304,72 @@ class OsmodAnalysis(object):
           form_gui.window['in_fecgeneratorpolynomialdepth'].update(gpdepth)
           form_gui.window['in_fecgeneratorpolynomial1'].update(gp_poly_1)
           form_gui.window['in_fecgeneratorpolynomial2'].update(gp_poly_2)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+        elif test_type == 'FDM Separation & DCS':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_overridefdmseparation'].update(True)
+          form_gui.window['cb_overridedownconvertshift'].update(True)
+
+          pair_level = form_gui.window['combo_fdmpairlevel'].get()
+          #rand_num_sep   = random.randint(75000,95000)
+          #rand_num_sep   = random.randint(140000,200000)
+          if pair_level == "Scale 1":
+            rand_num_sep   = random.randint(70000,100000)
+          elif pair_level == "Scale 2":
+            rand_num_sep   = random.randint(145000,185000)
+          elif pair_level == "Scale 3":
+            rand_num_sep   = random.randint(295000,390000)
+
+          rand_num_dcs   = random.randint(0,1000)
+          form_gui.window['in_fdmseparation'].update(rand_num_sep / 1000)
+          form_gui.window['in_downconvertshift'].update(rand_num_dcs / 1000)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+        elif test_type == 'Test DCS':
+          form_gui.window['cb_overridedownconvertshift'].update(True)
+          noise = values['btn_slider_awgn']
+          rand_num = random.randint(0,len(self.osmod.test_dcs_values)-1)
+          dcs = self.osmod.test_dcs_values[rand_num]
+          form_gui.window['in_downconvertshift'].update(dcs)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+        elif test_type == 'Costas K1 & K2':
+          if count == 0:
+            form_gui.window['cb_override_costasloop'].update(True)
+
+            form_gui.window['in_costasloop_dampingfactor'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[6]))
+            form_gui.window['in_costasloop_loopbandwidth'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[7]))
+            form_gui.window['in_costasloop_K1'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[8]))
+            form_gui.window['in_costasloop_K2'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[9]))
+
+            noise = values['btn_slider_awgn']
+
+          rand_num = random.randint(750,830)
+          costas_K1 = rand_num/1000
+          rand_num = random.randint(0,50)
+          costas_K2 = rand_num/1000
+          #form_gui.window['in_costasloop_K1'].update(costas_K1)
+          form_gui.window['in_costasloop_K2'].update(costas_K2)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+        elif test_type == 'Costas Damping & Loop BW':
+          if count == 0:
+            form_gui.window['cb_override_costasloop'].update(True)
+
+            form_gui.window['in_costasloop_dampingfactor'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[6]))
+            form_gui.window['in_costasloop_loopbandwidth'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[7]))
+            form_gui.window['in_costasloop_K1'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[8]))
+            form_gui.window['in_costasloop_K2'].update(str(form_gui.osmod.getInitBlockParam(mode, 'parameters')[9]))
+
+            noise = values['btn_slider_awgn']
+
+          rand_num = random.randint(400,500)
+          costas_damping = rand_num/1000
+          rand_num = random.randint(0,100)
+          costas_loopbw = rand_num/100
+          form_gui.window['in_costasloop_dampingfactor'].update(costas_damping)
+          #form_gui.window['in_costasloop_loopbandwidth'].update(costas_loopbw)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
 
@@ -622,6 +698,12 @@ DATA_CALC_2                = 23
           elif legend_type == 'RRC Alpha & T' and str(data[point][ocn.DATA_RRC_ALPHA]) + ' : ' + str(data[point][ocn.DATA_RRC_T]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_RRC_ALPHA]) + ' : ' + str(data[point][ocn.DATA_RRC_T])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'Costas K1 & K2' and str(data[point][ocn.DATA_COSTAS_K1]) + ' : ' + str(data[point][ocn.DATA_COSTAS_K2]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_K1]) + ' : ' + str(data[point][ocn.DATA_COSTAS_K2])] = color_count
+            color_count = color_count + 1
+          elif legend_type == 'Costas Damping & Loop BW' and str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH])] = color_count
+            color_count = color_count + 1
           elif legend_type == 'Pulse Train Length' and data[point][ocn.DATA_PULSE_TRAIN_LENGTH] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]] = color_count
             color_count = color_count + 1
@@ -644,9 +726,13 @@ DATA_CALC_2                = 23
             color_count = color_count + 1
           elif legend_type == 'DC Shift' and data[point][ocn.DATA_DOWNCONVERT_SHIFT] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]] = color_count
+            #dict_preset_pattern[str(data[point][ocn.DATA_DOWNCONVERT_SHIFT])] = color_count
             color_count = color_count + 1
           elif legend_type == 'Generator Polynomials' and str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])] = color_count
+            color_count = color_count + 1
+          elif legend_type == 'FDM Separator' and data[point][ocn.DATA_FDM_SEPARATOR] not in dict_preset_pattern:
+            dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]] = color_count
             color_count = color_count + 1
 
 
@@ -679,7 +765,10 @@ DATA_CALC_2                = 23
       if (data_y_max - data_y_min) == 0 and data_y_max < 0:
         data_y_max = 0
 
-      x_scaling = x_max / (data_x_max - data_x_min)
+      if data_x_max - data_x_min == 0:
+        x_scaling = 0
+      else:
+        x_scaling = x_max / (data_x_max - data_x_min)
       y_scaling = y_max / (data_y_max - data_y_min)
 
 
@@ -751,9 +840,18 @@ DATA_CALC_2                = 23
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'DC Shift':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'FDM Separator':
+            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]]
             #occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'RRC Alpha & T':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_RRC_ALPHA]) + ' : ' + str(data[point][ocn.DATA_RRC_T])]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Costas K1 & K2':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_K1]) + ' : ' + str(data[point][ocn.DATA_COSTAS_K2])]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Costas Damping & Loop BW':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH])]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Pulse Train Length':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]]
@@ -767,7 +865,8 @@ DATA_CALC_2                = 23
           elif legend_type == 'Generator Polynomials':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
-            if float(data[point][x_index]) - data_x_min <  float((data_x_max - data_x_min) / 2):
+            #if float(data[point][x_index]) - data_x_min <  float((data_x_max - data_x_min) / 2):
+            if float(data[point][x_index]) == 0.0:
               occurrences_less_than_mid_x[plot_color_index] = occurrences_less_than_mid_x[plot_color_index] + 1
 
 
@@ -828,6 +927,19 @@ DATA_CALC_2                = 23
           graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
           count = count + 1
       elif legend_type == 'DC Shift':
+        debug_string = '['
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            debug_string = debug_string + ',(' + pattern_location_name + ')'
+            count = count + 1
+        debug_string = debug_string + ']'
+        self.debug.info_message("debug_string: " + str(debug_string))
+      elif legend_type == 'FDM Separator':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[color_index]
           graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
@@ -849,6 +961,18 @@ DATA_CALC_2                = 23
           count = count + 1
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
+      elif legend_type == 'Costas K1 & K2':
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          plot_color = colors[color_index]
+          graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+          graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+          count = count + 1
+      elif legend_type == 'Costas Damping & Loop BW':
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          plot_color = colors[color_index]
+          graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+          graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+          count = count + 1
       elif legend_type == 'AWGN Range':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[count]

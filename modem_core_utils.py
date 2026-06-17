@@ -12,18 +12,24 @@ import scipy as sp
 import gc
 import FreeSimpleGUI as sg
 import random
+import ctypes
 
 from numpy import pi
-from scipy.signal import butter, filtfilt, firwin, sosfiltfilt
+from scipy.signal import butter, filtfilt, firwin, sosfiltfilt, hilbert
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.io.wavfile import write, read
 from datetime import datetime, timedelta
 from scipy.fft import fft
+
 from numpy.fft import ifft
 from scipy.signal import periodogram
 from numpy.polynomial import Chebyshev as T
 from scipy import stats
 from scipy.interpolate import CubicSpline, splrep, splev, PchipInterpolator, UnivariateSpline
+from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, ctop_int, ptoc_int_array, ptoc_numpy_int_array, ptoc_double, ptoc_double_pointer_array
+
+from scipy import signal as scipy_signal
+from datetime import datetime, timedelta
 
 """
 MIT License
@@ -127,7 +133,10 @@ class ModemCoreUtils(object):
       self.debug.info_message("test2")
       test2 = multi_block * (2**15 - 1)
 
-      multi_block = multi_block * (2**15 - 1) / np.max(np.abs(multi_block))
+      #multi_block = multi_block * (2**15 - 1) / np.max(np.abs(multi_block))
+      #multi_block = multi_block * (2**6 - 1) / np.max(np.abs(multi_block))
+      multi_block = multi_block * (2**3 - 1) / np.max(np.abs(multi_block))
+
 
       self.debug.info_message("writing audio file")
       multi_block = multi_block.astype(np.float32)
@@ -348,6 +357,58 @@ class ModemCoreUtils(object):
 
   """ Define filters """
 
+  # 'tx_filter' : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
+  def apply_filter(self, signal, params, center_frequency):
+    try:
+      filter_type = params[0]
+      filter_pass_type = params[1]
+      filter_width = params[2]
+      repeats = params[3]
+      filter_order = params[4]
+
+      if filter_type == ocn.FILTER_NONE:
+        return signal
+      elif filter_type == ocn.FILTER_BUTTERWORTH:
+        if filter_pass_type == ocn.FILTER_BAND_PASS:
+          """ filter the output signal """
+          for _ in range(repeats):
+            sig1 = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal, center_frequency + filter_width/2, filter_order)
+            signal = sig1
+          for _ in range(repeats):
+            sig2 = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency - filter_width/2, filter_order)
+            signal = sig2
+        return signal
+
+    except:
+      self.debug.error_message("Exception in apply_filter: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def filter_sharp_cutoff_low_pass(self, signal, cutoff_freq, filter_order):
+  #def filter_sharp_cutoff_low_pass(self, signal, cutoff_freq):
+    #return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'low',50)
+    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'low',filter_order)
+
+  def filter_sharp_cutoff_high_pass(self, signal, cutoff_freq, filter_order):
+  #def filter_sharp_cutoff_high_pass(self, signal, cutoff_freq):
+    #return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'highpass',50)
+    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'highpass',filter_order)
+
+  """ This method works well """
+  def filter_sharp_cutoff_common(self, signal, cutoff_freq, filter_type, order):
+    try:
+      nyquist_frequency = 0.5 * self.osmod.sample_rate
+      normalized_cutoff = cutoff_freq / nyquist_frequency
+      sos = butter(order, normalized_cutoff, btype=filter_type, analog=False, output='sos')
+      return_value = sosfiltfilt(sos, signal)
+
+    except:
+      self.debug.error_message("Exception in filter_low_pass_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return return_value
+
+
+
+
   def filter_low_pass(self, signal, cutoff_freq):
     return self.filter_common(signal, cutoff_freq, 'low')
 
@@ -546,6 +607,7 @@ class ModemCoreUtils(object):
           bit_triplets1.append(row1)
           bit_triplets2.append(row2)
           if self.osmod.process_debug == True:
+          #if self.osmod.process_debug == True and self.osmod.form_gui.window['cb_use_preset_message'].get() == True:
             self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row1), end="", text_color='green', background_color = 'white')
             self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row2), end="", text_color='green', background_color = 'white')
 
@@ -852,13 +914,45 @@ class ModemCoreUtils(object):
   def getStrongestFrequencies(self, data, N, lo, high):
     self.debug.info_message("getStrongestFrequencies")
     try:
+      def mysort(x):
+        arg_x = np.sort(x)
+        rank = [np.where(arg_x == i)[0][0] for i in x]
+        return np.array(rank)
+
       fft_output = np.fft.fft(data)
       frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
       positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
       fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      #fft_magnitudes = np.abs(fft_output)
       frequencies = frequencies[positive_frequency_indices]
+      self.debug.info_message("frequencies: " + str(frequencies))
+      self.debug.info_message("fft_magnitudes: " + str(fft_magnitudes))
+
+
+      #strongest_index = np.argmax(fft_magnitudes)
+      #strong_freqs = frequencies[strongest_index]
+      #strong_magnitudes = fft_magnitudes[strongest_index]
+      #sys.stdout.write("test strongest index: " + str(strongest_index) + "\n")
+      #sys.stdout.write("test strongest frequency: " + str(strong_freqs) + "\n")
+      #sys.stdout.write("test strong_magnitudes: " + str(strong_magnitudes) + "\n")
+      #newarr = np.delete(fft_magnitudes, strongest_index)
+      #strongest_index2 = np.argmax(newarr)
+      #sys.stdout.write("test strongest index 2: " + str(strongest_index2) + "\n")
+
+
+
+      self.debug.info_message("argsort: " + str(np.argsort(fft_magnitudes)[:-6:-1]))
+      #self.debug.info_message("argsort: " + str(np.argsort(fft_magnitudes).ravel()))
+      #self.debug.info_message("sort: " + str(sorted(fft_magnitudes, key=lambda x: x[0])))
+      #self.debug.info_message("mysort: " + str(mysort(fft_magnitudes)[-N:]))
+      top_n_indices = np.argsort(fft_magnitudes)[:-6:-1]
+      strongest_frequencies = frequencies[top_n_indices]
+      self.debug.info_message("BEST  === strongest_frequencies: " + str(strongest_frequencies))
+
 
       top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      self.debug.info_message("top_n_indices: " + str(top_n_indices))
+      #top_n_indices = np.argsort(fft_magnitudes)[-N:]
       strongest_frequencies = frequencies[top_n_indices]
       strongest_magnitudes  = fft_magnitudes[top_n_indices]
 
@@ -866,6 +960,38 @@ class ModemCoreUtils(object):
       self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
     except:
       self.debug.error_message("Exception in getStrongestFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return strongest_frequencies, strongest_magnitudes
+
+
+  """ This method works fine"""
+  def getIsSignalPresent(self, data, watch_freq):
+    self.debug.info_message("getIsSignalPresent")
+    try:
+      delta = 5
+      fft_output = np.fft.fft(data)
+      frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
+      positive_frequency_indices = np.where((frequencies > watch_freq - delta) & (frequencies < watch_freq + delta))[0]
+
+      fft_magnitude = np.abs(fft_output)[positive_frequency_indices]
+      frequencies = frequencies[positive_frequency_indices]
+      strongest_index = np.argmax(fft_magnitude)
+
+      fft_data = np.abs(fft_output)
+      strong_freqs = frequencies[strongest_index]
+      strong_magnitudes = fft_magnitude[strongest_index]
+
+      sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
+      sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
+      sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
+  
+    except:
+      self.debug.error_message("Exception in getIsSignalPresent: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+    finally:
+      self.debug.info_message("Completed getIsSignalPresent: ")
+
+    return strong_freqs, strong_magnitudes
+
 
 
   """ This method works fine"""
@@ -948,8 +1074,59 @@ class ModemCoreUtils(object):
 
     return snr
 
+
+  def calculate_EbN0(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
+    self.debug.info_message("calculateSNR_EbN0")
+
+    gc.collect()
+
+    try:
+      fft_signal = np.fft.fft(noise_free_signal)
+      frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
+
+      """ use best method to determine signal width"""
+      if self.osmod.tx_filter[2] > 0:
+        freq_low_signal  = center_frequency - (self.osmod.tx_filter[2]/2)    
+        freq_high_signal = center_frequency + (self.osmod.tx_filter[2]/2)    
+      else:
+        freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
+        freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+
+      freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
+      signal_power = np.abs(fft_signal[freq_indices])**2
+      self.debug.info_message("signal_power: " + str(signal_power) )
+
+      fft_noise = np.fft.fft(signal)
+      frequencies = np.fft.fftfreq(len(fft_noise), 1/self.osmod.sample_rate)
+      freq_low_noise = 0
+      freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_high_signal) ))
+      noise_power = np.abs(fft_noise[freq_indices])**2
+      self.debug.info_message("noise_psd: " + str(noise_power) )
+
+      Eb = np.mean(signal_power) / bit_rate
+      self.debug.info_message("Eb: " + str(Eb) )
+
+      """ N0 is often derived using average (mean)"""
+      N0 = np.mean(noise_power)
+      self.debug.info_message("N0: " + str(N0) )
+      """ ...but the definition states that N0 is psd in 1Hz of bandwidth..."""
+
+      ebn0 = Eb / N0
+      ebn0_db = 10 * np.log10(ebn0)
+      """ equivalent SNR over standard 2500 Hz bandwidth"""
+      SNR_equiv_db = ebn0 + 10 * np.log10(bit_rate / 2500)
+
+      self.debug.info_message("Eb/N0: " + "{:.2f}".format(ebn0) )
+      self.debug.info_message("Eb/N0 (dB): " + "{:.2f}".format(ebn0_db) + " (dB)")
+      self.debug.info_message("Equivalent SNR over 2500 Hz standard (dB): " + "{:.2f}".format(SNR_equiv_db) + " (dB)")
+
+      return float(ebn0_db), float(ebn0), float(SNR_equiv_db)
+    except:
+      self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
   """ Eb/N0 = SNR(dB) + 10 * log10(Bandwidth / bit_rate)   """
-  def calculate_EbN0(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal):
+  def calculate_EbN0_old(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal):
     self.debug.info_message("calculateSNR_EbN0")
 
     gc.collect()
@@ -960,10 +1137,18 @@ class ModemCoreUtils(object):
       psd = np.abs(fft_output)**2
       frequencies = np.fft.fftfreq(len(fft_output), 1/self.osmod.sample_rate)
 
-      freq_low_signal  = signal_frequency[0] - 2
-      freq_low_signal_hi  = signal_frequency[0] + 2
-      freq_high_signal = signal_frequency[1] + 2
-      freq_high_signal_lo = signal_frequency[1] - 2
+
+      freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
+      freq_low_signal_hi  = signal_frequency[0] + self.osmod.fft_filter[1]
+      freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+      freq_high_signal_lo = signal_frequency[1] + self.osmod.fft_filter[2]
+
+
+      #freq_low_signal  = signal_frequency[0] - 2
+      #freq_low_signal_hi  = signal_frequency[0] + 2
+      #freq_high_signal = signal_frequency[1] + 2
+      #freq_high_signal_lo = signal_frequency[1] - 2
+
       freq_indices = np.where(((frequencies >= freq_low_signal) & (frequencies <= freq_low_signal_hi)) | ((frequencies >= freq_high_signal_lo) & (frequencies <= freq_high_signal)) )[0]
       signal_psd = np.abs(fft_output[freq_indices])**2
       #self.debug.info_message("signal_psd: " + str(signal_psd) )
@@ -1026,10 +1211,91 @@ class ModemCoreUtils(object):
 
     return filtered_signal, fft_signal[mask]
 
-
   """ bandpass filter fft"""
   def bandpass_filter_fft(self, signal, freq_lo, freq_hi):
     self.debug.info_message("bandpass_filter_fft")
+
+    self.debug.info_message("len(signal): " + str(len(signal)))
+
+    #if False:
+    if True:
+      self.debug.info_message("FFT_INPUT max: " + str(np.max(signal)))
+
+      fft_result, sig2 =  self.bandpass_filter_fft_python(signal, freq_lo, freq_hi)
+
+      self.debug.info_message("FFT_RESULT data type: " + str(type(fft_result)))
+      self.debug.info_message("FFT_RESULT data subtype: " + str(fft_result.dtype))
+      self.debug.info_message("FFT_RESULT length: " + str(len(fft_result)))
+      self.debug.info_message("FFT_RESULT max: " + str(np.max(fft_result)))
+
+      #if isinstance(fft_result, np.ndarray) and np.issubdtype(fft_result.dtype, np.complex128):
+      #  self.debug.info_message("FFT RESULT IS NDARRAY OF COMPLEX128")
+      return fft_result, sig2
+    else:
+      self.debug.info_message("FFT_INPUT max: " + str(np.max(signal)))
+
+      fft_result, sig2 =  self.bandpass_filter_fft_c(signal, freq_lo, freq_hi)
+
+      self.debug.info_message("FFT_RESULT data type: " + str(type(fft_result)))
+      self.debug.info_message("FFT_RESULT data subtype: " + str(fft_result.dtype))
+      self.debug.info_message("FFT_RESULT length: " + str(len(fft_result)))
+      self.debug.info_message("FFT_RESULT max: " + str(np.max(fft_result)))
+
+      return fft_result, sig2
+
+  def bandpass_filter_fft_c(self, signal, freq_lo, freq_hi):
+    self.debug.info_message("bandpass_filter_fft_c")
+
+    try:
+        if np.issubdtype(signal.dtype, np.complex128):
+          self.debug.info_message("signal is complex128")
+          complex_signal = signal
+        else:
+          self.debug.info_message("converting signal to complex128")
+          complex_signal = signal.astype(complex)
+
+        for i in range(0, 10):
+          self.debug.info_message("signal[i] is: " + str(complex_signal[i]))
+        self.debug.info_message("freq_lo is: " + str(freq_lo))
+        self.debug.info_message("freq_hi is: " + str(freq_hi))
+
+        freq_array = np.array([freq_lo, freq_hi], dtype=np.float32)
+
+        num_carriers = 1
+        num_output_items = 1
+        fft_output = [0] * num_output_items
+        output_signal = np.zeros_like(complex_signal)
+        #output_signal[0].real = 123
+        fft_output[0] = output_signal
+
+        c_freq_lo            = ptoc_float(freq_lo)
+        c_freq_hi            = ptoc_float(freq_hi)
+        c_freq_array         = ptoc_float_array(freq_array)
+        c_num_carriers       = num_carriers
+        c_sample_rate        = self.osmod.sample_rate
+        c_signal_length      = len(signal)
+
+        c_fft_output    = (ctypes.POINTER(ctypes.c_double) * num_output_items)()
+        c_fft_output[0] = ptoc_double_array(fft_output[0])
+
+        self.osmod.compiled_lib.fft.argtypes = [np.ctypeslib.ndpointer(np.complex128, flags = 'C'), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.POINTER(ctypes.c_double) ) ]
+        self.osmod.compiled_lib.fft.restype = ctypes.c_int
+        success = self.osmod.compiled_lib.fft(complex_signal, c_freq_array, c_num_carriers, c_sample_rate, c_signal_length, c_fft_output)
+
+        for i in range(0, 10):
+          #output = fft_output[0].astype(complex)
+          output = fft_output[0]
+          self.debug.info_message("fft_output[i] is: " + str(output[i]))
+        return fft_output[0], 0
+    except:
+      sys.stdout.write("Exception in bandpass_filter_fft_c: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+    #return signal
+
+  """ bandpass filter fft"""
+  def bandpass_filter_fft_python(self, signal, freq_lo, freq_hi):
+    self.debug.info_message("bandpass_filter_fft_python")
 
     try:
       fft_signal  = sp.fft.fft(signal)
@@ -1063,3 +1329,249 @@ class ModemCoreUtils(object):
     return filtered_signal, fft_signal[mask]
 
 
+  def shiftAllFrequenciesOld(self, signal, freq_shift_amount):
+
+    try:
+      fs = 92800 # self.osmod.sample_rate
+      duration_seconds = len(signal) / fs
+      t = np.linspace(0, duration_seconds, fs, endpoint=False)
+    
+      self.debug.info_message("signal shape: " + str(signal.shape))
+      self.debug.info_message("t shape: " + str(t.shape))
+
+      #t_col = t[:, np.newaxis]
+      #shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t_col)
+
+      #shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
+      #return (shifted_signal.real + shifted_signal.imag ) / 2
+
+      #return shifted_signal
+
+      #for -ve freq shift
+      analytic_signal = hilbert(signal)
+      #shifted_signal = analytic_signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
+      shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
+      #return (shifted_signal.real + shifted_signal.imag ) / 2
+      return shifted_signal.astype(np.float64)
+
+    except:
+      self.debug.error_message("Exception in shiftAllFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  def shiftAllFrequencies(self, signal, shift_hz):
+    self.debug.info_message("shiftAllFrequencies")
+
+    try:
+      n = len(signal)
+      fs = self.osmod.sample_rate
+
+      window = np.ones(n)
+      #window = np.hanning(n)
+      #window = np.hamming(n)
+      #window = np.blackman(n)
+      #window = np.kaiser(n, beta=5)
+      #window = np.kaiser(n, beta=10)
+
+      #window = np.hanning(n)
+      fft_data = np.fft.rfft(signal * window)
+
+      #fft_signal  = sp.fft.fft(signal)
+      frequencies = np.fft.rfftfreq(len(signal), d=1/self.osmod.sample_rate)
+
+      bins_to_shift = int(round(shift_hz * n / fs))
+
+      shifted_fft = np.zeros_like(fft_data, dtype=np.complex128)
+
+      if bins_to_shift > 0:
+        shifted_fft[bins_to_shift:] = fft_data[:-bins_to_shift]
+        shifted_fft[:bins_to_shift] = 0
+
+      elif bins_to_shift < 0:
+        shift_abs = abs(bins_to_shift)
+        shifted_fft[:-shift_abs] = fft_data[shift_abs:]
+        shifted_fft[-shift_abs:] = 0
+      else:
+        shifted_fft = fft_data
+
+      shifted_signal = np.fft.irfft(shifted_fft)
+
+      max_val = np.max(np.abs(shifted_signal))
+      if max_val > 0:
+        shifted_signal = shifted_signal / max_val * 0.99
+
+      #shifted_signal = (shifted_signal * 32767).astype(np.int16)
+      shifted_signal = (shifted_signal * 32767).astype(np.float64)
+      return shifted_signal
+
+      #mask         = (np.abs(frequencies) >= freq_lo) & (np.abs(frequencies) <= freq_hi)
+      #fft_filtered = fft_signal * mask
+      #filtered_signal = sp.fft.ifft(fft_filtered)
+
+      #self.debug.info_message("fft signal data type: " + str(filtered_signal.dtype))
+
+      #return filtered_signal, fft_signal[mask]
+
+    except:
+      self.debug.error_message("Exception in shiftAllFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def resampleDopplerShift(self, signal, orig_fs, new_fs):
+    self.debug.info_message("resampleDopplerShift")
+
+    try:
+      #from scipy import signal
+      #orig_fs = self.osmod.sample_rate
+      #new_fs = 
+      num_samples_new_signal = int(len(signal) * new_fs / orig_fs)
+      resampled_signal = scipy_signal.resample(signal, num_samples_new_signal)
+
+      return resampled_signal
+    except:
+      self.debug.error_message("Exception in resampleDopplerShift: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def linearDopplerShiftAutoCorrect(self, signal, target_strongest_frequency, frequency_delta):
+    self.debug.info_message("linearDopplerShiftAutoCorrect")
+    try:
+      fs = self.osmod.sample_rate
+      frequency_test = self.osmod.modulation_object.getStrongestFrequency(signal, target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta)
+      self.debug.info_message("frequency_test: " + str(frequency_test))
+
+      test_signal = signal
+      for _ in range(10):
+        adjust_ratio = frequency_test / target_strongest_frequency
+        self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
+        new_signal = self.osmod.modulation_object.resampleDopplerShift(test_signal, fs / adjust_ratio, fs)
+        new_frequency_test = self.osmod.modulation_object.getStrongestFrequency(new_signal, target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta)
+        error_value = abs((new_frequency_test - frequency_test) * 1000)
+        self.debug.info_message("error_value: " + str(error_value))
+        if error_value < 5:
+          break
+        else:
+          frequency_test = new_frequency_test
+          test_signal = new_signal
+          self.debug.info_message("frequency_test: " + str(frequency_test))
+
+      return new_signal
+    except:
+      self.debug.error_message("Exception in linearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+
+
+  def adjustFrequencyShiftAndDopplerShift(self, noise_free_signal, values, center_frequency):
+
+    self.debug.info_message("adjustFrequencyShiftAndDopplerShift")
+    try:
+
+      """ TEST CODE shift frequencies"""
+      self.debug.info_message(" TEST CODE FOR DOPPLER SHIFT AND FREQUENCY SHIFT")
+
+      """ Apply manual frequency shift """
+      enable_fine_tune_frequency = self.osmod.form_gui.window['cb_enable_fine_tune_frequency'].get()
+      if enable_fine_tune_frequency:
+        frequency_shift_value = values['slider_freq_fine_tune']
+        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value)
+        #noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, -1 * frequency_shift_value)
+      enable_fine_tune_resample = self.osmod.form_gui.window['cb_enable_fine_tune_resample'].get()
+
+      """ Auto correct frequency shift """
+      enable_resample_auto_correct = self.osmod.form_gui.window['cb_enable_resample_auto_correct'].get()
+      enable_frequency_shift_auto_correct = self.osmod.form_gui.window['cb_enable_frequency_shift_auto_correct'].get()
+      if enable_frequency_shift_auto_correct and enable_resample_auto_correct == False:
+        target_freq_low = center_frequency + self.osmod.resample_params[1]
+        actual_low_freq = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, target_freq_low - 5, target_freq_low + 5)
+        frequency_shift_value = target_freq_low - actual_low_freq
+        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value)
+
+      """ Apply manual doppler shift """
+      if enable_fine_tune_resample:
+        doppler_shift_value = values['slider_resample_fine_tune']
+        #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8000, 8000 * doppler_shift_value)
+        #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 800000, 800002). # need to be this accurate for correct decode
+        #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8000, 8100)
+        #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8100, 8000)
+        noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, self.osmod.sample_rate, self.osmod.sample_rate * doppler_shift_value)
+
+      """ automatic adjust for linear doppler shift """
+      enable_resample_auto_correct = self.osmod.form_gui.window['cb_enable_resample_auto_correct'].get()
+      if enable_resample_auto_correct:
+        if self.osmod.resample_params[0] == ocn.RESAMPLE_AVAILABLE and self.osmod.resample_params[3] != 0:
+          self.debug.info_message("RESAMPLE_AVAILABLE ")
+          if enable_frequency_shift_auto_correct == False:
+            target_freq_low = center_frequency + self.osmod.resample_params[1]
+            #noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, 1382.5, 5)   #this for 6400 mode
+            #noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, 1381.875, 5)  #this for 12800 mode
+            noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  #this for 12800 mode
+          else:
+            self.debug.info_message("correcting for frequency shift and doppler shift ")
+
+            if self.osmod.resample_params[0] == ocn.RESAMPLE_AVAILABLE:
+
+              """ first doppler shift correct """
+              target_freq_low = center_frequency + self.osmod.resample_params[1]
+              noise_free_signal_temp = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  
+
+              """ second calc residual frequency shift component"""
+              frequency_test_lower  = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal_temp, 1380, 1385)
+              frequency_test_higher = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal_temp, 1414, 1424)
+              difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.resample_params[2] - self.osmod.resample_params[1])) * 10000
+              self.debug.info_message("difference: " + str(difference))
+
+              partial_result = difference 
+              self.debug.info_message("partial_result: " + str(partial_result))
+              calculated_freq_offset = partial_result / self.osmod.resample_params[3] 
+              self.debug.info_message("calculated_freq_offset: " + str(calculated_freq_offset))
+
+              """ third apply frequency shift component to original signal """
+              noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, calculated_freq_offset)
+
+              """ fourth reapply auto doppler shift correction """
+              target_freq_low = center_frequency + self.osmod.resample_params[1]
+              noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  
+            else:
+              self.debug.info_message("RESAMPLE_UNAVAILABLE ")
+
+        else:
+          self.debug.info_message("RESAMPLE_UNAVAILABLE ")
+
+      return noise_free_signal
+
+    except:
+      self.debug.error_message("Exception in linearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def appendTableRow(self, message):
+    self.debug.info_message("appendTableRow")
+    try:
+      center_frequency = self.osmod.getCenterFrequency()
+      timestamp = datetime.utcnow().strftime('%Y/%m/%d %H:%M')
+
+      if self.osmod.form_gui.window['cb_use_prod_modes'].get() == True:
+        mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
+      else:
+        mode = self.osmod.form_gui.window['combo_main_modem_modes'].get()
+
+      data_key = str(center_frequency) + "_" + str(mode)
+      #if data_key in self.osmod.dict_rcvd:
+      #else:
+      self.osmod.dict_rcvd[data_key] = [timestamp, message]
+      self.debug.info_message("self.osmod.dict_rcvd: " + str(self.osmod.dict_rcvd))
+
+      data_table = []
+      for key, value in self.osmod.dict_rcvd.items():
+        data_row = key.split('_') + value
+        self.debug.info_message("data_row: " + str(data_row))
+        data_table.append(data_row)
+
+      self.debug.info_message("data_table: " + str(data_table))
+
+      self.osmod.form_gui.window['tbl_tmplt_templates'].update(data_table)
+
+      #self.osmod.form_gui.window['tbl_tmplt_templates'].update([[center_frequency,mode,timestamp,message]])
+      self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
+
+
+    except:
+      self.debug.error_message("Exception in appendTableRow: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))

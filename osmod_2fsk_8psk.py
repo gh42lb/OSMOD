@@ -132,15 +132,67 @@ class mod_2FSK8PSK(ModulatorPSK):
     try:
       gc.collect()
 
-      """ modulate the signal """
-      data2 = np.array([])
-      for triplet1, triplet2 in zip(bit_triplets[0], bit_triplets[1]):
-        #self.debug.info_message("modulating triplet: " + str(triplet1))
-        #self.debug.info_message("modulating triplet: " + str(triplet2))
-        combined = self.osmod.mod_2fsk8psk.modulate_2fsk_8psk_optimized(frequency, [triplet1, triplet2])
-        data2 = np.append(data2, combined)
+      """ outer loop for frequency division multiplexing """
+      if self.osmod.FDM == "yes":
+        pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
+        half = int(pulse_length / 2)
 
-      return data2
+        data_fdm = np.array([])
+        if self.osmod.FDM_parameters[0] == 2:
+          for seg_count in range(0, 2):
+            data2 = np.array([])
+            offset = seg_count * self.osmod.FDM_parameters[1]
+
+            self.osmod.setStandingWaveValues([frequency[0] + offset, frequency[1] + offset])
+
+            for triplet1, triplet2 in zip(bit_triplets[0], bit_triplets[1]):
+              if seg_count == 1:
+                triplet1 = [0,0,0]
+                triplet2 = [0,0,0]
+              combined = self.osmod.mod_2fsk8psk.modulate_2fsk_8psk_optimized([frequency[0] + offset, frequency[1] + offset], [triplet1, triplet2])
+              data2 = np.append(data2, combined)
+            if seg_count == 0:
+              data_fdm = data2
+            else:
+              data_fdm = data_fdm + data2
+          self.osmod.setStandingWaveValues(frequency)
+
+        elif self.osmod.FDM_parameters[0] == 4:
+          for seg_count_2 in range(0, 2):
+            for seg_count_1 in range(0, 2):
+              data2 = np.array([])
+              for triplet1, triplet2 in zip(bit_triplets[0], bit_triplets[1]):
+                self.debug.info_message("triplet1: " + str(triplet1))
+                self.debug.info_message("triplet2: " + str(triplet2))
+                if seg_count_1 == 1 or seg_count_2 == 1:
+                  triplet1 = [0,0,0]
+                  triplet2 = [0,0,0]
+
+                offset_1 = seg_count_1 * self.osmod.FDM_parameters[1]
+                offset_2 = seg_count_2 * self.osmod.FDM_parameters[2]
+                combined = self.osmod.mod_2fsk8psk.modulate_2fsk_8psk_optimized([frequency[0] + offset_1 + offset_2, frequency[1] + offset_1 + offset_2], [triplet1, triplet2])
+                data2 = np.append(data2, combined)
+              if seg_count_1 == 0 and seg_count_2 == 0:
+                data_fdm = data2
+              else:
+                data_fdm = data_fdm + data2
+
+        #data_fdm = np.append(np.array([0]*half), data_fdm)
+        #data_fdm = data_fdm[half:]
+
+        #data_fdm = data_fdm  / self.osmod.FDM_parameters[0]
+        return data_fdm
+
+      else:
+        """ modulate the signal """
+        data2 = np.array([])
+        for triplet1, triplet2 in zip(bit_triplets[0], bit_triplets[1]):
+          #self.debug.info_message("modulating triplet: " + str(triplet1))
+          #self.debug.info_message("modulating triplet: " + str(triplet2))
+          combined = self.osmod.mod_2fsk8psk.modulate_2fsk_8psk_optimized(frequency, [triplet1, triplet2])
+          data2 = np.append(data2, combined)
+
+        return data2
 
     except:
       self.debug.error_message("Exception in modulate: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -852,6 +904,10 @@ class demod_2FSK8PSK(DemodulatorPSK):
       pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
       pre_signal = audio_array = np.append(self.remainder, audio_block)
 
+      """ debug code for FFT analysis"""
+      self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.FFT_ANALYSIS)
+
+
       """ processing *before* fft """
       ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
       pulse_start_index = ret_values[0]
@@ -910,7 +966,8 @@ class demod_2FSK8PSK(DemodulatorPSK):
           interpolated = self.osmod.detector.createInterpolated()
           interpolated_lower  = interpolated[0]
           interpolated_higher = interpolated[1]
-          self.extrapolate_step = ocn.EXTRAPOLATE_FIXED_ROTATION_DECODE
+          #self.extrapolate_step = ocn.EXTRAPOLATE_FIXED_ROTATION_DECODE
+          self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
           decoded_bitstring_1, decoded_bitstring_2, audio_array = decodeChunkCharacters(audio_array.copy(), interpolated, shift_amount)
           self.osmod.detector.findDisposition(interpolated[0], interpolated[1])
           #disposition, match_type, best_ambiguous_match = self.osmod.detector.findDisposition(interpolated[0], interpolated[1])

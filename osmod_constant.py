@@ -93,8 +93,9 @@ DATA_DOWNCONVERT_SHIFT      = 26
 DATA_GENERATOR_POLYNOMIAL_1 = 27
 DATA_GENERATOR_POLYNOMIAL_2 = 28
 DATA_GENERATOR_POLY_DEPTH   = 29
-DATA_CALC_1                 = 30
-DATA_CALC_2                 = 31
+DATA_FDM_SEPARATOR          = 30
+DATA_CALC_1                 = 31
+DATA_CALC_2                 = 32
 
 
 """ used for intra block phase encoding """
@@ -207,6 +208,7 @@ LOCATE_PULSES_PEAK          = 4
 PULSE_DETECT_INFO           = 5
 CALC_BLOCK_OFFSETS_FRACTION = 6
 FIND_TRIPLET_MAX_POINT      = 7
+FFT_ANALYSIS                = 8
 
 SIGNAL_ENVELOPE_GAUSSIAN       = 0
 SIGNAL_ENVELOPE_HILBERT        = 1
@@ -252,5 +254,22 @@ HOLOGRAPH_DECODE_ThREE          = 1
 HOLOGRAPH_DECODE_FIVE           = 2
 HOLOGRAPH_DECODE_SEVEN          = 3
 
+DOPPLER_ADJUST_NONE             = 0
+DOPPLER_ADJUST_PULSES           = 1
+DOPPLER_ADJUST_BLOCKS           = 2
+DOPPLER_ADJUST_ALL              = 3
 
+FILTER_NONE                     = 0
+FILTER_BUTTERWORTH              = 1
+FILTER_FFT                      = 2
+FILTER_FIR                      = 3
+FILTER_CHEBYSHEV_TYPE1          = 4
+FILTER_CHEBYSHEV_TYPE2          = 5
+FILTER_ELLIPTIC                 = 6
+FILTER_LOW_PASS                 = 7
+FILTER_HIGH_PASS                = 8
+FILTER_BAND_PASS                = 9
+FILTER_NOTCH                    = 10
 
+RESAMPLE_UNAVAILABLE            = 0
+RESAMPLE_AVAILABLE              = 1

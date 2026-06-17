@@ -295,11 +295,25 @@ class ModulatorPSK(ModemCoreUtils):
     hasData = not self.osmod.isDataQueueEmpty()
 
     if hasData:
+      self.debug.info_message("sending data to output device")
       data = self.osmod.popDataQueue()
-      outdata[:,0] = self.modulateChunk8PSK(1500, data) 
+
+      reshaped_audio_data = data.reshape(self.osmod.get_sd_blocksize(),).astype(np.float32)
+      outdata[:,0] = reshaped_audio_data #self.modulateChunk8PSK(1500, data) 
+
+
+      #outdata[:,0] = data[0:8000]  #self.modulateChunk8PSK(1500, data) 
+
+      #reshaped_audio_data = np.reshape(data, (self.osmod.sample_rate))
+      #outdata[:,0] = reshaped_audio_data[0:400]  #self.modulateChunk8PSK(1500, data)       #outdata[:,0] = data[0:400]  #self.modulateChunk8PSK(1500, data) 
+      #outdata[:] = data[0:400]  #self.modulateChunk8PSK(1500, data) 
+      #self.debug.info_message("data: " + str(data))
+      #return outdata
     else:
+      self.debug.info_message("done sending data to output device")
       syms = np.zeros(self.osmod.symbol_block_size)
       outdata[:,0] = syms
+      self.osmod.stopEncoder()
 
     return None
 

@@ -11,6 +11,7 @@ import threading
 import sys
 import gc
 import pyaudio
+import ctypes
 
 from numpy import pi
 from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
@@ -32,6 +33,7 @@ from osmod_simulations import OsmodSimulator
 from osmod_interpolation import OsmodInterpolator
 from osmod_test import OsmodTest
 from osmod_fec import OsmodFEC
+from osmod_prod_params import OsmodProdParams
 
 class osModem(object):
 
@@ -54,6 +56,7 @@ class osModem(object):
   previousBlocksizeOut = 0
   inStreamRunning      = False
   outStreamRunning     = False
+  signal_squelch_value = 0.25
 
   spectral_density_queue_counter = 0
   spectral_density_block = None
@@ -77,7 +80,7 @@ class osModem(object):
 
     self.sample_rate = 4410 * 5 #44100
     self.attenuation = 30
-    self.center_frequency = 1500
+    self.center_frequency = 1400
     self.symbols = 32
     self.bandwidth = 1000
     self.bits_per_symbol = int(np.log2(self.symbols))
@@ -98,6 +101,9 @@ class osModem(object):
     #self.mod_2fsk4psk   = mod_2FSK4PSK(self)
     #self.demod_2fsk4psk = demod_2FSK4PSK(self)
 
+    self.prodparams   = OsmodProdParams(self)
+
+
     self.dataQueue = Queue()
     self.inputBuffer = Queue()
 
@@ -106,6 +112,8 @@ class osModem(object):
     self.timer_dict_when = {}
     self.timer_dict_elapsed = {}
     self.timer_last_name = ''
+
+    self.dict_rcvd = {}
 
     """ generator polynomials for range 7 thru 21 defined in the following dictionary """
     fec_gp = { 7: (0o171, 0o133), 8: (0o235, 0o331), 9: (0o557, 0o663), 10: (0o473, 0o725), 11: (0o557, 0o731),
@@ -152,6 +160,11 @@ class osModem(object):
     self.modulation_specific_pulse_shapes['LB28-3200-32-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
     self.modulation_specific_pulse_shapes['LB28-1600-16-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
     self.modulation_specific_pulse_shapes['LB28-800-8-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
+    self.modulation_specific_pulse_shapes['LB28-2560-8-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
+    self.modulation_specific_pulse_shapes['LB28-320-8-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
+    self.modulation_specific_pulse_shapes['LB28-400-8-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
+    self.modulation_specific_pulse_shapes['LB28-320-8-2-37-I3E8-FEC-FDM'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
+    self.modulation_specific_pulse_shapes['LB28-400-8-2-37-I3E8-FEC-FDM'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
 
     self.modulation_specific_pulse_shapes['LB28-25600-256-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
     self.modulation_specific_pulse_shapes['LB28-51200-512-2-37-I3E8-FEC'] = [(0.735 , 0.221), (0.804 , 0.25), (0.595 , 0.255), (0.638 , 0.318), (0.104 , 0.187), (0.604 , 0.295)]
@@ -161,18 +174,32 @@ class osModem(object):
 
     #self.test_pulse_shapes = [(0.763, 0.107), (0.992 , 0.276),(0.849 , 0.898),(0.586 , 0.78),(0.612 , 0.353),(0.63 , 0.206),(0.638 , 0.318), (0.515 , 0.035),(0.662 , 0.228),(0.937 , 0.172),(0.523 , 0.068),(0.585 , 0.056),(0.308 , 0.024),(0.966 , 0.157),(0.215 , 0.091),(0.708 , 0.104),(0.92 , 0.025),(0.735 , 0.221),(0.161 , 0.209),(0.128 , 0.188),(0.096 , 0.157),(0.881 , 0.266),(0.783 , 0.282),(0.941 , 0.254),(0.778 , 0.177),(0.403 , 0.294),(0.68 , 0.096),(0.579 , 0.248)]
 
-    self.test_pulse_shapes = [(0.595 , 0.255),(0.727 , 0.225),(0.491 , 0.29),(0.945 , 0.346),(0.954 , 0.289),(0.979 , 0.34),(0.657 , 0.173),(0.183 , 0.148),(0.552 , 0.288),(0.569 , 0.191),(0.692 , 0.241),(0.138 , 0.176),(0.285 , 0.268),(0.904 , 0.305),(0.412 , 0.224),(0.785 , 0.323),(0.658 , 0.241),(0.737 , 0.238),(0.336 , 0.223),(0.475 , 0.242),(0.604 , 0.295),(0.824 , 0.34),(0.519 , 0.177),(0.707 , 0.244),(0.557 , 0.252),(0.804 , 0.25),(0.601 , 0.175),(0.638 , 0.32),(0.833 , 0.309),(0.104 , 0.187),(0.887 , 0.322),(0.722 , 0.288),(0.352 , 0.165),(0.367 , 0.25)]
+    #self.test_pulse_shapes = [(0.595 , 0.255),(0.727 , 0.225),(0.491 , 0.29),(0.945 , 0.346),(0.954 , 0.289),(0.979 , 0.34),(0.657 , 0.173),(0.183 , 0.148),(0.552 , 0.288),(0.569 , 0.191),(0.692 , 0.241),(0.138 , 0.176),(0.285 , 0.268),(0.904 , 0.305),(0.412 , 0.224),(0.785 , 0.323),(0.658 , 0.241),(0.737 , 0.238),(0.336 , 0.223),(0.475 , 0.242),(0.604 , 0.295),(0.824 , 0.34),(0.519 , 0.177),(0.707 , 0.244),(0.557 , 0.252),(0.804 , 0.25),(0.601 , 0.175),(0.638 , 0.32),(0.833 , 0.309),(0.104 , 0.187),(0.887 , 0.322),(0.722 , 0.288),(0.352 , 0.165),(0.367 , 0.25)]
+
+    self.test_pulse_shapes = [(0.323 , 0.054),(0.115 , 0.028),(0.07 , 0.025),(0.402 , 0.048),(0.3 , 0.085),(0.708 , 0.076),(0.745 , 0.093),(0.051 , 0.009)]
 
     self.best_pulse_shapes = [(0.104 , 0.187), (0.336 , 0.223), (0.804 , 0.25), (0.722 , 0.288), (0.595 , 0.255), (0.945 , 0.346), (0.737 , 0.238), (0.638 , 0.318), (0.662 , 0.228), (0.161 , 0.209), (0.612 , 0.353), (0.783 , 0.282), (0.735 , 0.221), (0.215 , 0.091)]
 
-    self.all_pulse_shapes = [self.test_pulse_shapes, self.best_pulse_shapes]
+    self.pulse_shapes_1 =[(0.661 , 0.063),(0.646 , 0.039),(0.392 , 0.093),(0.123 , 0.058),(0.344 , 0.098)]
+
+
+    #self.all_pulse_shapes = [self.test_pulse_shapes, self.best_pulse_shapes]
+
+    self.all_pulse_shapes = [self.pulse_shapes_1]
 
     #[,(0.519 , 0.177),(0.569 , 0.191),(0.945 , 0.346),(0.785 , 0.323),(0.887 , 0.322),(0.824 , 0.34),(0.104 , 0.187),(0.183 , 0.148),(0.336 , 0.223),(0.475 , 0.242),(0.737 , 0.238),(0.804 , 0.25),(0.722 , 0.288),(0.904 , 0.305),(0.601 , 0.175),(0.595 , 0.255),(0.833 , 0.309),(0.557 , 0.252),(0.707 , 0.244),(0.979 , 0.34),(0.954 , 0.289),(0.138 , 0.176),(0.285 , 0.268),(0.604 , 0.295),(0.367 , 0.25),(0.657 , 0.173),(0.692 , 0.241),(0.491 , 0.29),(0.552 , 0.288)]
 
     self.test_sw_patterns_1 = [('A-D', 0.594), ('A-D', 0.657), ('A-D', 0.312), ('A-D', 0.562), ('A-D', 0.605), ('A-D', 0.827), ('A-D', 0.822), ('A-D', 0.373), ('A-D', 0.827)]
     self.test_sw_patterns_2 = [('C-C', 0.133),('B-C', 0.338),('C-C', 0.233),('C-C', 0.144),('C-E', 0.506),('C-C', 0.429),('A-D', 0.821),('A-D', 0.196),('A-D', 0.312),('A-D', 0.827),('A-D', 0.562),('A-D', 0.026),('A-D', 0.612),('A-D', 0.616)]
     self.test_sw_patterns_3  = [('A-D', 0.768),('A-D', 0.656),('A-D', 0.456),('A-D', 0.913),('A-D', 0.385),('A-D', 0.113),('A-D', 0.577),('A-D', 0.426),('A-D', 0.493),('A-D', 0.675),('A-D', 0.747),('A-D', 0.882),('A-D', 0.636),('B-C', 0.581),('A-C', 0.843),('A-D', 0.417),('B-C', 0.314),('A-D', 0.933),('A-D', 0.565),('A-D', 0.678),('A-D', 0.501),('A-D', 0.621),('A-D', 0.492),('A-D', 0.659),('A-D', 0.825),('A-D', 0.939)]
-    self.test_sw_patterns = [self.test_sw_patterns_1, self.test_sw_patterns_2, self.test_sw_patterns_3]
+
+    self.test_sw_patterns_4  = [('B-B', 0.791),('C-C', 0.462),('B-D', 0.875),('B-C', 0.435),('A-E', 0.327),('D-E', 0.742),('E-E', 0.212),('B-C', 0.324),('A-C', 0.685),('C-C', 0.1),('A-D', 0.201),('A-D', 0.61),('C-C', 0.148),('B-E', 0.752),('B-D', 0.38),('D-D', 0.811),('A-E', 0.049),('A-C', 0.43),('B-E', 0.921),('B-B', 0.88),('C-E', 0.777),('B-E', 0.561),('A-A', 0.288),('B-C', 0.266),('C-E', 0.788),('C-E', 0.251),('D-D', 0.977),('A-D', 0.034),('A-E', 0.653),('A-D', 0.541),('A-C', 0.797),('C-C', 0.696),('C-C', 0.323),('A-C', 0.053),('D-D', 0.884),('C-C', 0.195),('A-B', 0.287),('C-D', 0.748),('A-D', 0.656),('B-C', 0.041),('A-B', 0.286)]
+
+    self.test_sw_patterns_5  = [('A-B', 0.32),('A-A', 0.114),('A-A', 0.577),('C-E', 0.397),('A-E', 0.196),('B-B', 0.72),('A-C', 0.061),('D-D', 0.028),('D-E', 0.935),('C-E', 0.126),('A-D', 0.369),('C-E', 0.398),('E-E', 0.516),('A-C', 0.701),('E-E', 0.99),('D-D', 0.702),('B-B', 0.012)]
+
+
+    #self.test_sw_patterns = [self.test_sw_patterns_1, self.test_sw_patterns_2, self.test_sw_patterns_3]
+    self.test_sw_patterns = [self.test_sw_patterns_5]
 
     #self.best_sw_patterns_awgn8 = [('C-C', 0.144),('C-C', 0.429),('A-D', 0.493),('A-D', 0.562),('A-D', 0.768), ('A-D', 0.312), ('A-D', 0.417)]
     #self.best_sw_patterns_awgn6 = [('A-D', 0.417), ('C-C', 0.429), ('A-D', 0.822), ('B-C', 0.338), ('A-D', 0.312)]
@@ -186,8 +213,15 @@ class osModem(object):
     self.test_viterbi_gp_2 = [(19 , 104171 , 43597),(16 , 25867 , 64068),(15 , 22748 , 20515),(18 , 49870 , 25915),(14 , 2670 , 13353),(19 , 267052 , 292632),(14 , 10117 , 10273),(16 , 19094 , 45608),(18 , 147012 , 171229),(17 , 59952 , 35021),(18 , 223244 , 166886),(19 , 165277 , 44828)]
     self.test_viterbi_gp_3 = [(15 , 4293 , 27673),(19 , 75437 , 395530),(13 , 567 , 1044),(18 , 175858 , 114619),(17 , 24678 , 113783),(15 , 14047 , 24322),(11 , 1504 , 330),(17 , 102984 , 108103),(17 , 49292 , 39302),(18 , 26581 , 142760),(11 , 320 , 517),(17 , 11484 , 2257),(13 , 7120 , 4105),(19 , 315807 , 489515),(18 , 16885 , 110965)]
 
-    self.all_viterbi_gps  = [self.test_viterbi_gp_1, self.test_viterbi_gp_2, self.test_viterbi_gp_3]
+    self.test_viterbi_gp_4 = [(14 , 12874 , 2088),(19 , 487833 , 272009),(18 , 138813 , 136592),(17 , 56883 , 48672),(15 , 32454 , 29350),(17 , 109434 , 66931),(13 , 6375 , 5183),(19 , 454203 , 467489),(15 , 11481 , 14041),(17 , 125755 , 97716),(13 , 5426 , 1463),(16 , 53269 , 27876),(18 , 117917 , 109517),(18 , 21198 , 252632),(17 , 58879 , 96029),(14 , 4112 , 11103),(18 , 203771 , 210048),(15 , 10070 , 13902),(16 , 37139 , 63104),(17 , 62779 , 86412),(14 , 8074 , 15694),(14 , 2897 , 70),(12 , 3541 , 1599),(11 , 736 , 452),(17 , 59265 , 11061),(17 , 128295 , 5901),(19 , 316991 , 234689),(16 , 20506 , 54096),(15 , 13684 , 2676),(13 , 8154 , 7138),(12 , 2495 , 3051),(19 , 76197 , 499063),(13 , 1394 , 4569),(12 , 3972 , 388),(15 , 11382 , 26842),(19 , 94049 , 382551)]
+
+    self.all_viterbi_gps  = [self.test_viterbi_gp_4]
+
+    #self.all_viterbi_gps  = [self.test_viterbi_gp_1, self.test_viterbi_gp_2, self.test_viterbi_gp_3]
     self.best_viterbi_gps = [(18 , 147012 , 171229), (15 , 4293 , 27673),(13 , 5890 , 6271),(15 , 14047 , 24322),(11 , 320 , 517)]
+
+    """ downconvert shift values section"""
+    self.test_dcs_values = [(0.765),(0.654),(0.734),(0.665),(0.653),(0.757),(0.784),(0.562),(0.597),(0.603),(0.957),(0.964),(0.658),(0.814),(0.697),(0.892),(0.723),(0.614),(0.7),(0.857),(0.822),(0.744),(0.891),(0.684),(0.835),(0.802),(0.774),(0.601),(0.51),(0.762),(0.994),(0.907),(0.933),(0.735),(0.84),(0.925),(0.803),(0.795),(0.689),(0.982),(0.641),(0.918),(0.879),(0.713),(0.897),(0.76),(0.672),(0.751),(0.647),(0.792),(0.704),(0.956),(0.722),(0.769),(0.574),(0.557),(0.997),(0.758),(0.905),(0.927),(0.602),(0.8),(0.752),(0.924),(0.998),(0.932),(0.794),(0.797),(0.992),(0.606),(0.604),(0.731),(0.727),(0.98),(0.558),(0.763),(0.586),(0.903),(0.659),(0.657),(0.613),(0.669),(0.62),(0.73),(0.981),(0.645),(0.746),(0.505),(0.809),(0.871)]
 
     """ initialize the initialization blocks for the different modulations"""
     #self.modulation_initialization_block = {'LB28-0.15625-10I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
@@ -454,7 +488,9 @@ class osModem(object):
                                                               'fft_interpolate'      : (-1, 1, -1, 1),
                                                               'pulses_per_block'     : 512,
                                                               'process_debug'        : False,
-                                                              'parameters'           : (600, 0.54, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              #'parameters'           : (600, 0.54, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              'parameters'           : (1500, 0.435, 0.579, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
 
                                    'LB28-25600-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
@@ -551,7 +587,8 @@ class osModem(object):
                                                               'fft_interpolate'      : (-1, 1, -1, 1),
                                                               'pulses_per_block'     : 256,
                                                               'process_debug'        : False,
-                                                              'parameters'           : (600, 0.54, 0.89, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              #'parameters'           : (600, 0.54, 0.89, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              'parameters'           : (1500, 0.986, 0.015, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
 
 #                                        'LB28-0.3125-10I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
@@ -728,23 +765,148 @@ class osModem(object):
                                                               'extrapolate'          : 'yes', #no rotation tables yet!!!
                                                              },
 
-                               # THIS PARTIALLY WORKS!!!!
-                               'LB28-800-8-2-37-I3E8-FEC': {'inherit_from'        : 'LB28-6400-64-2-37-I3E8-FEC',
+
+
+                               # THIS WORKS!!!! 10 bits per second
+                               'LB28-2560-8-2-37-I3E8-FEC': {'inherit_from'        : 'LB28-6400-64-2-37-I3E8-FEC',
                                                               'pulses_per_block'     : 8,
                                                               'symbol_block_size'    : 2560,
-                                                              #'symbol_block_size'    : 1600,
+                                                              'fft_filter'           : (-6, 6, -6, 6),
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'extrapolate'          : 'no', #no rotation tables yet!!!
+                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+                                                              'parameters'           : (1500, 0.215, 0.091, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              'persistent_search'    : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
+                                                             },
+
+
+                               #  80 bits per second
+                             'LB28-320-8-2-37-I3E8-FEC-FDM': {'inherit_from'        : 'LB28-320-8-2-37-I3E8-FEC',
+                                                              'FDM'                 : "yes",
+                                                              #'FDM_parameters'      : (2, 93), #frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.171,
+
+                                                              #'FDM_parameters'      : (2, 94), #frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.907,
+
+                                                              #'FDM_parameters'      : (2, 93.25), #frequency division mutiplexing: multiplier, separation
+                                                              'downconvert_shift'    : 0.133,
+
+                                                              'FDM_parameters'      : [2, 85.865], #frequency division mutiplexing: multiplier, separation
+
+
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.246), 
+                                                              #'fft_filter'           : (-12, 12, -12, 12),
+
+                                                              #'parameters'           : (1500, 0.069, 0.033, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+
+                                                             },
+
+
+                               # THIS  WORKS!!!! 80 bits per second
+                               'LB28-320-8-2-37-I3E8-FEC': {'inherit_from'        : 'LB28-6400-64-2-37-I3E8-FEC',
+                                                              'pulses_per_block'     : 8,
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'persistent_search'    : (1, 0.95, -0.001, "yes"), #hi range, lo range, inc, scan entire range
+                                                              'symbol_block_size'    : 320,
 
                                                               #'fft_filter'           : (-20, 16, -16, 20),
-                                                              #'fft_filter'           : (-8, 8, -8, 8),
+                                                              #'downconvert_shift'    : 0.514,
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-C', 0.701), 
 
-                                                              'fft_filter'           : (-6, 6, -6, 6),
-                                                              #'fft_filter'           : (-4, 4, -4, 4),
-                                                              #'fft_filter'           : (-3, 2, -2, 3),
+                                                              #4.35 EBN0
+                                                              #'fft_filter'           : (-16, 12, -12, 16),
+                                                              #'downconvert_shift'    : 0.898,
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'B-B', 0.928), 
 
-                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'fft_filter'           : (-12, 12, -12, 12),
+                                                              'downconvert_shift'    : 0.898,
+                                                              'I3_parameters'        : (0.99, 0.99, 2e-3, 'B-B', 0.928), 
+                                                              #3.8 EBN0
+                                                              #'parameters'           : (1500, 0.661, 0.063, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              #2.6 EBN0
+                                                              #'parameters'           : (1500, 0.69, 0.046, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              #1.7 EBN0
+                                                              'parameters'           : (1500, 0.069, 0.033, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
 
-                                                              #'symbol_block_size'    : 800,
+
+                                                              'I3_offsets_type'      : ocn.OFFSETS_MANUAL,
                                                               'extrapolate'          : 'no', #no rotation tables yet!!!
+                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+                                                              'I3_combine'           : ocn.INTRA_COMBINE_TYPE6,
+
+                                                              #'carrier_separation'   : 59,   or 75 with .932 downconvert shift
+
+                                                              #'fec_params'           : (15 , 13684 , 2676, [1,0,1,0] ),
+                                                             },
+
+
+
+                               #  80 bits per second X 4....YES THIS WORKS!!!!
+                             'LB28-400-8-2-37-I3E8-FEC-FDM': {'inherit_from'        : 'LB28-400-8-2-37-I3E8-FEC',
+                                                              'FDM'                 : "yes",
+                                                              #'downconvert_shift'    : 0.814,
+                                                              #'FDM_parameters'      : (2, 82.544), #frequency division mutiplexing: multiplier, separation
+                                                              'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-B', 0.649), 
+
+                                                              #'FDM_parameters'      : [4, 82.544, 160.073], #149.295 frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.598,
+
+                                                              #'FDM_parameters'      : (2, 84.243), #frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.709,
+                                                              #'FDM_parameters'      : (2, 77.934), #frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.633,
+                                                              #'FDM_parameters'      : (2, 95.172), #frequency division mutiplexing: multiplier, separation
+                                                              #'downconvert_shift'    : 0.835,
+
+
+                                                              'I3_parameters'        : (0.99, 0.99, 2e-3, 'E-E', 0.861), 
+                                                              'FDM_parameters'      : [2, 76.607], #frequency division mutiplexing: multiplier, separation
+                                                              'downconvert_shift'    : 0.656,
+
+
+                                                              #'sample_rate'          : 48000,
+
+
+                                                             },
+
+
+                               # THIS WORKS!!!! 64.4 bits per second
+                               'LB28-400-8-2-37-I3E8-FEC': {'inherit_from'        : 'LB28-6400-64-2-37-I3E8-FEC',
+                                                              'pulses_per_block'     : 8,
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'persistent_search'    : (1, 0.95, -0.001, "yes"), #hi range, lo range, inc, scan entire range
+                                                              'symbol_block_size'    : 400,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'downconvert_shift'    : 0.514,
+                                                              'I3_offsets_type'      : ocn.OFFSETS_MANUAL,
+                                                              'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-C', 0.701), 
+                                                              'extrapolate'          : 'no', #no rotation tables yet!!!
+                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+                                                              'parameters'           : (1500, 0.661, 0.063, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              'I3_combine'           : ocn.INTRA_COMBINE_TYPE6,
+
+                                                             },
+
+
+                               # THIS WORKS!!!! 32 bits per second
+                               'LB28-800-8-2-37-I3E8-FEC': {'inherit_from'        : 'LB28-6400-64-2-37-I3E8-FEC',
+                                                              'pulses_per_block'     : 8,
+                                                              'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'persistent_search'    : (1, 0.95, -0.002, "yes"), #hi range, lo range, inc, scan entire range
+                                                              'symbol_block_size'    : 800,
+                                                              #'symbol_block_size'    : 320,
+                                                              'fft_filter'           : (-20, 16, -16, 20),
+                                                              'I3_offsets_type'      : ocn.OFFSETS_MANUAL,
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'C-E', 0.776), 
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'B-E', 0.921), 
+                                                              #'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.61), 
+                                                              'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-A', 0.003), 
+
+                                                              'extrapolate'          : 'no', #no rotation tables yet!!!
+                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+                                                              #'parameters'           : (1500, 0.215, 0.091, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              'parameters'           : (1500, 0.115, 0.028, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
 
                                                              },
 
@@ -811,7 +973,10 @@ class osModem(object):
                                                               'extrapolate'          : 'yes',
                                                               'extrapolate_seqlen'   : 8,
                                                               'downconvert_shift'    : 0.535,
-                                                               
+
+                                                              #'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+
+
                                                               'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MODULATION_SPECIFIC,
                                                               #'I3_pulse_shape_index' : 4, # can go to ebno 3.3
                                                               'I3_pulse_shape_index' : 5, # can go to ebno -0.16 to 2.7
@@ -824,15 +989,55 @@ class osModem(object):
                                                               'I3_offsets_type'      : ocn.OFFSETS_MANUAL,
                                                               'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.312), 
                                                               #'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.311), 
+
+                                                              'tx_filter'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 48, 5, 50),
+
+
+                                                              #'I3_combine'           : ocn.INTRA_COMBINE_TYPE5,
+                                                              'I3_combine'           : ocn.INTRA_COMBINE_TYPE9,
+                                                              'I3_extract'           : ocn.INTRA_EXTRACT_TYPE4,
+                                                              'doppler_pulse_interpolation' : 'Chebyshev',
+                                                              #'doppler_pulse_interpolation' : 'Cubic-Spline',
+                                                              #'doppler_pulse_interpolation' : 'Pchip',
+
+                                                              'doppler_adjust'           : ocn.DOPPLER_ADJUST_NONE,
+
+                                                              #'disposition_increment' : 3e-1,
+
+                                                              #'rotation_increments'  : 20,
+
+                                                              #'persistent_search'    : (1, 0.95, -0.002, "yes"), #hi range, lo range, inc, scan entire range
+
+                                                              #'fft_filter'           : (-1, 1, -1, 1),
+                                                              'fft_filter'           : (-2, 2, -2, 2),
+                                                              #'fft_filter'           : (-3, 2, -2, 3),
+                                                              #'fft_interpolate'      : (-3, 2, -2, 3),
+                                                              'fft_interpolate'      : (-2, 2, -2, 2),
+                                                              #'fft_interpolate'      : (-3, 3, -3, 3),
+
+                                                              #PATTERN 19 PATTERN 27 PATTERN 36 
+
                                                               'start_seq'            : '2_of_8',
                                                               'phase_align'          : 'start_seq',
-                                                              'extrapolate'           : 'yes',
+                                                              #'extrapolate'           : 'yes',
+                                                              'extrapolate'           : 'no',
                                                               'extrapolate_seqlen'       : 8,
-                                                              'downconvert_shift'    : 0.535,
+                                                              #'downconvert_shift'    : 0.535,
+                                                              #'downconvert_shift'    : 0.533,
+                                                              #'downconvert_shift'    : 0.505,   # use this to generate rotation tables. this works great for 8k simulation
+                                                              #'downconvert_shift'    : 0.530,  # this works great for 8k tx with 8k rx and 48k tx with 8k rx
+                                                              #'downconvert_shift'    : 0.55,  # this works great for 8k tx with 8k rx and 48k tx with 8k rx
+                                                              'downconvert_shift'    : 0.53,  # this works great for 8k tx with 8k rx and 48k tx with 8k rx
+                                                              #'downconvert_shift'    : 0.851,  #  this is for best audio decode at 1480hz using rta built from 0.530 at 8000hz sample rate
+                                                              #'downconvert_shift'    : 0.502,  # this works great for 8k simulation and 48k simulation
                                                               #'downconvert_shift'    : 0.5,
-                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MODULATION_SPECIFIC,
+                                                              #'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MODULATION_SPECIFIC,
+
+                                                              'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
+
                                                               'I3_pulse_shape_index' : 3,
-                                                              'parameters'           : (1500, 0.763, 0.107, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              #'parameters'           : (1500, 0.763, 0.107, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                                                              'parameters'           : (1500, 0.822, 0.997, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
 
                                                               }, 
 
@@ -880,7 +1085,7 @@ class osModem(object):
                                                               'doppler_pulse_interpolation' : 'Pchip',
 
 
-                                                              'I3_combine'           : ocn.INTRA_COMBINE_TYPE10,
+                                                              'I3_combine'           : ocn.INTRA_COMBINE_TYPE9,
                                                               'I3_extract'           : ocn.INTRA_EXTRACT_TYPE5,
                                                               #'I3_offsets_type'      : ocn.OFFSETS_PATTERN5,
                                                               'I3_offsets_type'      : ocn.OFFSETS_PATTERN37,
@@ -966,7 +1171,8 @@ class osModem(object):
                                                               'pulses_per_block'     : 64,
                                                               'process_debug'        : False,
                                                               #'parameters'           : (600, 0.68, 0.89, 10000, 2, 98) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
-                                                              'parameters'           : (1500, 0.68, 0.89, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              #'parameters'           : (1500, 0.68, 0.89, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              'parameters'           : (1500, 0.76, 0.191, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
 #                                        'LB28-1.25-10I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                         'LB28-32-2-10-I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
@@ -1311,6 +1517,8 @@ class osModem(object):
                                                               'pulses_per_block'     : 2,
                                                               'parameters'           : (700, 0.8, 0.6, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) }}  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
+    """ default to test block """
+    self.initBlock = self.getInitializationBlock()
 
 
     """ set some default values..."""
@@ -1333,6 +1541,7 @@ class osModem(object):
                                     'I3_pulse_shape_index' : 0,
                                     'pulse_start_sigma'    : 7,
                                     'doppler_pulse_interpolation'    : 'Chebyshev',
+                                    'doppler_adjust'           : ocn.DOPPLER_ADJUST_NONE,
                                     'extrapolate'          : 'no',
                                     'extrapolate_seqlen'   : 3,
                                     'downconvert_shift'    : 0.5,
@@ -1343,40 +1552,116 @@ class osModem(object):
                                     'post_extrapolate_calibrate': 'no',
                                     'holographic_decode'   : ocn.HOLOGRAPH_DECODE_NONE,
                                     'disposition_increment' : 1e-1,
+                                    'persistent_search'    : (0.89, 0.5, -0.1, "no"),
+                                    'I3_combine'           : ocn.INTRA_COMBINE_TYPE9,
+                                    'FDM_parameters'       : [0, 0],
+                                    'FDM'                  : "no",
+                                    'rotation_increments'  : 40,
+                                    'rx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
+                                    'tx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
+                                    'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
+
 
                                    }
 
 
+  def getSignalSquelch(self):
+    return self.signal_squelch_value
+
+  def setSignalSquelch(self, newvalue):
+    self.signal_squelch_value = newvalue
+
+  def getInitializationBlock(self):
+    return self.modulation_initialization_block
+
+  def getInitBlockParam(self, mode, param):
+    #return self.modulation_initialization_block[mode][param]
+    return self.initBlock[mode][param]
+
+  def getInitBlockMode(self, mode):
+    #return self.modulation_initialization_block[mode]
+    return self.initBlock[mode]
+
+  def useTestMode(self): 
+    self.debug.info_message("switching to test mode initialization block")
+    self.initBlock = self.getInitializationBlock()
+
+  def useProdMode(self): 
+    self.debug.info_message("switching to prod mode initialization block")
+    self.initBlock = self.prodparams.getInitializationBlock()
+
+  def setCenterFrequency(self, centfreq):
+    self.center_frequency = centfreq
+
+  def getCenterFrequency(self):
+    return self.center_frequency
+
   def resetOptionalInitParamDefaults(self, mode):
+    self.debug.info_message("resetOptionalInitParamDefaults")
     for param in self.optional_param_defaults:
       self.optional_param_values[param] = self.optional_param_defaults[param]
 
   def processOptionalInitParams(self, mode):
+    self.debug.info_message("processOptionalInitParams")
     for param in self.optional_param_values:
-      if param in self.modulation_initialization_block[mode]:
-        self.optional_param_values[param] = self.modulation_initialization_block[mode][param]
+      if param in self.getInitBlockMode(mode):
+        self.optional_param_values[param] = self.getInitBlockParam(mode, param)
 
 
   """ recursive... multi level inheritance"""
   def processInheritFrom(self, mode):
     self.debug.info_message("processInheritFrom mode: " + str(mode))
-    if 'inherit_from' in self.modulation_initialization_block[mode]:
-      self.processInheritFrom(self.modulation_initialization_block[mode]['inherit_from'])
-    for param in self.modulation_initialization_block[mode]:
-      self.optional_param_values[param] = self.modulation_initialization_block[mode][param]
+    if 'inherit_from' in self.getInitBlockMode(mode):
+      self.processInheritFrom(self.getInitBlockParam(mode, 'inherit_from'))
+    for param in self.getInitBlockMode(mode):
+      self.optional_param_values[param] = self.getInitBlockParam(mode, param)
 
   def getParam(self, mode, param_name):
-    if param_name in self.modulation_initialization_block[mode]:
-      param_value = self.modulation_initialization_block[mode][param_name]
-      self.debug.info_message("param " + str(param_name) + " = " + str(param_value))
-      return param_value  #  self.modulation_initialization_block[mode][param_name]
+    if param_name in self.getInitBlockMode(mode):
+      param_value = self.getInitBlockParam(mode, param_name)
+      #self.debug.info_message("param " + str(param_name) + " = " + str(param_value))
+      sys.stdout.write("                    \'"  + str(param_name) + "\' : " + str(param_value) + "\n")
+
+      return param_value  #  self.getInitBlockParam(mode, param_name]
     else:
       param_value = self.optional_param_values[param_name]
-      self.debug.info_message("param " + str(param_name) + " = " + str(param_value))
+      #self.debug.info_message("param " + str(param_name) + " = " + str(param_value))
+      sys.stdout.write("                    \'"  + str(param_name) + "\' : " + str(param_value) + "\n")
       return param_value  #  self.optional_param_values[param_name]
 
   def getOptionalParam(self, param):
     return self.optional_param_values[param]
+
+
+  class C_mode(ctypes.Structure):
+    _fields_ = [   ("mode_name",           ctypes.c_char_p),
+                   ("symbol_block_size",   ctypes.c_int),
+                   ("symbols_per_block",   ctypes.c_int),
+                   ("pulses_per_block",    ctypes.c_int),
+                   ("sample_rate",         ctypes.c_int),
+                   ("num_carriers",        ctypes.c_int),
+                   ("carrier_separation",  ctypes.c_int),
+                   ("baseband_conversion", ctypes.c_char_p),
+                   ("fft_filter",          ctypes.POINTER(ctypes.c_float)),
+                   ("fft_intrpolate",      ctypes.POINTER(ctypes.c_float)),
+                   ("downconvert_shift",   ctypes.c_int)  ]
+
+  def C_setCurrentMode(self):
+    try:
+      #c_current_mode = 
+
+      c_int_array = ptoc_int_array(python_list)
+
+      self.osmod.compiled_lib.find_mode.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+      self.osmod.compiled_lib.find_mode.restype = C_mode
+      mode = self.osmod.compiled_lib.find_mode(c_int_array, len(python_list))
+
+      mode.x=10
+      mode.y=20
+
+    except:
+      self.debug.error_message("Exception in C_setCurrentMode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
 
 
   def setInitializationBlock(self, mode):
@@ -1400,6 +1685,10 @@ class osModem(object):
       self.processInheritFrom(mode)
 
       self.debug.info_message("optional_param_values (after inherit): " + str(self.optional_param_values))
+
+      sys.stdout.write("\n")
+      sys.stdout.write("\n")
+      sys.stdout.write("          \'" + str(mode) + "\' :{ \n")
 
       self.info                 = self.getParam(mode, 'info')
       self.encoder_callback     = self.getParam(mode, 'encoder_callback')
@@ -1433,6 +1722,7 @@ class osModem(object):
       self.I3_pulse_shape_index = self.getParam(mode, 'I3_pulse_shape_index')
       self.pulse_start_sigma    = self.getParam(mode, 'pulse_start_sigma')
       self.doppler_pulse_interpolation    = self.getParam(mode, 'doppler_pulse_interpolation')
+      self.doppler_adjust       = self.getParam(mode, 'doppler_adjust')
       self.extrapolate          = self.getParam(mode, 'extrapolate')
       self.extrapolate_seqlen   = int(self.getParam(mode, 'extrapolate_seqlen'))
       self.downconvert_shift    = float(self.getParam(mode, 'downconvert_shift'))
@@ -1443,6 +1733,57 @@ class osModem(object):
       self.post_extrapolate_calibrate = self.getParam(mode, 'post_extrapolate_calibrate')
       self.holographic_decode   = self.getParam(mode, 'holographic_decode')
       self.disposition_increment   = float(self.getParam(mode, 'disposition_increment'))
+      self.persistent_search   = self.getParam(mode, 'persistent_search')
+      self.I3_combine          = self.getParam(mode, 'I3_combine')
+      self.FDM_parameters      = self.getParam(mode, 'FDM_parameters')
+      self.FDM                 = self.getParam(mode, 'FDM')
+      self.rotation_increments = self.getParam(mode, 'rotation_increments')
+      self.rx_filter           = self.getParam(mode, 'rx_filter')
+      self.tx_filter           = self.getParam(mode, 'tx_filter')
+      self.resample_params     = self.getParam(mode, 'resample_params')
+
+      sys.stdout.write("          }, \n")
+      sys.stdout.write("\n")
+      sys.stdout.write("\n")
+
+
+      fdmsep_override_checked = self.form_gui.window['cb_overridefdmseparation'].get()
+      if fdmsep_override_checked:
+        self.debug.info_message("FDM_parameters: " + str(self.FDM_parameters))
+        pair_level = self.form_gui.window['combo_fdmpairlevel'].get()
+        fdm_separation = float(self.form_gui.window['in_fdmseparation'].get())
+        if pair_level == "Scale 1":
+          self.FDM_parameters[1] = fdm_separation
+        elif pair_level == "Scale 2":
+          self.FDM_parameters[2] = fdm_separation
+        elif pair_level == "Scale 3":
+          self.FDM_parameters[3] = fdm_separation
+
+
+      combine_override_checked = self.form_gui.window['cb_overridecombine'].get()
+      if combine_override_checked:
+        selected_type = self.form_gui.window['combo_intra_combine_type'].get()
+
+        if selected_type == 'Type 1':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE1
+        elif selected_type == 'Type 2':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE2
+        elif selected_type == 'Type 3':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE3
+        elif selected_type == 'Type 4':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE4
+        elif selected_type == 'Type 5':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE5
+        elif selected_type == 'Type 6':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE6
+        elif selected_type == 'Type 7':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE7
+        elif selected_type == 'Type 8':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE8
+        elif selected_type == 'Type 9':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE9
+        elif selected_type == 'Type 10':
+          self.I3_combine = ocn.INTRA_COMBINE_TYPE10
 
 
       self.fec.init_params(self.FEC)
@@ -1453,27 +1794,27 @@ class osModem(object):
       self.rotation_tables      = self.opd.readRotationTablesFromFile(mode)
 
       """
-      self.info                 = self.modulation_initialization_block[mode]['info']
-      self.encoder_callback     = self.modulation_initialization_block[mode]['encoder_callback']
-      self.decoder_callback     = self.modulation_initialization_block[mode]['decoder_callback']
-      self.text_encoder         = self.modulation_initialization_block[mode]['text_encoder']
-      self.mode_selector        = self.modulation_initialization_block[mode]['mode_selector']
-      self.symbol_block_size    = self.modulation_initialization_block[mode]['symbol_block_size']
-      self.sample_rate          = self.modulation_initialization_block[mode]['sample_rate']
-      self.parameters           = self.modulation_initialization_block[mode]['parameters']
-      self.carrier_separation   = self.modulation_initialization_block[mode]['carrier_separation']
-      self.num_carriers         = self.modulation_initialization_block[mode]['num_carriers']
-      self.pulses_per_block     = self.modulation_initialization_block[mode]['pulses_per_block']
-      self.detector_function    = self.modulation_initialization_block[mode]['detector_function']
-      self.symbol_wave_function = self.modulation_initialization_block[mode]['symbol_wave_function']
-      self.extraction_points    = self.modulation_initialization_block[mode]['extraction_points']
-      self.phase_extraction     = self.modulation_initialization_block[mode]['phase_extraction']
-      self.baseband_conversion  = self.modulation_initialization_block[mode]['baseband_conversion']
-      self.process_debug        = self.modulation_initialization_block[mode]['process_debug']
-      self.fft_filter           = self.modulation_initialization_block[mode]['fft_filter']
-      self.fft_interpolate      = self.modulation_initialization_block[mode]['fft_interpolate']
-      self.modulation_object    = self.modulation_initialization_block[mode]['modulation_object']
-      self.demodulation_object  = self.modulation_initialization_block[mode]['demodulation_object']
+      self.info                 = self.getInitBlockParam(mode, 'info')
+      self.encoder_callback     = self.getInitBlockParam(mode, 'encoder_callback')
+      self.decoder_callback     = self.getInitBlockParam(mode, 'decoder_callback')
+      self.text_encoder         = self.getInitBlockParam(mode, 'text_encoder')
+      self.mode_selector        = self.getInitBlockParam(mode, 'mode_selector')
+      self.symbol_block_size    = self.getInitBlockParam(mode, 'symbol_block_size')
+      self.sample_rate          = self.getInitBlockParam(mode, 'sample_rate')
+      self.parameters           = self.getInitBlockParam(mode, 'parameters')
+      self.carrier_separation   = self.getInitBlockParam(mode, 'carrier_separation')
+      self.num_carriers         = self.getInitBlockParam(mode, 'num_carriers')
+      self.pulses_per_block     = self.getInitBlockParam(mode, 'pulses_per_block')
+      self.detector_function    = self.getInitBlockParam(mode, 'detector_function')
+      self.symbol_wave_function = self.getInitBlockParam(mode, 'symbol_wave_function')
+      self.extraction_points    = self.getInitBlockParam(mode, 'extraction_points')
+      self.phase_extraction     = self.getInitBlockParam(mode, 'phase_extraction')
+      self.baseband_conversion  = self.getInitBlockParam(mode, 'baseband_conversion')
+      self.process_debug        = self.getInitBlockParam(mode, 'process_debug')
+      self.fft_filter           = self.getInitBlockParam(mode, 'fft_filter')
+      self.fft_interpolate      = self.getInitBlockParam(mode, 'fft_interpolate')
+      self.modulation_object    = self.getInitBlockParam(mode, 'modulation_object')
+      self.demodulation_object  = self.getInitBlockParam(mode, 'demodulation_object')
       """
 
       blocksize_override_checked = self.form_gui.window['cb_override_blocksize'].get()
@@ -1700,6 +2041,11 @@ class osModem(object):
                              'LB28-3200-32-2-37-I3E8-FEC' : self.getPersistentData('LB28-3200-32-2-37-I3E8-FEC',   values),
                              'LB28-1600-16-2-37-I3E8-FEC' : self.getPersistentData('LB28-1600-16-2-37-I3E8-FEC',   values),
                              'LB28-800-8-2-37-I3E8-FEC' : self.getPersistentData('LB28-800-8-2-37-I3E8-FEC',   values),
+                             'LB28-2560-8-2-37-I3E8-FEC' : self.getPersistentData('LB28-2560-8-2-37-I3E8-FEC',   values),
+                             'LB28-320-8-2-37-I3E8-FEC' : self.getPersistentData('LB28-320-8-2-37-I3E8-FEC',   values),
+                             'LB28-400-8-2-37-I3E8-FEC' : self.getPersistentData('LB28-400-8-2-37-I3E8-FEC',   values),
+                             'LB28-320-8-2-37-I3E8-FEC-FDM' : self.getPersistentData('LB28-320-8-2-37-I3E8-FEC-FDM',   values),
+                             'LB28-400-8-2-37-I3E8-FEC-FDM' : self.getPersistentData('LB28-400-8-2-37-I3E8-FEC-FDM',   values),
 
                              'LB28-64-2-15-I'         : self.getPersistentData('LB28-64-2-15-I',   values),
                              'LB28-64-2-10-I'         : self.getPersistentData('LB28-64-2-10-I',   values),
@@ -1778,7 +2124,7 @@ class osModem(object):
             False,
             '3:peter piper',
             False,
-            self.modulation_initialization_block[mode]['symbol_block_size'],
+            self.getInitBlockParam(mode, 'symbol_block_size'),
             '30',
             True,
             '100',
@@ -1843,7 +2189,7 @@ class osModem(object):
     form_gui.window['cb_enable_awgn'].update(True)
     form_gui.window['combo_text_options'].update('3:peter piper')
     form_gui.window['cb_override_blocksize'].update(False)
-    form_gui.window['in_symbol_block_size'].update(self.modulation_initialization_block[mode]['symbol_block_size'])
+    form_gui.window['in_symbol_block_size'].update(self.getInitBlockParam(mode, 'symbol_block_size'))
     form_gui.window['combo_chunk_options'].update('30')
     form_gui.window['cb_enable_align'].update(True)
     form_gui.window['option_carrier_alignment'].update('100')
@@ -1851,12 +2197,12 @@ class osModem(object):
     form_gui.window['cb_display_phases'].update(False)
     form_gui.window['option_chart_options'].update('Both')
     form_gui.window['cb_override_rrc_alpha'].update(False)
-    form_gui.window['in_rrc_alpha'].update(self.modulation_initialization_block[mode]['parameters'][1])
+    form_gui.window['in_rrc_alpha'].update(self.getInitBlockParam(mode, 'parameters')[1])
     form_gui.window['cb_override_rrc_t'].update(False)
-    form_gui.window['in_rrc_t'].update(self.modulation_initialization_block[mode]['parameters'][2])
+    form_gui.window['in_rrc_t'].update(self.getInitBlockParam(mode, 'parameters')[2])
     form_gui.window['btn_slider_awgn'].update(8)
     form_gui.window['slider_amplitude'].update(1.0)
-    form_gui.window['slider_carrier_separation'].update(self.modulation_initialization_block[mode]['carrier_separation'])
+    form_gui.window['slider_carrier_separation'].update(self.getInitBlockParam(mode, 'carrier_separation'))
 
     self.setFromCodeDefaults(mode)
 
@@ -1867,7 +2213,7 @@ class osModem(object):
             True,
             '3:peter piper',
             False,
-            self.modulation_initialization_block[mode]['symbol_block_size'],
+            self.getInitBlockParam(mode, 'symbol_block_size'),
             '30',
             True,
             '100',
@@ -1875,12 +2221,12 @@ class osModem(object):
             False,
             'Both',
             False,
-            self.modulation_initialization_block[mode]['parameters'][1],
+            self.getInitBlockParam(mode, 'parameters')[1],
             False,
-            self.modulation_initialization_block[mode]['parameters'][2],
+            self.getInitBlockParam(mode, 'parameters')[2],
             '8.0',
             '1.0',
-            self.modulation_initialization_block[mode]['carrier_separation']
+            self.getInitBlockParam(mode, 'carrier_separation')
                    )
     self.opd.main_settings.get('params')[mode] = updated_data
 
@@ -1941,6 +2287,9 @@ class osModem(object):
       self.form_gui.window['text_info_freq1'].update(frequency[0])
       self.form_gui.window['text_info_freq2'].update(frequency[1])
 
+      self.setStandingWaveValues(frequency)
+
+
       self.debug.info_message("calcCarrierFrequenciesFromFFT. frequencies: " + str(frequency))
 
       return frequency
@@ -1952,40 +2301,6 @@ class osModem(object):
   def calcCarrierFrequencies(self, center_frequency, separation_override):
     self.debug.info_message("calcCarrierFrequencies")
     try:
-      def set_sw_values():
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, standingwave_location)
-        if   standingwave_pattern == 'A-B':
-          self.i3_offsets = phase_list_low[0], phase_list_low[1], phase_list_high[0], phase_list_high[1]
-        elif standingwave_pattern == 'A-C':
-          self.i3_offsets = phase_list_low[0], phase_list_low[2], phase_list_high[0], phase_list_high[2]
-        elif standingwave_pattern == 'A-D':
-          self.i3_offsets = phase_list_low[0], phase_list_low[3], phase_list_high[0], phase_list_high[3]
-        elif standingwave_pattern == 'A-E':
-          self.i3_offsets = phase_list_low[0], phase_list_low[4], phase_list_high[0], phase_list_high[4]
-        elif standingwave_pattern == 'B-C':
-          self.i3_offsets = phase_list_low[1], phase_list_low[2], phase_list_high[1], phase_list_high[2]
-        elif standingwave_pattern == 'B-D':
-          self.i3_offsets = phase_list_low[1], phase_list_low[3], phase_list_high[1], phase_list_high[3]
-        elif standingwave_pattern == 'B-E':
-          self.i3_offsets = phase_list_low[1], phase_list_low[4], phase_list_high[1], phase_list_high[4]
-        elif standingwave_pattern == 'C-D':
-          self.i3_offsets = phase_list_low[2], phase_list_low[3], phase_list_high[2], phase_list_high[3]
-        elif standingwave_pattern == 'C-E':
-          self.i3_offsets = phase_list_low[2], phase_list_low[4], phase_list_high[2], phase_list_high[4]
-        elif standingwave_pattern == 'D-E':
-          self.i3_offsets = phase_list_low[3], phase_list_low[4], phase_list_high[3], phase_list_high[4]
-        elif standingwave_pattern == 'A-A':
-          self.i3_offsets = phase_list_low[0], phase_list_low[0], phase_list_high[0], phase_list_high[0]
-        elif standingwave_pattern == 'B-B':
-          self.i3_offsets = phase_list_low[1], phase_list_low[1], phase_list_high[1], phase_list_high[1]
-        elif standingwave_pattern == 'C-C':
-          self.i3_offsets = phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
-        elif standingwave_pattern == 'D-D':
-          self.i3_offsets = phase_list_low[3], phase_list_low[3], phase_list_high[3], phase_list_high[3]
-        elif standingwave_pattern == 'E-E':
-          self.i3_offsets = phase_list_low[4], phase_list_low[4], phase_list_high[4], phase_list_high[4]
-
-
       enable_align_checked = self.form_gui.window['cb_enable_align'].get()
       carrier_alignment = self.form_gui.window['option_carrier_alignment'].get()
 
@@ -2024,6 +2339,57 @@ class osModem(object):
       self.form_gui.window['text_info_freq1'].update(frequency[0])
       self.form_gui.window['text_info_freq2'].update(frequency[1])
 
+
+      self.setStandingWaveValues(frequency)
+
+
+      self.debug.info_message("calcCarrierFrequencies. frequencies: " + str(frequency))
+
+      return frequency
+
+    except:
+      self.debug.error_message("Exception in calcCarrierFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def setStandingWaveValues(self, frequency):
+    self.debug.info_message("calcCarrierFrequencies")
+
+    try:
+
+      def set_sw_values():
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, standingwave_location)
+        if   standingwave_pattern == 'A-B':
+          self.i3_offsets = phase_list_low[0], phase_list_low[1], phase_list_high[0], phase_list_high[1]
+        elif standingwave_pattern == 'A-C':
+          self.i3_offsets = phase_list_low[0], phase_list_low[2], phase_list_high[0], phase_list_high[2]
+        elif standingwave_pattern == 'A-D':
+          self.i3_offsets = phase_list_low[0], phase_list_low[3], phase_list_high[0], phase_list_high[3]
+        elif standingwave_pattern == 'A-E':
+          self.i3_offsets = phase_list_low[0], phase_list_low[4], phase_list_high[0], phase_list_high[4]
+        elif standingwave_pattern == 'B-C':
+          self.i3_offsets = phase_list_low[1], phase_list_low[2], phase_list_high[1], phase_list_high[2]
+        elif standingwave_pattern == 'B-D':
+          self.i3_offsets = phase_list_low[1], phase_list_low[3], phase_list_high[1], phase_list_high[3]
+        elif standingwave_pattern == 'B-E':
+          self.i3_offsets = phase_list_low[1], phase_list_low[4], phase_list_high[1], phase_list_high[4]
+        elif standingwave_pattern == 'C-D':
+          self.i3_offsets = phase_list_low[2], phase_list_low[3], phase_list_high[2], phase_list_high[3]
+        elif standingwave_pattern == 'C-E':
+          self.i3_offsets = phase_list_low[2], phase_list_low[4], phase_list_high[2], phase_list_high[4]
+        elif standingwave_pattern == 'D-E':
+          self.i3_offsets = phase_list_low[3], phase_list_low[4], phase_list_high[3], phase_list_high[4]
+        elif standingwave_pattern == 'A-A':
+          self.i3_offsets = phase_list_low[0], phase_list_low[0], phase_list_high[0], phase_list_high[0]
+        elif standingwave_pattern == 'B-B':
+          self.i3_offsets = phase_list_low[1], phase_list_low[1], phase_list_high[1], phase_list_high[1]
+        elif standingwave_pattern == 'C-C':
+          self.i3_offsets = phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
+        elif standingwave_pattern == 'D-D':
+          self.i3_offsets = phase_list_low[3], phase_list_low[3], phase_list_high[3], phase_list_high[3]
+        elif standingwave_pattern == 'E-E':
+          self.i3_offsets = phase_list_low[4], phase_list_low[4], phase_list_high[4], phase_list_high[4]
+
+
       offsets_override_checked = self.form_gui.window['cb_override_standingwaveoffsets'].get()
       if offsets_override_checked:
         standingwave_location = float(self.form_gui.window['in_standingwavelocation'].get())
@@ -2059,13 +2425,9 @@ class osModem(object):
           else:
             self.i3_offsets = self.getOffsetsForPattern(self.i3_offsets_type, frequency)
 
-
-      self.debug.info_message("calcCarrierFrequencies. frequencies: " + str(frequency))
-
-      return frequency
-
     except:
-      self.debug.error_message("Exception in calcCarrierFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in setStandingWaveValues: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
 
   """
 LB28-6400-64-2-15-I3,-3.3688081276276565,-24.768404549646576,0.1419753086419753,1.25,7.5,8.0,C-C,0.576
@@ -2442,6 +2804,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
   def getDurationAndReset(self, name):
     self.debug.info_message("getDurationAndReset")
+    self.debug.info_message("name: " + str(name))
     try:
       elapsed = datetime.now() - self.timer_dict_when[self.timer_last_name] 
       if name in self.timer_dict_when:
@@ -2464,19 +2827,62 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.info_message("total elapsed time for " + key + ": " + str(self.timer_dict_elapsed[key]))
 
      
-  def startEncoder(self, text, mode):
+  def startEncoder(self, values, text, mode):
     self.debug.info_message("startEncoder")
 
     try:
+      self.useProdMode()
+      mode = values['combo_main_modem_prod_modes']
+
       self.setInitializationBlock(mode)
 
       self.debug.info_message("encoding text: " + str(text))
-      triplets = self.text_encoder(text)
-      for triplet in triplets:
-        self.debug.info_message("pushing triplet: " + str(triplet) )
-        self.pushDataQueue(triplet)
 
-      self.initOutputStream(self.sample_rate)
+      noise = values['btn_slider_awgn']
+      text_num = values['combo_text_options'].split(':')[0]
+      amplitude = values['slider_amplitude']
+      carrier_separation_override = values['slider_carrier_separation']
+
+      #message_text = 
+      use_preset_message = self.form_gui.window['cb_use_preset_message'].get()
+      if use_preset_message:
+        txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, True, "")
+      else:
+        send_text = self.form_gui.window['ml_txrx_sendtext'].get()
+        txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
+        #txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, "Hi there this is me")
+
+
+      #test1 = np.max(np.abs(txblocks))
+      #test2 = txblocks * (2**15 - 1)
+      txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks))
+      txblocks = txblocks.astype(np.float32)
+
+      output_signal_gain = values['slider_signal_outgain']
+      txblocks = txblocks * output_signal_gain
+
+      #self.pushDataQueue(txblocks)
+
+      #reshaped_blocks = txblocks.reshape(self.get_sd_blocksize(),).astype(np.float32)
+      #for location in range(0, len(reshaped_blocks) , 8000):
+      #  self.pushDataQueue(reshaped_blocks[location:location+8000])
+
+
+      for location in range(0, len(txblocks) , 8000):
+        block_item = txblocks[location:location+8000]
+        if len(block_item) < 8000:
+          new_item =  np.zeros((8000,), dtype = np.float32)
+          new_item[0:len(block_item)] = block_item
+          block_item = new_item
+          #block_item.resize(8000)
+        self.pushDataQueue(block_item)
+
+      #triplets = self.text_encoder(text)
+      #for triplet in triplets:
+      #  self.debug.info_message("pushing triplet: " + str(triplet) )
+      #  self.pushDataQueue(triplet)
+
+      self.initOutputStream(values, self.sample_rate)
 
     except:
       self.debug.error_message("Exception in startEncoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -2488,6 +2894,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     self.runDecoder = True
 
     try:
+      self.useProdMode()
+      mode = values['combo_main_modem_prod_modes']
+
       self.setInitializationBlock(mode)
       self.initInputStream(self.sample_rate, window, values)
 
@@ -2500,6 +2909,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     if self.outStreamRunning == True:
       self.outStream.stop()
       self.outStreamRunning = False
+      self.outStream.close()
 
 
   def stopDecoder(self):
@@ -2510,6 +2920,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     if self.inStreamRunning == True:
       self.inStream.stop()
       self.inStreamRunning = False
+      self.inStream.close()
 
 
   def resetInputBuffer(self):
@@ -2560,11 +2971,21 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def popDataQueue(self):
     return self.dataQueue.get_nowait()
 
+  def get_sd_blocksize(self):
+    #return self.symbol_block_size
+    return self.sample_rate
+
   def isDataQueueEmpty(self):
     return self.dataQueue.empty()
 
   def initInputStream(self, sample_rate, window, values):
     self.debug.info_message("initInputStream" )
+
+    center_frequency = values['slider_frequency']
+    separation_override = values['slider_carrier_separation']
+    self.watch_frequency = self.calcCarrierFrequencies(center_frequency, separation_override)[0]
+    self.debug.info_message("watch_frequency: " + str(self.watch_frequency) )
+
 
     if self.symbol_block_size != self.previousBlocksizeIn or self.inStreamRunning == False:
       self.previousBlocksizeIn = self.symbol_block_size
@@ -2590,8 +3011,19 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       #self.inStream = sd.InputStream(samplerate=16000, channels = 1, blocksize=self.symbol_block_size,
       #self.inStream = sd.InputStream(samplerate=8000, channels = 1, blocksize=self.symbol_block_size,
 
-      self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.symbol_block_size,
+      input_device = self.form_gui.window['combo_main_modem_input_device'].get()
+
+      self.inStream = sd.InputStream(device=input_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
                                      dtype=np.float32, callback = self.sd_instream_callback)
+
+      #self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #                               dtype=np.float32, callback = self.sd_instream_callback)
+
+      #self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.sample_rate,
+      #                               dtype=np.float32, callback = self.sd_instream_callback)
+
+
+
       #device_id = 2
       #self.inStream = sd.InputStream(samplerate=48000, channels = 2, device = device_id, blocksize=self.symbol_block_size,
       #                               dtype=np.float32, callback = self.sd_instream_callback)
@@ -2604,17 +3036,48 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     t1 = threading.Thread(target=self.decoder_thread, args=(window, values, ))
     t1.start()
 
-  def initOutputStream(self, sample_rate):
+  def initOutputStream(self, values, sample_rate):
     self.debug.info_message("initOutputStream" )
 
-    if self.symbol_block_size != self.previousBlocksizeOut or self.outStreamRunning == False:
-      self.previousBlocksizeOut = self.symbol_block_size
+    """
+    noise = values['btn_slider_awgn']
+    text_num = values['combo_text_options'].split(':')[0]
+    amplitude = values['slider_amplitude']
+    carrier_separation_override = values['slider_carrier_separation']
+    self.useProdMode()
+    mode = values['combo_main_modem_prod_modes']
+    """
+
+    #self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude)
+
+    devices = sd.query_devices()
+    for device in devices:
+      self.debug.info_message("device ID: " + str(device['index']) + " device Name: " + str(device['name'])  )
+
+
+    #if self.symbol_block_size != self.previousBlocksizeOut or self.outStreamRunning == False:
+    #  self.previousBlocksizeOut = self.symbol_block_size
 
       if self.outStreamRunning == True:
         self.outStream.stop()
 
-      self.outStream = sd.OutputStream(samplerate=self.sample_rate, blocksize=self.symbol_block_size,
-                                       channels=1, callback=self.sd_callback, dtype=np.float32)
+      #self.outStream = sd.OutputStream(samplerate=self.sample_rate, blocksize=self.symbol_block_size,
+      #                                 channels=1, callback=self.sd_callback, dtype=np.float32)
+
+      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=self.sample_rate, blocksize=self.symbol_block_size,
+      #                                 channels=1, callback=self.sd_callback, dtype=np.float32)
+
+      output_device = self.form_gui.window['combo_main_modem_output_device'].get()
+
+      self.outStream = sd.OutputStream(device=output_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+                                     dtype=np.float32, callback = self.sd_callback)
+
+      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #                               dtype=np.float32, callback = self.sd_callback)
+
+      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #                               dtype=np.float64, callback = self.sd_callback)
+
 
       self.outStream.start()
       self.outStreamRunning = True
@@ -2645,50 +3108,84 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     self.debug.info_message("sd_instream_callback. num frames: " + str(frames))
     self.debug.info_message("time_info capture time of first sample: " + str(time.inputBufferAdcTime))
 
-    """ send data to demodulator """
-    #"""
-    if self.runDecoder == True:
-      self.pushInputBuffer(np.array(indata))
-      #self.pushInputBuffer(np.array(indata).astype(np.float64))
-      #self.pushInputBuffer(indata.astype(np.float64))
-    #"""
+    try:
 
-    """ send data to spectrum display """
-    #self.form_gui.spectralDensityQueue.put(indata)
-    """
-    if self.inStreamRunning == True:
-      if self.spectral_density_queue_counter == 0:
-        self.spectral_density_block = indata
-        self.spectral_density_queue_counter += 1
-      elif self.spectral_density_queue_counter > 0:
-        #self.debug.info_message("pushing data for spectral density plot")
-        self.spectral_density_block = np.append(self.spectral_density_block, indata)
-        self.form_gui.spectralDensityQueue.put(self.spectral_density_block)
-        self.spectral_density_queue_counter = 0
-      else:
-        self.spectral_density_block = np.append(self.spectral_density_block, indata)
-        self.spectral_density_queue_counter += 1
-    """
+      """ send data to demodulator """
+      #"""
+      if self.runDecoder == True:
+
+        #strong_freqs = self.detector.getStrongestFrequencyOverRange(indata)
+        #self.debug.info_message("strong_freqs: " + str(strong_freqs))
+
+        block = np.array(indata)
+        #self.debug.info_message("in loop strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(block.reshape(self.symbol_block_size,).astype(np.float64), 1370, 1390)))
+        #self.debug.info_message("in loop strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(block.reshape(self.symbol_block_size,).astype(np.float64), 1350, 1450)))
+        #present_freq, present_mag = self.modulation_object.getIsSignalPresent(block.reshape(self.symbol_block_size,).astype(np.float64), 1382.5)
+
+
+        present_freq, present_mag = self.modulation_object.getIsSignalPresent(block.reshape(self.get_sd_blocksize(),).astype(np.float64), self.watch_frequency + 0.5)
+
+
+        #signal_squelch_value
+
+        self.form_gui.window['text_input_signal_magnitude_passband'].update(str(present_mag))
+
+
+        if present_mag > self.getSignalSquelch():
+        #if present_mag > 0.25:
+          self.pushInputBuffer(np.array(indata))
+
+        #self.form_gui.spectralDensityQueue.put(indata)
+        self.form_gui.spectralDensityQueue.put(block.reshape(self.get_sd_blocksize(),).astype(np.float64))
+
+    except:
+      self.debug.error_message("Exception in sd_instream_callback: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+        #self.pushInputBuffer(np.array(indata).astype(np.float64))
+        #self.pushInputBuffer(indata.astype(np.float64))
+      #"""
+
+      """ send data to spectrum display """
+      #self.form_gui.spectralDensityQueue.put(indata)
+      """
+      if self.inStreamRunning == True:
+        if self.spectral_density_queue_counter == 0:
+          self.spectral_density_block = indata
+          self.spectral_density_queue_counter += 1
+        elif self.spectral_density_queue_counter > 0:
+          #self.debug.info_message("pushing data for spectral density plot")
+          self.spectral_density_block = np.append(self.spectral_density_block, indata)
+          self.form_gui.spectralDensityQueue.put(self.spectral_density_block)
+          self.spectral_density_queue_counter = 0
+        else:
+          self.spectral_density_block = np.append(self.spectral_density_block, indata)
+          self.spectral_density_queue_counter += 1
+      """
+
+
     return None
 
   def decoder_thread(self, window, values):
     self.debug.info_message("decoder_thread")
 
+    max_blocks = int(58 * (self.symbol_block_size / self.get_sd_blocksize()))
+
     while self.runDecoder == True:
       num_items = self.getInputBufferItemCount()
       self.debug.info_message("decoder_thread num items: "+ str(num_items))
-      if  num_items >= 30:
+      if  num_items >= max_blocks:
         self.debug.info_message("we have 30 items in queue...starting decode")
-        for i in range(0, 30): 
+        for i in range(0, max_blocks): 
           block = self.popInputBuffer()
           if i == 0:
             self.debug.info_message("i: " + str(i))
             self.debug.info_message("self.symbol_block_size: " + str(self.symbol_block_size))
-            multi_block = np.zeros((30 * self.symbol_block_size,), dtype = np.float64)
-            multi_block[0:self.symbol_block_size] = block.reshape(self.symbol_block_size,).astype(np.float64)
+            multi_block = np.zeros((max_blocks * self.get_sd_blocksize(),), dtype = np.float64)
+            multi_block[0:self.get_sd_blocksize()] = block.reshape(self.get_sd_blocksize(),).astype(np.float64)
           else:
             self.debug.info_message("i: " + str(i))
-            multi_block[i*self.symbol_block_size:(i+1) * self.symbol_block_size] = block.reshape(self.symbol_block_size,).astype(np.float64)
+            multi_block[i*self.get_sd_blocksize():(i+1) * self.get_sd_blocksize()] = block.reshape(self.get_sd_blocksize(),).astype(np.float64)
+
 
 
         multi_block = multi_block * 1
@@ -2703,7 +3200,11 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
         # test increase amplitude...
         #multi_block = 0.0001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
-        multi_block = 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
+
+        input_signal_gain = values['slider_signal_ingain']
+
+
+        multi_block = input_signal_gain * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
 
         center_frequency = values['slider_frequency']
         separation_override = values['slider_carrier_separation']
@@ -2717,14 +3218,25 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         fft_frequency = 1382 #1300.166666
         self.form_gui.window['text_info_fftfreq'].update(fft_frequency)
 
-        #frequency = self.calcCarrierFrequencies(center_frequency, separation_override)
-        frequency = self.calcCarrierFrequenciesFromFFT(fft_frequency, separation_override)
+        frequency = self.calcCarrierFrequencies(center_frequency, separation_override)
+        #frequency = self.calcCarrierFrequenciesFromFFT(fft_frequency, separation_override)
 
 
         #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
 
+        """ filter the input signal """
+        rx_filter_params = self.rx_filter
+        multi_block = self.modulation_object.apply_filter(multi_block, rx_filter_params, center_frequency)
+
+        multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
+
 
         self.decoder_callback(multi_block, frequency)
+
+        self.resetInputBuffer()
+
+        if self.form_gui.window['cb_continuous_decode'].get() == False:
+          self.stopDecoder()
 
       else:
         time.sleep(1)
@@ -2747,4 +3259,122 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     plt.show()
 
     
+
+
+  def createTxBlocks(self, mode, values, noise_mode, text_num, carrier_separation_override, amplitude, use_preset, custom_message):
+
+    self.debug.info_message("createTxBlocks")
+
+    try:
+      self.startTimer('init')
+
+      """ initialize the block"""
+      self.setInitializationBlock(mode)
+
+      """ figure out the carrier frequencies"""
+      center_frequency = values['slider_frequency']
+
+      frequency = self.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      self.debug.info_message("center frequency: " + str(center_frequency))
+      self.debug.info_message("carrier frequencies: " + str(frequency))
+
+      """ convert text to bits"""
+      text_examples = [0] * 16
+      text_examples[0]  = " cq wh6ggo "
+      text_examples[1]  = " cqcqcqcqcqcq wh6ggo "
+      text_examples[2]  = " cqcqcqcqcqcqcqcqcqcqcq wh6ggo "
+      text_examples[3]  = " peter piper picked a peck of pickled peppercorn "
+      text_examples[4]  = "jack be nimble jack be quick jack jump over the candlestick"
+      text_examples[5]  = "row row row your boat gently down the stream merrily merrily merrily merrily life is but a dream"
+      text_examples[6]  = "hickory dickory dock the mouse ran up the clock the clock struch one the mouse ran down hickory dicory dock"
+      text_examples[7]  = "its raining its pouring the old man is snoring he bumped his head and went to bed and he couldnt get up in the morning"
+      text_examples[8]  = "jack and jill went up the hill to fetch a pail of water jack fell down and broke his crown and jill came tumbling after"
+      text_examples[9]  = "humpty dumpty dat on a wall humpty dumpty had a great fall all the kings forses and all the kings men coudnt put humpty together again"
+      text_examples[10]  = "a wise old owl sat in an oak the more he heard the less he spoke the less he spoke the more he heard why arent we all like that wise old bird"
+      text_examples[11]  = "hey diddle diddle the cat and the fiddle the cow jumped over the moon the little dog laughed to see such fun and the dish ran away with the spoon"
+      text_examples[12]  = "baa baa black sheep have you any wool yes sir yes sir three bags full one for the master and one for the dame and one for the little boy who lives down the lane"
+      text_examples[13] = "twinkle twinkle little bat how i wonder what youre at up above the world you fly like a tea tray in the sky twinkle twinkle little bat how i wonder what youre at"
+      text_examples[14] = "i can read on a boat i can read with a goat i can read on a train i can read in the rain i can read with a fox i can read in a box i can read with a mouse i can read in a house i can read here or there i can read anywhere"
+      text_examples[15] = "the queen of hearts she made some tarts all on a summers day the knave of hearts he stole the tarts and took them clean away the king of hearts called for the tarts and beat the knave full sore the knave of hearts brought back the tarts and vowed hed steal no more"
+
+      if use_preset:
+        message_text = text_examples[int(text_num)]
+      else:
+        custom_message = custom_message.lower()
+        message_text = "                                                e"
+        message_text = custom_message +  message_text[len(custom_message):]    #   [0:len(custom_message)] = custom_message
+
+      self.debug.info_message("message_text: " + str(message_text))
+
+
+      """ add start sequence character and trailing space """
+      if self.start_seq == '2_of_3':
+        text = 'aaa' + message_text + ' '
+      elif self.start_seq == '2_of_4' or self.start_seq == '3_of_4':
+        text = 'aaaa' + message_text + ' '
+      elif self.start_seq == '2_of_5' or self.start_seq == '3_of_5' or self.start_seq == '4_of_5':
+        text = 'aaaaa' + message_text + ' '
+      elif self.start_seq == '2_of_6':
+        text = 'aaaaaa' + message_text + ' '
+      elif self.start_seq == '2_of_7':
+        text = 'aaaaaaa' + message_text + ' '
+      elif self.start_seq == '2_of_8':
+        text = 'aaaaaaaa' + message_text + ' '
+      else:
+        text = 'aaa' + message_text + ' '
+
+      self.debug.info_message("encoding text: " + str(text))
+
+      bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
+      data2 = self.modulation_object.modulate(frequency, bit_groups)
+
+      """ filter the output signal """
+      tx_filter_params = self.tx_filter
+      data2 = self.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+
+      """ write to file """
+      self.debug.info_message("size of signal data: " + str(len(data2)))
+      self.modulation_object.writeFileWav(mode + ".wav", data2)
+
+      """ read file """
+      use_audio_sample = self.form_gui.window['cb_test_routine_use_audio_sample'].get()
+      if use_audio_sample:
+        audio_sample_name = self.form_gui.window['combo_audio_sample_name'].get()
+        audio_array = self.modulation_object.readFileWav(audio_sample_name) 
+      else:
+        audio_array = self.modulation_object.readFileWav(mode + ".wav") 
+
+      self.debug.info_message("audio data type: " + str(audio_array.dtype))
+      self.debug.info_message("demodulating")
+      total_audio_length = len(audio_array)
+
+      """ add noise for testing..."""
+      noise_free_signal = audio_array*0.00001 * float(amplitude)   
+
+      self.debug.info_message("noise mode: " + str(noise_mode))
+      value = float(noise_mode)
+
+      audio_array = noise_free_signal
+      if self.form_gui.window['cb_enable_awgn'].get():
+        audio_array = self.modulation_object.addAWGN(audio_array, value, frequency)
+      if self.form_gui.window['cb_enable_timing_noise'].get():
+        audio_array = self.modulation_object.addTimingNoise(audio_array)
+      if self.form_gui.window['cb_enable_phase_noise'].get():
+        audio_array = self.modulation_object.addPhaseNoise2(audio_array)
+
+      self.debug.info_message("size of noise data: " + str(len(audio_array)))
+      self.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
+
+      audio_array_with_unfiltered_noise = audio_array.copy()
+
+
+
+
+      #return noise_free_signal * output_signal_gain
+      return noise_free_signal
+
+    except:
+      self.debug.error_message("Exception in createTxBlocks: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
 

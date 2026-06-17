@@ -501,6 +501,15 @@ class OsmodDetector(object):
             sum_points.append(sum_at_location)
 
           index_max = np.where(sum_points == np.max(sum_points))[0]
+          #index_max = np.where(sum_points >= 0.95*np.max(sum_points))[0]
+
+          #self.debug.info_message("index_max: " + str(np.where(sum_points >= 0.999*np.max(sum_points))))
+
+          #FIXME_INDEX_MAX
+          self.debug.info_message("index_max: " + str(index_max))
+          if self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_ALL and self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_BLOCKS:
+            index_max = [50]
+
           block_offsets.append(index_max[0] - half)
 
           if block_count > 0:
@@ -529,8 +538,109 @@ class OsmodDetector(object):
 
         return block_offsets
 
+
+      def identifyStrongestPeaksForGivenPulseLength(test_signal, resolution_increment, range_lohi, finetune_pulse_length):
+        self.debug.info_message("identifyStrongestPeaksForGivenPulseLength()")
+
+        sum_points = []
+
+        for location in range(range_lohi[0], range_lohi[1], resolution_increment): 
+          sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % finetune_pulse_length == location])
+          sum_points.append(sum_at_location)
+
+        #self.debug.info_message("sum_points: " + str(sum_points))
+        self.debug.info_message("max sum_points: " + str(np.max(sum_points)))
+        self.debug.info_message("min sum_points: " + str(np.min(sum_points)))
+
+        index_max = np.where(sum_points == np.max(sum_points))[0]
+        index_min = np.where(sum_points == np.min(sum_points))[0]
+
+        self.debug.info_message("index_max: " + str(index_max))
+        self.debug.info_message("index_min: " + str(index_min))
+        self.debug.info_message("diff: " + str(index_max - index_min))
+
+        #signal_start = (start_pulse * pulse_length) + ((start_index_2 + half) % pulse_length)
+
+
+        return index_max + half, np.max(sum_points)
+
+
+      def analyseBlocksFFT(signal, divisions, search_range):
+        self.debug.info_message("analyseBlocksFFT()")
+
+        """ establish a frequency baseline from the main signal components. This is used for main frequency fine tune adjust """
+        """ at a later stage, this baseline can be used to compare frequency of each block to determine the doppler adjustment required """
+        self.osmod.modulation_object.getStrongestFrequency(signal, 1380, 1385)
+        self.osmod.modulation_object.getStrongestFrequencies(signal, 10, 1380, 1385)
+
+        """ determine the overall frequency offset of the signal by fineding the precise pulse length to determine the exact pulse frequency """
+        """
+        revised_start_location, revised_magnitude = identifyStrongestPeaksForGivenPulseLength(signal, 1, (0, pulse_length), pulse_length)
+        test_pulse_length = pulse_length
+        delta = 2
+        test_start_location = revised_start_location
+        for precise_pulse_length in range (test_pulse_length-delta, test_pulse_length+delta, 0.1):
+          start_location, new_magnitude = identifyStrongestPeaksForGivenPulseLength(signal, 0.1, (test_start_location-delta, test_start_location+delta), precise_pulse_length)
+          if new_magnitude > revised_magnitude:
+            revised_pulse_length = precise_pulse_length
+            revised_start_location = start_location
+        test_pulse_length = revised_pulse_length
+        delta = 0.2
+        test_start_location = revised_start_location
+        for precise_pulse_length in range (test_pulse_length-delta, test_pulse_length+delta, 0.01):
+          start_location, new_magnitude = identifyStrongestPeaksForGivenPulseLength(signal, 0.01, (test_start_location-delta,test_start_location+delta), precise_pulse_length)
+          if new_magnitude > revised_magnitude:
+            revised_pulse_length = precise_pulse_length
+            revised_start_location = start_location
+        test_pulse_length = revised_pulse_length
+        #delta = 0.02
+        #test_start_location = revised_start_location
+        #for precise_pulse_length in range (test_pulse_length-delta, test_pulse_length+delta, 0.01):
+        #  start_location, new_magnitude = identifyStrongestPeaksForGivenPulseLength(signal, 0.01, (test_start_location-delta,test_start_location+delta), precise_pulse_length)
+        #  if new_magnitude > revised_magnitude:
+        #    revised_pulse_length = precise_pulse_length
+        #    revised_start_location = start_location
+        self.debug.info_message("revised_pulse_length: " + str(revised_pulse_length))
+        """
+
+        block_offsets = []
+        num_full_blocks = int((len(signal)) // self.osmod.symbol_block_size)
+        for block_count in range(0, num_full_blocks): 
+          offset = ((block_count * self.osmod.pulses_per_block) * pulse_length) 
+          for division_count in range(0, divisions): 
+            division_offset = int(((division_count / divisions) * self.osmod.pulses_per_block) * pulse_length) 
+            block_signal = signal[offset + division_offset:offset + division_offset + int((self.osmod.pulses_per_block * pulse_length)/divisions)]
+
+            start_index, _ = identifyStrongestPeaks(block_signal, 1, 1, False, (0,0))
+            self.debug.info_message("start_index: " + str(start_index))
+
+            #self.osmod.modulation_object.getStrongestFrequencies(block_signal, 10, 0, 500)
+
+            #self.osmod.modulation_object.getStrongestFrequencies(block_signal, 10, 50, 100)
+            #self.osmod.modulation_object.getStrongestFrequency(block_signal, 75, 85)
+
+            #shifted_signal = self.osmod.modulation_object.shiftAllFrequencies(block_signal, 20)
+
+            #self.osmod.modulation_object.getStrongestFrequencies(shifted_signal, 10, 50, 100)
+            #self.osmod.modulation_object.getStrongestFrequency(block_signal, 65, 95)
+
+            #modulo_number = start_index % 3
+            #if start_index not in block_offsets:
+            #  block_offsets.append(start_index)
+            #if modulo_number not in block_offsets:
+            #block_offsets.append(modulo_number)
+
+        self.debug.info_message("block_offsets: " + str(block_offsets))
+
+        return block_offsets
+
+
       def identifyStrongestPeaksPerBlockFraction(signal, divisions, search_range):
         self.debug.info_message("identifyStrongestPeaksPerBlockFraction()")
+
+        #search_range = 0
+        #multiplier = 1
+        #multiplier = 50
 
         search_lo = 0
         search_hi = pulse_length
@@ -541,13 +651,26 @@ class OsmodDetector(object):
           for division_count in range(0, divisions): 
             division_offset = int(((division_count / divisions) * self.osmod.pulses_per_block) * pulse_length) 
             block_signal = signal[offset + division_offset:offset + division_offset + int((self.osmod.pulses_per_block * pulse_length)/divisions)]
+            #block_signal = signal[offset + division_offset:offset + division_offset + int((self.osmod.pulses_per_block * pulse_length)/divisions)*multiplier]
+            #block_signal = signal[offset + division_offset:offset + division_offset + 50*int((self.osmod.pulses_per_block * pulse_length)/divisions)]
             sum_points = []
             for location in range(search_lo, search_hi): 
               sum_at_location = np.sum(block_signal[np.arange(len(block_signal)) % pulse_length == location])
+
+              #sum_at_location = np.sum(block_signal[np.arange(len(block_signal)) % pulse_length == location])
+              #sum_at_location = np.sum(block_signal[(np.arange(len(block_signal)) % pulse_length)//10 == location//10])
               #sum_at_location = np.sum(block_signal[(np.arange(len(block_signal)) % pulse_length)/24 == location/24])
               sum_points.append(sum_at_location)
 
             index_max = (np.where(sum_points == np.max(sum_points))[0]) + search_lo
+
+            #FIXME_INDEX_MAX
+            index_min = (np.where(sum_points == np.min(sum_points))[0]) + search_lo
+            self.debug.info_message("index_max: " + str(index_max) )
+            self.debug.info_message("index_min: " + str(index_min) )
+            if self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_ALL and self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_PULSES:
+              index_max = [50]
+
             block_offsets.append(index_max[0] - half)
           if search_range != 0:
             if block_count == 3:
@@ -568,8 +691,9 @@ class OsmodDetector(object):
       def getDopplerShiftFourths(signal, search_range):
         self.debug.info_message("getDopplerShiftFourths()")
 
-        block_offsets_sigma_template = 3
+        #block_offsets_sigma_template = 3
         #block_offsets_sigma_template = 1.27
+        block_offsets_sigma_template = 2.7
 
         override_block_offsets_sigma = self.osmod.form_gui.window['cb_overridedopplerfourthssigma'].get()
         if override_block_offsets_sigma:
@@ -726,45 +850,45 @@ class OsmodDetector(object):
 
           self.dict_saved_data['doppler before convert'] = doppler_shift.copy()
 
-          last_known_good_x = mid
-          for j in range(mid+1, data_len):
-            if which_series[j] == max_index:
-              last_known_good_x = j
-              break
+          if False:
+            last_known_good_x = mid
+            for j in range(mid+1, data_len):
+              if which_series[j] == max_index:
+                last_known_good_x = j
+                break
+
+            deviation = 3
+
+            self.debug.info_message("recalcDopplerPoint first call")
+
+            #recalcDopplerPoint(mid, 0, -1, offset_length, signal, part_length, last_known_good_x, max_index)
+            recalcDopplerPoint(mid, -1, -1, offset_length, signal, part_length, last_known_good_x, max_index, deviation)
+
+            self.dict_saved_data['doppler mid convert'] = doppler_shift.copy()
+
+            last_known_good_x = mid
+            #for j in range(mid-1, 0, -1):
+            for j in range(mid-1, -1, -1):
+              if which_series[j] == max_index:
+                last_known_good_x = j
+                break
+
+            self.debug.info_message("recalcDopplerPoint second call")
+
+            recalcDopplerPoint(mid, len(doppler_shift)-6, 1, offset_length, signal, part_length, last_known_good_x, max_index, deviation)
+
+            self.dict_saved_data['doppler after convert'] = doppler_shift.copy()
 
 
-          deviation = 3
-
-          self.debug.info_message("recalcDopplerPoint first call")
-
-          #recalcDopplerPoint(mid, 0, -1, offset_length, signal, part_length, last_known_good_x, max_index)
-          recalcDopplerPoint(mid, -1, -1, offset_length, signal, part_length, last_known_good_x, max_index, deviation)
-
-          self.dict_saved_data['doppler mid convert'] = doppler_shift.copy()
+            #deviation = 2
+            deviation = 3
 
 
-          last_known_good_x = mid
-          #for j in range(mid-1, 0, -1):
-          for j in range(mid-1, -1, -1):
-            if which_series[j] == max_index:
-              last_known_good_x = j
-              break
+            self.debug.info_message("recalcDopplerPoint third call")
 
-          self.debug.info_message("recalcDopplerPoint second call")
+            recalcDopplerPoint(0, len(doppler_shift)-6, 1, offset_length, signal, part_length, 0, max_index, deviation)
 
-          recalcDopplerPoint(mid, len(doppler_shift)-6, 1, offset_length, signal, part_length, last_known_good_x, max_index, deviation)
-
-          self.dict_saved_data['doppler after convert'] = doppler_shift.copy()
-
-
-          deviation = 2
-
-
-          self.debug.info_message("recalcDopplerPoint third call")
-
-          recalcDopplerPoint(0, len(doppler_shift)-6, 1, offset_length, signal, part_length, 0, max_index, deviation)
-
-          self.dict_saved_data['doppler after convert 2 '] = doppler_shift.copy()
+            self.dict_saved_data['doppler after convert 2 '] = doppler_shift.copy()
 
 
 
@@ -788,7 +912,9 @@ class OsmodDetector(object):
         self.debug.info_message("getDopplerShiftPulsesN()")
         nonlocal doppler_shift
 
-        block_offsets_sigma_template = 3
+        #block_offsets_sigma_template = 3
+        block_offsets_sigma_template = 2.7
+
         override_block_offsets_sigma = self.osmod.form_gui.window['cb_overridedopplerfourthssigma'].get()
         if override_block_offsets_sigma:
           block_offsets_sigma_template = float(self.osmod.form_gui.window['in_dopplerfourthssigma'].get())
@@ -954,11 +1080,19 @@ class OsmodDetector(object):
             if self.osmod.doppler_pulse_interpolation == 'B-Spline':
               tck = splrep(filtered_x, filtered_y, s=spline_smoothing)
               y_smooth = splev(x_smooth, tck)
+            elif self.osmod.doppler_pulse_interpolation == 'Cubic-Spline':
+              spline_smoothing = 10
+              #y_smooth = self.osmod.modulation_object.PchipCurveInterpolation(x, x_smooth, data, spline_smoothing)
+              y_smooth = self.osmod.modulation_object.CubicSplineCurveInterpolation(x, x_smooth, data, spline_smoothing)
             elif self.osmod.doppler_pulse_interpolation == 'Pchip':
-              spline_smoothing = 50
+              spline_smoothing = 80 #50
               y_smooth = self.osmod.modulation_object.PchipCurveInterpolation(x, x_smooth, data, spline_smoothing)
             elif self.osmod.doppler_pulse_interpolation == 'Chebyshev':
-              y_smooth = self.osmod.modulation_object.chebyshevCurveInterpolation(x, x_smooth, data, 12)
+              #spline_smoothing = 30
+              spline_smoothing = 36
+
+              #y_smooth = self.osmod.modulation_object.chebyshevCurveInterpolation(x, x_smooth, data, 12)
+              y_smooth = self.osmod.modulation_object.chebyshevCurveInterpolation(x, x_smooth, data, spline_smoothing)
 
           self.debug.info_message("y_smooth: " + str(y_smooth))
 
@@ -995,9 +1129,14 @@ class OsmodDetector(object):
 
         index_max = np.where(sum_points == np.max(sum_points))[0]
         index_min = np.where(sum_points == np.min(sum_points))[0]
+
         self.debug.info_message("index_max: " + str(index_max))
         self.debug.info_message("index_min: " + str(index_min))
         self.debug.info_message("diff: " + str(index_max - index_min))
+
+        #FIXME_INDEX_MAX
+        #index_max = [50]
+
 
         return index_max[0], index_min[0]
 
@@ -1120,21 +1259,29 @@ class OsmodDetector(object):
 
         test_signal = gaussian_filter(np.abs(audio_array[start:]), sigma=pulse_start_sigma_template)
 
+        self.debug.info_message("self.osmod.sample_rate: " + str(self.osmod.sample_rate))
+
         if self.osmod.sample_rate == 8000:
           start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, False, (0,0))
         elif self.osmod.sample_rate == 48000:
-          #start_index_2, _ = identifyStrongestPeaks(test_signal, 8, 1, False, (0,0))
-
+          #start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, False, (0,0))
           self.debug.info_message("LOCATE_PULSE_START_INDEX step 1")
           first_inc = 10
-          #first_inc = 20
-          #first_inc = 30
           start_index_first_pass, _ = identifyStrongestPeaks(test_signal, first_inc, 1, False, (0,0))
           span = first_inc
           self.debug.info_message("LOCATE_PULSE_START_INDEX step 2")
           second_inc = 3
-          #second_inc = 6
-          #second_inc = 8
+          start_index_second_pass, _ = identifyStrongestPeaks(test_signal, second_inc, 1, True, (start_index_first_pass - span, start_index_first_pass + span))
+          span = second_inc
+          self.debug.info_message("LOCATE_PULSE_START_INDEX step 3")
+          start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, True, (start_index_second_pass - span, start_index_second_pass + span))
+        elif self.osmod.sample_rate == 16000:
+          self.debug.info_message("LOCATE_PULSE_START_INDEX step 1")
+          first_inc = 10
+          start_index_first_pass, _ = identifyStrongestPeaks(test_signal, first_inc, 1, False, (0,0))
+          span = first_inc
+          self.debug.info_message("LOCATE_PULSE_START_INDEX step 2")
+          second_inc = 3
           start_index_second_pass, _ = identifyStrongestPeaks(test_signal, second_inc, 1, True, (start_index_first_pass - span, start_index_first_pass + span))
           span = second_inc
           self.debug.info_message("LOCATE_PULSE_START_INDEX step 3")
@@ -1173,8 +1320,9 @@ class OsmodDetector(object):
         #smoothing = ocn.SIGNAL_ENVELOPE_HILBERT_GAUSS
         #smoothing = ocn.SIGNAL_ENVELOPE_HILBERT_SG
 
-        block_offsets_sigma_template = 1.25
+        #block_offsets_sigma_template = 1.25
         #block_offsets_sigma_template = 1.27
+        block_offsets_sigma_template = 1.9
         override_block_offsets_sigma = self.osmod.form_gui.window['cb_overrideblockoffsetssigma'].get()
         if override_block_offsets_sigma:
           block_offsets_sigma_template = float(self.osmod.form_gui.window['in_blockoffsetssigma'].get())
@@ -1199,8 +1347,14 @@ class OsmodDetector(object):
 
 
         if self.osmod.sample_rate == 8000:
+        #if self.osmod.sample_rate == 86666000:
           block_offsets = identifyStrongestPeaksPerBlock(test_signal)
         elif self.osmod.sample_rate == 48000:
+        #elif self.osmod.sample_rate == 8000:
+          #block_offsets = identifyStrongestPeaksPerBlock(test_signal)
+          num_full_blocks = int((len(test_signal)) // self.osmod.symbol_block_size)
+          block_offsets = [0] * num_full_blocks
+        elif self.osmod.sample_rate == 16000:
           num_full_blocks = int((len(test_signal)) // self.osmod.symbol_block_size)
           block_offsets = [0] * num_full_blocks
 
@@ -1215,7 +1369,8 @@ class OsmodDetector(object):
 
         #block_offsets_sigma_template = 1.25
         #block_offsets_sigma_template = 3.5
-        block_offsets_sigma_template = 3
+        #block_offsets_sigma_template = 3
+        block_offsets_sigma_template = 1.9
         override_block_offsets_sigma = self.osmod.form_gui.window['cb_overrideblockoffsetssigma'].get()
         if override_block_offsets_sigma:
           block_offsets_sigma_template = float(self.osmod.form_gui.window['in_blockoffsetssigma'].get())
@@ -1269,17 +1424,32 @@ class OsmodDetector(object):
         block_scan_range = int(pulse_length / 16)
 
         if self.osmod.sample_rate == 8000:
+        #if self.osmod.sample_rate == 666000:
           doppler_fourths = getDopplerShiftFourths(audio_array, int(pulse_length / 8))
           self.dict_saved_data['block offsets fourth'] = doppler_fourths
           #doppler_fourths_b = getDopplerShiftPulsesN(audio_array, block_scan_range, int(self.osmod.pulses_per_block * block_scan_fraction))
           #self.dict_saved_data['block offsets fourth b'] = doppler_fourths_b
           pulses_per_offset = int(self.osmod.pulses_per_block / 4)
         elif self.osmod.sample_rate == 48000:
-          #number_of_pulses = int(self.osmod.pulses_per_block * block_scan_fraction)
+        #elif self.osmod.sample_rate == 8000:
           number_of_pulses = int((self.osmod.pulses_per_block * block_scan_fraction) // 6) * 6
+          number_of_pulses = max(1, number_of_pulses)
+
+          self.debug.info_message("self.osmod.pulses_per_block: " + str(self.osmod.pulses_per_block))
+          self.debug.info_message("number_of_pulses: " + str(number_of_pulses))
+
           doppler_fourths = getDopplerShiftPulsesN(audio_array, block_scan_range, number_of_pulses)
           self.dict_saved_data['block offsets fourth b'] = doppler_fourths
-          #pulses_per_offset = int(self.osmod.pulses_per_block / 8)
+          pulses_per_offset = int(number_of_pulses / 2)
+        elif self.osmod.sample_rate == 16000:
+          number_of_pulses = int((self.osmod.pulses_per_block * block_scan_fraction) // 6) * 6
+          number_of_pulses = max(1, number_of_pulses)
+
+          self.debug.info_message("self.osmod.pulses_per_block: " + str(self.osmod.pulses_per_block))
+          self.debug.info_message("number_of_pulses: " + str(number_of_pulses))
+
+          doppler_fourths = getDopplerShiftPulsesN(audio_array, block_scan_range, number_of_pulses)
+          self.dict_saved_data['block offsets fourth b'] = doppler_fourths
           pulses_per_offset = int(number_of_pulses / 2)
 
 
@@ -1355,6 +1525,16 @@ class OsmodDetector(object):
         self.debug.info_message("test2: " + str(test2))
         for i in range(0, 100):
           self.debug.info_message(" " + str(test[i] % pulse_length))
+
+      elif detection_type == ocn.FFT_ANALYSIS:
+        self.debug.info_message("FFT_ANALYSIS")
+        #analyseBlocksFFT
+        #identifyStrongestPeaksPerBlockFraction(signal, divisions, search_range):
+        test_signal = audio_array[pulse_start_index:]
+        fft_block_offsets = analyseBlocksFFT(test_signal, 1, 0)
+        #fft_block_offsets = analyseBlocksFFT(test_signal, 2, 0)
+        #block_offsets = identifyStrongestPeaksPerBlockFraction(test_signal, 4, 0)
+        self.dict_saved_data['fft_block_offsets'] = fft_block_offsets
 
 
     except:
@@ -1832,8 +2012,14 @@ class OsmodDetector(object):
         else:
         #if phase_adjust_type == ocn.PHASE_ADJUST_RELATIVE:
           #YES!!!!THIS WORKS FOR CURVED DOPPLER SHIFT....aaibaaaiyyyy445yy41kkkkkkku     length 12
-          adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
-          adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
+          #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
+          #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
+
+          #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /2.75)
+          #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /2.75)
+          adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / 3.7)
+          adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / 3.7)
+
         #elif phase_adjust_type == ocn.PHASE_ADJUST_ABSOLUTE:
         #  adjustment_phase_lower  = block_start_residual_lower[block_count] + (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
         #  adjustment_phase_higher = block_start_residual_higher[block_count] + (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
@@ -1937,21 +2123,38 @@ class OsmodDetector(object):
   def findDisposition(self,  interpolated_lower, interpolated_higher):
     self.debug.info_message("findDisposition")
     try:
+
+      def get_min_diff_angle(angle_a, angle_b):
+        if angle_a > angle_b:
+          return min(angle_a - angle_b, angle_b - angle_a + (2*np.pi) )
+        elif angle_a < angle_b:
+          return min(angle_b - angle_a, angle_a - angle_b + (2*np.pi) )
+        else:
+          return 0.0
+
+
       match_type = ocn.DISPOSITION_NO_MATCH
       best_ambiguous_match = 0
 
       rotation_lo = self.rotation_angles[0]
       rotation_hi = self.rotation_angles[1]
  
+      center_frequency = self.osmod.getCenterFrequency()
+      #center_frequency = new_value #values['slider_frequency']
+
+
       rotation_dict = self.osmod.rotation_tables
       self.disposition = -1
       if rotation_dict != None:
         self.debug.info_message("located tables for mode")
-        self.debug.info_message("rotation_dict: " + str(rotation_dict))
+        #self.debug.info_message("rotation_dict: " + str(rotation_dict))
         #pulse_train_length = min(int((len(interpolated_lower) // 3 ) * 3), int((len(interpolated_higher) // 3 ) * 3))
         pulse_train_length = min(len(interpolated_lower), len(interpolated_higher))
         self.debug.info_message("pulse_train_length: " + str(pulse_train_length))
-        active_table = rotation_dict[str(pulse_train_length)]
+
+        #active_table = rotation_dict[str(pulse_train_length)]
+        active_table = rotation_dict[str(int(center_frequency)) + "_" + str(pulse_train_length)]
+
         self.debug.info_message("active_table: " + str(active_table))
         self.debug.info_message("rotation_lo: " + str(rotation_lo))
         self.debug.info_message("rotation_hi: " + str(rotation_hi))
@@ -1972,45 +2175,95 @@ class OsmodDetector(object):
         self.debug.info_message("adjusted rotation_lo: " + str(rotation_lo))
         self.debug.info_message("adjusted rotation_hi: " + str(rotation_hi))
 
+        if rotation_lo < rotation_hi:
+          initial_second_match_quantifier = rotation_hi - rotation_lo
+        elif rotation_lo > rotation_hi:
+          initial_second_match_quantifier = rotation_hi - rotation_lo + (2*np.pi)
+        self.debug.info_message("initial_second_match_quantifier: " + str(initial_second_match_quantifier))
+
         """ -1 is not found, -2 is more than 1 found, >=0 is valid value for disposition."""
         rel_accuracy = 0.0
 
-        #abs_accuracy = 1e-1
-        #accuracy_increment = 1e-1
-
-        abs_accuracy = self.osmod.disposition_increment
-        accuracy_increment = self.osmod.disposition_increment
-
         found_match = False
-        for _ in range (0,15):
-          if found_match == True:
-            break
+        match_quantifier = 100
+        second_match_quantifier = 100
+        saved_second_match_quantifier_diff = 100
+        if True:
+          #if found_match == True:
+          #  break
 
-          abs_accuracy = abs_accuracy + accuracy_increment
+          abs_accuracy = (np.pi / 4) * 2 #0.5
+          #abs_accuracy = (np.pi / 4) * 3 #0.5
 
           for test_disposition in range(0, len(active_table)):
-            self.debug.info_message("active_table[test_disposition]: " + str(active_table[test_disposition]))
-            self.debug.info_message("test_disp_lo: " + str(active_table[test_disposition][0]))
-            self.debug.info_message("test_disp_hi: " + str(active_table[test_disposition][1]))
             test_disp_lo  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][0] + adjust_lo)
             test_disp_hi  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][1] + adjust_hi)
-            self.debug.info_message("adjusted test_disp_lo: " + str(test_disp_lo))
-            self.debug.info_message("adjusted test_disp_hi: " + str(test_disp_hi))
+            #self.debug.info_message("adjusted test_disp_lo: " + str(test_disp_lo))
+            #self.debug.info_message("adjusted test_disp_hi: " + str(test_disp_hi))
 
-            if math.isclose(rotation_lo, test_disp_lo, rel_tol = rel_accuracy, abs_tol = abs_accuracy):
-              if math.isclose(rotation_hi, test_disp_hi, rel_tol = rel_accuracy, abs_tol = abs_accuracy):
-                if found_match == False:
-                  self.debug.info_message("found match")
+            if get_min_diff_angle(rotation_lo, test_disp_lo) <= abs_accuracy:
+              if get_min_diff_angle(rotation_hi, test_disp_hi) <= abs_accuracy:
+            #if math.isclose(rotation_lo, test_disp_lo, rel_tol = rel_accuracy, abs_tol = abs_accuracy):
+            #  if math.isclose(rotation_hi, test_disp_hi, rel_tol = rel_accuracy, abs_tol = abs_accuracy):
+                if True:
+                  self.debug.info_message("match found")
                   self.debug.info_message("test_disposition: " + str(test_disposition))
-                  self.debug.info_message("abs_accuracy: " + str(abs_accuracy))
-                  self.disposition = test_disposition
+                  #self.debug.info_message("abs_accuracy: " + str(abs_accuracy))
+                  self.debug.info_message("test_disp_lo: " + str(active_table[test_disposition][0]))
+                  self.debug.info_message("test_disp_hi: " + str(active_table[test_disposition][1]))
                   found_match = True
                   match_type = ocn.DISPOSITION_MATCH_SINGLE
-                  best_ambiguous_match = test_disposition
-                else:
-                  self.debug.info_message("ERROR duplicate match found")
-                  self.disposition = -2
-                  match_type = ocn.DISPOSITION_MATCH_AMBIGUOUS
+
+                  #x = get_min_diff_angle(angle_a, angle_b)
+                  #new_match_quantifier = abs((get_min_diff_angle(rotation_lo, active_table[test_disposition][0]))**2) + abs((get_min_diff_angle(rotation_hi, active_table[test_disposition][1]))**2)
+                  new_match_quantifier = max(get_min_diff_angle(rotation_lo, active_table[test_disposition][0]) , get_min_diff_angle(rotation_hi, active_table[test_disposition][1]))
+                  #new_match_quantifier = abs((rotation_lo - active_table[test_disposition][0])**2) + abs((rotation_hi - active_table[test_disposition][1])**2)
+                  self.debug.info_message("match_quantifier: " + str(new_match_quantifier))
+
+                  second_match_quantifier = get_min_diff_angle(active_table[test_disposition][0], active_table[test_disposition][1])
+                  #if active_table[test_disposition][0] < active_table[test_disposition][1]:
+                  #  second_match_quantifier = active_table[test_disposition][1] - active_table[test_disposition][0]
+                  #elif active_table[test_disposition][0] > active_table[test_disposition][1]:
+                  #  second_match_quantifier = active_table[test_disposition][1] - active_table[test_disposition][0] + (2*np.pi)
+
+                  #second_match_quantifier_diff = abs(initial_second_match_quantifier - second_match_quantifier)
+                  second_match_quantifier_diff = get_min_diff_angle(initial_second_match_quantifier, second_match_quantifier)
+                  self.debug.info_message("second_match_quantifier: " + str(second_match_quantifier))
+                  self.debug.info_message("second_match_quantifier_diff: " + str(second_match_quantifier_diff))
+
+                  #if new_match_quantifier < 10:
+                  if new_match_quantifier < match_quantifier:
+                    self.debug.info_message("SETTING BEST MATCH A")
+                    self.debug.info_message("match_quantifier: " + str(match_quantifier))
+                    match_quantifier = new_match_quantifier
+                    saved_second_match_quantifier_diff = second_match_quantifier_diff
+                    self.disposition = test_disposition
+                    best_ambiguous_match = test_disposition
+                  #else:
+                  #  if second_match_quantifier_diff < saved_second_match_quantifier_diff:
+                  #    self.debug.info_message("SETTING BEST MATCH B")
+                  #    self.debug.info_message("saved_second_match_quantifier_diff: " + str(saved_second_match_quantifier_diff))
+                  #    match_quantifier = new_match_quantifier
+                  #    saved_second_match_quantifier_diff = second_match_quantifier_diff
+                  #    self.disposition = test_disposition
+                  #    best_ambiguous_match = test_disposition
+                  #found_match = True
+                  #match_type = ocn.DISPOSITION_MATCH_SINGLE
+
+                  #elif new_match_quantifier > match_quantifier:
+                  #  match_type = ocn.DISPOSITION_MATCH_SINGLE
+                  #elif new_match_quantifier > 0:
+                  #  self.disposition = -2
+                  #  match_type = ocn.DISPOSITION_MATCH_AMBIGUOUS
+                  #else:
+                  #  self.disposition = -2
+                  #  match_type = ocn.DISPOSITION_MATCH_AMBIGUOUS
+
+
+        if found_match == False:
+          self.debug.info_message("ERROR! no match found")
+        else:
+          self.debug.info_message("SUCCESS! Matching disposition is: " + str(self.disposition))
 
       return self.disposition
       #return self.disposition, match_type, best_ambiguous_match

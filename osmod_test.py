@@ -21,6 +21,7 @@ from scipy.io.wavfile import write, read
 from modulators import ModulatorPSK 
 from demodulators import DemodulatorPSK 
 from queue import Queue
+from datetime import datetime, timedelta
 
 """
 MIT License
@@ -66,12 +67,156 @@ class OsmodTest(object):
         self.testInterpolate(mode)
       elif routine_type == 'Calculate Phase Angles':
         self.testCalcPhaseAngles(mode)
+      elif routine_type == 'Compare Modes':
+        self.testCompareModes(mode)
       elif routine_type == 'Calculate Rotation Tables':
-        self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude)
+        self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
+        #self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "partial")
+      elif routine_type == 'Calculate Constellation Shift Tables':
+        self.createConstellationShiftTables(values, mode, chunk_num, carrier_separation_override, amplitude)
+        """constellation_shift_values = [0.023, 0.124, 0.246, 0.312, 0.627, 0.676, 0.732, 0.886, 1.586, 2.071, 3.19, 3.641, 3.652, 3.673, 3.71, 4.034, 4.11,
+         4.176, 4.392, 4.516, 4.523, 4.603, 4.626, 4.712, 4.784, 5.915, 5.94, 5.945, 6.252, 6.405, 6.539, 6.575, 6.62, 6.765, 6.811, 6.936, 6.958, 7.065,
+         7.644, 7.994, 8.269, 8.414, 8.542, 8.966, 9.29, 11.164, 11.215, 11.846, 11.95, 11.961, 12.119, 12.392, 12.656, 12.798, 13.0, 13.159, 13.167, 13.203,
+         13.457, 13.634, 13.933, 14.547, 14.713, 15.183, 15.556, 15.815, 15.91, 16.116, 17.502, 17.547, 18.408, 18.687, 18.944, 19.089, 19.356, 19.777, 19.824,
+         20.172, 20.356, 20.391, 20.435, 20.634, 20.86, 21.085, 21.106, 21.405, 21.91, 22.103, 22.312, 22.378, 22.456, 22.466, 22.735, 22.746, 23.069, 23.084,
+         23.366, 23.554, 23.587, 23.756, 23.976, 24.523, 24.879, 25.033, 25.148, 26.089, 26.327, 26.44, 26.632, 27.164, 27.506, 27.526, 27.585, 28.271, 28.445,
+         28.84, 28.924, 28.955, 29.386, 29.801, 29.85, 30.164, 30.752, 31.286, 31.583, 32.093, 32.185, 32.27, 32.322, 32.336, 32.74, 33.316, 33.419, 33.56, 33.878,
+         33.932, 34.182, 34.319, 34.407, 34.664, 34.751, 35.078, 35.275, 35.876, 36.202, 36.231, 36.273, 36.375, 37.113, 37.655, 37.662, 37.697, 37.792, 37.893, 37.955,
+         38.327, 38.347, 38.358, 38.455, 38.484, 38.983, 39.649, 40.19, 40.364, 40.642, 40.679, 40.709, 40.787, 40.813, 40.906, 40.942, 41.234, 41.254, 41.474, 41.517,
+         41.527, 41.887, 42.164, 42.62, 43.874, 43.955, 44.23, 44.66, 45.095, 45.838, 45.858, 46.304, 46.387, 46.91, 47.14, 47.162, 47.256, 47.498, 47.595, 47.867, 48.004,
+         48.326, 48.375, 48.511, 48.568, 48.903, 49.025, 49.095, 49.098, 49.506, 49.903, 49.951, 50.101, 50.323, 51.237, 51.457, 51.49, 51.551, 51.773, 51.965, 52.079,
+         53.628, 53.632, 54.068, 54.64, 54.873, 54.957, 54.985, 55.21, 55.465, 55.808, 55.818, 55.84, 55.914, 56.024, 56.025, 56.54, 56.744, 57.104, 57.125, 57.218, 57.445,
+         57.522, 57.551, 57.766, 58.529, 58.911, 59.028, 59.153, 59.617, 60.413, 60.816, 61.032, 61.335, 61.63, 62.034, 62.296, 62.402, 62.467, 62.968, 63.001, 63.177, 63.225, 63.357, 63.477, 63.54, 63.66, 63.731, 64.203, 64.525, 64.725, 64.96, 65.145, 65.228, 65.312, 65.347, 65.831, 66.229, 66.302, 66.544, 67.574, 68.083, 68.367, 68.372, 68.519, 68.921, 69.18, 69.602, 69.644, 69.822, 70.112, 70.844, 71.279, 71.29, 71.365, 71.658, 71.795, 71.844, 71.915, 72.206, 72.336, 72.371, 72.735, 72.837, 73.146, 73.153, 73.216, 73.225, 73.654, 74.335, 74.691, 75.592, 75.618, 75.892, 76.718, 76.897, 77.147, 77.3, 77.769, 78.064, 78.13, 78.29, 78.35, 78.458, 78.555, 78.825, 79.124, 79.133, 79.272, 79.555, 79.612, 80.339, 80.435, 80.646, 80.866, 81.033, 81.053, 81.131, 81.191, 81.223, 81.764, 81.786, 81.946, 82.175, 82.221, 82.645, 82.821, 82.867, 83.275, 84.179, 84.245, 84.344, 84.662, 85.255, 85.359, 85.591, 85.923, 86.08, 86.083, 86.354, 86.538, 86.823, 87.939, 88.386, 88.389, 88.629, 88.781, 88.85, 88.86, 88.984, 89.081, 89.931, 90.114, 90.151, 90.593, 91.369, 91.448, 91.76, 92.22, 92.414, 92.644, 93.0, 93.04, 93.226, 93.391, 93.608, 94.618, 95.238, 95.538, 95.547, 96.065, 96.275, 96.571, 96.64, 97.007, 97.359, 97.383, 97.448, 97.594, 97.649, 97.812, 98.635, 98.703, 99.126, 99.264, 99.301, 99.537, 99.716, 99.935]
+        """
+
+        #self.calculateMinimumIncrement(constellation_shift_values)
 
 
     except:
       self.debug.error_message("Exception in testRoutines: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def testCompareModes(self, mode):
+    self.debug.info_message("testCompareModes")
+
+    #test_normalized_key_values = {}
+
+    """ recursive... multi level inheritance"""
+    #def processInheritFrom(mode):
+    #  self.debug.info_message("processInheritFrom mode: " + str(mode))
+    #  if 'inherit_from' in self.modulation_initialization_block[mode]:
+    #    self.processInheritFrom(self.modulation_initialization_block[mode]['inherit_from'])
+    #  for param in self.modulation_initialization_block[mode]:
+    #    self.optional_param_values[param] = self.modulation_initialization_block[mode][param]
+
+    #def getParam(mode, param_name):
+    #  if param_name in self.modulation_initialization_block[mode]:
+    #    param_value = self.modulation_initialization_block[mode][param_name]
+    #    return param_value  
+    #  else:
+    #    param_value = self.optional_param_values[param_name]
+    #    return param_value 
+
+    #def processOptionalInitParams(mode):
+    #  for param in self.optional_param_values:
+    #    if param in self.modulation_initialization_block[mode]:
+    #      self.optional_param_values[param] = self.modulation_initialization_block[mode][param]
+
+    def compare_values(dict_a, dict_b):
+      for key, value in dict_a.items():
+        if value != dict_b[key]:
+          self.debug.info_message("mismatch values for key: " + str(key) )
+          self.debug.info_message("value a: " + str(value) )
+          self.debug.info_message("value b: " + str(dict_b[key]) )
+
+
+    def a_in_b(dict_a, dict_b):
+      for key, value in dict_a.items():
+        if key not in dict_b:
+        #  self.debug.info_message("found key: " + str(key) )
+        #else:
+          self.debug.info_message("missing key: " + str(key) )
+
+    def loop_all_keys(loop_mode, init_block):
+      nonlocal normalized_key_values
+
+      self.debug.info_message("iterating keys at new level" )
+      for key, value in init_block[loop_mode].items():
+        self.debug.info_message("key: " + str(key) + " value: " + str(value) )
+        if key == "inherit_from":
+          loop_all_keys(value, init_block)
+        else:
+          normalized_key_values[key] = value
+      self.debug.info_message("completed iterating keys at this level" )
+
+    def display_key_values(key_values):
+      for key, value in key_values.items():
+        self.debug.info_message("key: " + str(key) + " value: " + str(value) )
+
+    try:
+      #resetOptionalInitParamDefaults(mode)
+      #processOptionalInitParams(mode)
+      #processInheritFrom(mode)
+
+      normalized_key_values = {}
+      loop_all_keys(mode, self.osmod.modulation_initialization_block)
+      test_normalized_key_values = normalized_key_values
+      self.debug.info_message("test_normalized_key_values: " )
+      display_key_values(test_normalized_key_values)
+
+      normalized_key_values = {}
+      loop_all_keys("LB28-6400-I3-B", self.osmod.prodparams.getInitializationBlock())
+      prod_normalized_key_values = normalized_key_values
+      self.debug.info_message("prod_normalized_key_values: " )
+      display_key_values(prod_normalized_key_values)
+
+      self.debug.info_message("test - prod" )
+      a_in_b(test_normalized_key_values, prod_normalized_key_values)
+
+      self.debug.info_message("prod - test" )
+      a_in_b(prod_normalized_key_values, test_normalized_key_values)
+
+      self.debug.info_message("prod - test - compare values" )
+      compare_values(prod_normalized_key_values, test_normalized_key_values)
+
+    except:
+      self.debug.error_message("Exception in testRoutines: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def calculateMinimumIncrement(self, constellation_shift_values):
+    #self.debug.info_message("calculateMinimumIncrement")
+    try:
+      min_diff = 100.0
+      for i in range(len(constellation_shift_values) - 1):
+        diff = constellation_shift_values[i+1] - constellation_shift_values[i]
+        #if diff < min_diff:
+        min_diff = min(min_diff, diff)
+        #  self.debug.info_message("constellation_shift_values[i]: " + str(constellation_shift_values[i]) )
+      #self.debug.info_message("min_diff: " + str(min_diff) )
+
+      float_min_diff = float("{:.3f}".format(min_diff))
+
+      self.debug.info_message("minimum increment: " + str(float_min_diff) )
+
+      discrete_jump_list = []
+      for i in range(len(constellation_shift_values) ):
+        float_value = float("{:.3f}".format(constellation_shift_values[i]))
+
+        #value = ((float_value / float_min_diff) * 100) % 100
+        #value = float_value / float_min_diff
+        value = float_value 
+
+        float_result = float("{:.3f}".format(value))
+
+        discrete_jump_list.append(float_result)
+        #self.debug.info_message("float_lo, float_hi: " + str(float_lo) + ", " + str(float_hi))
+
+      discrete_jump_set = set(discrete_jump_list)
+      sorted_unique_jumps = sorted(list(discrete_jump_set))
+      self.debug.info_message("sorted_unique_jumps: " + str(sorted_unique_jumps))
+
+    except:
+      self.debug.error_message("Exception in calculateMinimumIncrement: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   def calculateInterPulsePhaseDelta(self, frequency, num_pulses):
@@ -328,7 +473,14 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
     self.test1(mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude)
 
 
-  def createRotationTables(self, values, mode, chunk_num, carrier_separation_override, amplitude):
+
+  #def createPhaseRotationTables(self, values, mode, chunk_num, carrier_separation_override, amplitude, tablename, full_partial):
+  #  self.debug.info_message("createPhaseRotationTables")
+
+
+
+
+  def createRotationTables(self, values, mode, chunk_num, carrier_separation_override, amplitude, tablename, full_partial):
     self.debug.info_message("createRotationTables")
 
     try:
@@ -364,13 +516,29 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       how_many_blocks = max(1, int(len(text) // int(chunk_num)))
       audio_block = np.array_split( noise_free_signal , how_many_blocks, axis=0)
 
+      """ filter the output signal """
+      tx_filter_params = self.osmod.tx_filter
+      audio_block = self.osmod.modulation_object.apply_filter(audio_block, tx_filter_params, center_frequency)
+
+
       base_signal = audio_block[0].copy()
       half = int(self.osmod.pulses_per_block / 2)
 
-      rotation_dict = {}
+      #rotation_dict = {}
+
+      rotation_dict = self.osmod.opd.readRotationTablesFromFile(tablename)
+
+
+      if full_partial == "full":
+        loop_start = 3
+        loop__end = half + 1
+      elif full_partial == "partial":
+        loop_start = half - 3   #18 #half - 6
+        loop__end  = half + 1
+        #self.osmod.rotation_increments = 100000
 
       #for pulse_train_length in range(3,33):
-      for pulse_train_length in range(3,half + 1):
+      for pulse_train_length in range(loop_start,loop__end):
 
         test_limit = half - pulse_train_length
 
@@ -383,7 +551,9 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         self.debug.info_message("interpolated_lower: " + str(interpolated_lower))
         self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
 
-        rotation_dict[pulse_train_length] = []
+        #rotation_dict[pulse_train_length] = []
+        rotation_dict[str(int(center_frequency)) + "_" + str(pulse_train_length)] = []
+
         for offset in range(0, test_limit + 1):
           test_signal = (base_signal[offset * pulse_length:]).copy()
 
@@ -417,12 +587,12 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
           rotation_lo = self.osmod.detector.rotation_angles[0]
           rotation_hi = self.osmod.detector.rotation_angles[1]
 
-          rotation_dict[pulse_train_length].append((rotation_lo, rotation_hi))
+          rotation_dict[str(int(center_frequency)) + "_" + str(pulse_train_length)].append((rotation_lo, rotation_hi))
 
       self.debug.info_message("rotation_dict: " + str(rotation_dict))
 
 
-      self.osmod.opd.writeRotationTablesToFile(mode, rotation_dict)
+      self.osmod.opd.writeRotationTablesToFile(tablename, rotation_dict)
 
       #self.debug.info_message("rotation_lo: " + str(rotation_lo))
       #self.debug.info_message("rotation_hi: " + str(rotation_hi))
@@ -430,6 +600,59 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
     except:
       self.debug.error_message("Exception in createRotationTables: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
+
+
+
+  def createConstellationShiftTables(self, values, mode, chunk_num, carrier_separation_override, amplitude):
+    self.debug.info_message("createConstellationShiftTables")
+
+    try:
+      half = int(self.osmod.pulses_per_block / 2)
+      #constellation_shift_dict = {}
+
+      """
+      self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, "constellation_test", "partial")
+      """
+      current_rotation_table = self.osmod.opd.readRotationTablesFromFile("constellation_test")
+
+      #current_rotation_table = self.osmod.rotation_tables
+      if current_rotation_table != None:
+        #for pulse_train_length in range(3,half + 1):
+        for key, value in current_rotation_table.items():
+          discrete_jump_list = []
+
+          for item_count in range(0, len(value)):
+            #self.debug.info_message("value item: " + str(value[item_count]))
+            item_lo = value[item_count][0]
+            item_hi = value[item_count][1]
+            shift_lo = ((item_lo / (np.pi / 4)) * 100.0) % 100
+            shift_hi = ((item_hi / (np.pi / 4)) * 100.0) % 100
+            #self.debug.info_message("shift_lo, shift_hi: " + str(shift_lo) + ", " + str(shift_hi))
+
+            float_lo = float("{:.3f}".format(shift_lo))
+            float_hi = float("{:.3f}".format(shift_hi))
+
+            discrete_jump_list.append(float_lo)
+            discrete_jump_list.append(float_hi)
+
+          discrete_jump_set = set(discrete_jump_list)
+          sorted_unique_jumps = sorted(list(discrete_jump_set))
+          self.debug.info_message("Scale " + str(key) + " :- ")
+
+          self.calculateMinimumIncrement(sorted_unique_jumps)
+          #self.debug.info_message("float_lo, float_hi: " + str(float_lo) + ", " + str(float_hi))
+
+
+
+        #self.debug.info_message("sorted_unique_jumps: " + str(sorted_unique_jumps))
+
+
+    except:
+      self.debug.error_message("Exception in createConstellationShiftTables: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  #test = [0.023, 0.124, 0.246, 0.312, 0.627, 0.676, 0.732, 0.886, 1.586, 2.071, 3.19, 3.641, 3.652, 3.673, 3.71, 4.034, 4.11, 4.176, 4.392, 4.516, 4.523, 4.603, 4.626, 4.712, 4.784, 5.915, 5.94, 5.945, 6.252, 6.405, 6.539, 6.575, 6.62, 6.765, 6.811, 6.936, 6.958, 7.065, 7.644, 7.994, 8.269, 8.414, 8.542, 8.966, 9.29, 11.164, 11.215, 11.846, 11.95, 11.961, 12.119, 12.392, 12.656, 12.798, 13.0, 13.159, 13.167, 13.203, 13.457, 13.634, 13.933, 14.547, 14.713, 15.183, 15.556, 15.815, 15.91, 16.116, 17.502, 17.547, 18.408, 18.687, 18.944, 19.089, 19.356, 19.777, 19.824, 20.172, 20.356, 20.391, 20.435, 20.634, 20.86, 21.085, 21.106, 21.405, 21.91, 22.103, 22.312, 22.378, 22.456, 22.466, 22.735, 22.746, 23.069, 23.084, 23.366, 23.554, 23.587, 23.756, 23.976, 24.523, 24.879, 25.033, 25.148, 26.089, 26.327, 26.44, 26.632, 27.164, 27.506, 27.526, 27.585, 28.271, 28.445, 28.84, 28.924, 28.955, 29.386, 29.801, 29.85, 30.164, 30.752, 31.286, 31.583, 32.093, 32.185, 32.27, 32.322, 32.336, 32.74, 33.316, 33.419, 33.56, 33.878, 33.932, 34.182, 34.319, 34.407, 34.664, 34.751, 35.078, 35.275, 35.876, 36.202, 36.231, 36.273, 36.375, 37.113, 37.655, 37.662, 37.697, 37.792, 37.893, 37.955, 38.327, 38.347, 38.358, 38.455, 38.484, 38.983, 39.649, 40.19, 40.364, 40.642, 40.679, 40.709, 40.787, 40.813, 40.906, 40.942, 41.234, 41.254, 41.474, 41.517, 41.527, 41.887, 42.164, 42.62, 43.874, 43.955, 44.23, 44.66, 45.095, 45.838, 45.858, 46.304, 46.387, 46.91, 47.14, 47.162, 47.256, 47.498, 47.595, 47.867, 48.004, 48.326, 48.375, 48.511, 48.568, 48.903, 49.025, 49.095, 49.098, 49.506, 49.903, 49.951, 50.101, 50.323, 51.237, 51.457, 51.49, 51.551, 51.773, 51.965, 52.079, 53.628, 53.632, 54.068, 54.64, 54.873, 54.957, 54.985, 55.21, 55.465, 55.808, 55.818, 55.84, 55.914, 56.024, 56.025, 56.54, 56.744, 57.104, 57.125, 57.218, 57.445, 57.522, 57.551, 57.766, 58.529, 58.911, 59.028, 59.153, 59.617, 60.413, 60.816, 61.032, 61.335, 61.63, 62.034, 62.296, 62.402, 62.467, 62.968, 63.001, 63.177, 63.225, 63.357, 63.477, 63.54, 63.66, 63.731, 64.203, 64.525, 64.725, 64.96, 65.145, 65.228, 65.312, 65.347, 65.831, 66.229, 66.302, 66.544, 67.574, 68.083, 68.367, 68.372, 68.519, 68.921, 69.18, 69.602, 69.644, 69.822, 70.112, 70.844, 71.279, 71.29, 71.365, 71.658, 71.795, 71.844, 71.915, 72.206, 72.336, 72.371, 72.735, 72.837, 73.146, 73.153, 73.216, 73.225, 73.654, 74.335, 74.691, 75.592, 75.618, 75.892, 76.718, 76.897, 77.147, 77.3, 77.769, 78.064, 78.13, 78.29, 78.35, 78.458, 78.555, 78.825, 79.124, 79.133, 79.272, 79.555, 79.612, 80.339, 80.435, 80.646, 80.866, 81.033, 81.053, 81.131, 81.191, 81.223, 81.764, 81.786, 81.946, 82.175, 82.221, 82.645, 82.821, 82.867, 83.275, 84.179, 84.245, 84.344, 84.662, 85.255, 85.359, 85.591, 85.923, 86.08, 86.083, 86.354, 86.538, 86.823, 87.939, 88.386, 88.389, 88.629, 88.781, 88.85, 88.86, 88.984, 89.081, 89.931, 90.114, 90.151, 90.593, 91.369, 91.448, 91.76, 92.22, 92.414, 92.644, 93.0, 93.04, 93.226, 93.391, 93.608, 94.618, 95.238, 95.538, 95.547, 96.065, 96.275, 96.571, 96.64, 97.007, 97.359, 97.383, 97.448, 97.594, 97.649, 97.812, 98.635, 98.703, 99.126, 99.264, 99.301, 99.537, 99.716, 99.935]
 
 
 
@@ -506,13 +729,33 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
       data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
 
+      """ filter the output signal """
+      tx_filter_params = self.osmod.tx_filter
+      data2 = self.osmod.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+
+      """
+      signal_width = 48 # 50 actually works at 1.5 AWGN to 0.06 BER
+      for _ in range(5):
+        sig1 = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(data2, center_frequency + signal_width/2)
+        data2 = sig1
+      for _ in range(5):
+        sig2 = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(data2, center_frequency - signal_width/2)
+        data2 = sig2
+      """
+
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))
       #if len(data2) < 10000000:
       self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
 
       """ read file """
-      audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav") #'8psktest11.wav')
+      use_audio_sample = self.osmod.form_gui.window['cb_test_routine_use_audio_sample'].get()
+      if use_audio_sample:
+        audio_sample_name = self.osmod.form_gui.window['combo_audio_sample_name'].get()
+        audio_array = self.osmod.modulation_object.readFileWav(audio_sample_name) #v* 0.00000001
+      else:
+        audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav") #'8psktest11.wav')
+
       self.debug.info_message("audio data type: " + str(audio_array.dtype))
       self.debug.info_message("demodulating")
       total_audio_length = len(audio_array)
@@ -520,6 +763,38 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       """ add noise for testing..."""
       #noise_free_signal = audio_array*0.00001
       noise_free_signal = audio_array*0.00001 * float(amplitude)   #* 0.7
+
+
+      noise_free_signal = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(noise_free_signal, self.values, center_frequency)
+
+
+      frequency_test_lower  = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1380, 1385)
+      frequency_test_higher = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1414, 1424)
+      """ freq diff for 37 showing as 36.056 from fft values. changes depending on mode"""
+      difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.resample_params[2] - self.osmod.resample_params[1])) * 10000
+      self.debug.info_message("difference: " + str(difference))
+
+      #partial_result = difference + 9439.0 # this value changes depending on mode
+      partial_result = difference # - 0.344827586 # this value changes depending on mode
+      self.debug.info_message("partial_result: " + str(partial_result))
+      calculated_freq_offset = partial_result / 250    #255  #271
+      self.debug.info_message("calculated_freq_offset: " + str(calculated_freq_offset))
+
+      self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1180, 1185)
+      self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1214, 1224)
+
+      """ 9439 is at 0 freq diff , 9466 is at 0.1 freq diff, 9490 is at 0.2 freq diff"""
+      """ (difference - 9439) / 255 """
+
+      """
+      frequency_test = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1380, 1385)
+      adjust_ratio = frequency_test / 1382.5
+      self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
+      #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8000, 8000 * adjust_ratio)
+      noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8000 / adjust_ratio, 8000)
+      self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1380, 1385)
+      """
+
 
       self.debug.info_message("noise mode: " + str(noise_mode))
       value = float(noise_mode)
@@ -535,6 +810,15 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.debug.info_message("size of noise data: " + str(len(audio_array)))
       #if len(audio_array) < 10000000:
       self.osmod.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
+
+      audio_array_with_unfiltered_noise = audio_array.copy()
+
+
+      """ receive section """
+
+      """ filter the input signal """
+      rx_filter_params = self.osmod.rx_filter
+      audio_array = self.osmod.modulation_object.apply_filter(audio_array, rx_filter_params, center_frequency)
 
       """ reset the remainder"""
       self.osmod.demod_2fsk8psk.remainder = np.array([])
@@ -684,11 +968,11 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.debug.info_message("BER: " + str(ber))
       #total_num_bits = len(sent_bitstring[0])*6
 
-      ebn0_db, ebn0, SNR_equiv_db = self.osmod.mod_2fsk8psk.calculate_EbN0(audio_array, frequency, total_num_bits, bits_per_second, noise_free_signal) 
+      ebn0_db, ebn0, SNR_equiv_db = self.osmod.mod_2fsk8psk.calculate_EbN0(audio_array_with_unfiltered_noise, frequency, total_num_bits, bits_per_second, noise_free_signal, center_frequency) 
       self.osmod.form_gui.window['text_ber_value'].update("BER: " + str(ber))
       self.osmod.form_gui.window['text_ebn0_value'].update("Eb/N0: " + str(ebn0))
       self.osmod.form_gui.window['text_ebn0db_value'].update("Eb/N0 (dB): " + str(ebn0_db))
-      self.osmod.form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
+      self.osmod.form_gui.window['text_snr_value'].update("SNR dB: " + str(SNR_equiv_db))
 
       self.osmod.getSummary()
 
@@ -764,6 +1048,12 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
           downconvert_shift = float(self.osmod.form_gui.window['in_downconvertshift'].get())
 
 
+      fdmsep = self.osmod.FDM_parameters[1]
+      fdmsep_override_checked = self.osmod.form_gui.window['cb_overridefdmseparation'].get()
+      if fdmsep_override_checked:
+        fdmsep = float(self.osmod.form_gui.window['in_fdmseparation'].get())
+
+
       polynomial_override_checked = self.osmod.form_gui.window['cb_overridegeneratorpolynomials'].get()
       if polynomial_override_checked:
         gp1     = self.osmod.form_gui.window['in_fecgeneratorpolynomial1'].get()
@@ -788,9 +1078,16 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       pulse_train_length = self.osmod.detector.pulse_train_length
 
-      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth]
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep]
       #csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location]
       self.osmod.analysis.writeDataToFile(csv_data)
+
+      self.debug.info_message("strongest frequency is: " + str(self.osmod.modulation_object.getStrongestFrequency(audio_array, 500, 2000)))
+      self.debug.info_message("strongest frequencies over range is: " + str(self.osmod.modulation_object.getStrongestFrequencies(audio_array, 20, 500, 2000)))
+
+      #timestamp = datetime.utcnow().strftime('%y%m%d%H%M%S')
+      timestamp = datetime.utcnow().strftime('%Y/%m/%d %H:%M')
+      self.debug.info_message("timestamp UTC: " + str(timestamp))
 
 
     except:

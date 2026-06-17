@@ -125,6 +125,11 @@ class PersistentData(object):
                              'LB28-3200-32-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-3200-32-2-37-I3E8-FEC',   values),
                              'LB28-1600-16-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-1600-16-2-37-I3E8-FEC',   values),
                              'LB28-800-8-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-800-8-2-37-I3E8-FEC',   values),
+                             'LB28-2560-8-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-2560-8-2-37-I3E8-FEC',   values),
+                             'LB28-320-8-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-320-8-2-37-I3E8-FEC',   values),
+                             'LB28-400-8-2-37-I3E8-FEC'  : self.osmod.getPersistentData('LB28-400-8-2-37-I3E8-FEC',   values),
+                             'LB28-320-8-2-37-I3E8-FEC-FDM'  : self.osmod.getPersistentData('LB28-320-8-2-37-I3E8-FEC-FDM',   values),
+                             'LB28-400-8-2-37-I3E8-FEC-FDM'  : self.osmod.getPersistentData('LB28-400-8-2-37-I3E8-FEC-FDM',   values),
 
                              'LB28-64-2-15-I'         : self.osmod.getPersistentData('LB28-64-2-15-I',   values),
                              'LB28-64-2-10-I'         : self.osmod.getPersistentData('LB28-64-2-10-I',   values),
@@ -162,7 +167,9 @@ class PersistentData(object):
     self.debug.info_message("writeRotationTablesToFile")
 
     try:
-      filename = mode + ".rta"
+      #filename = mode + ".rta"
+      #filename = mode + ".frt"
+      filename = mode + ".rtf"
 
       with open(filename, 'w') as convert_file:
                 convert_file.write(json.dumps(dict_rotation_table))
@@ -176,7 +183,9 @@ class PersistentData(object):
     self.debug.info_message("readRotationTablesFromFile")
 
     try:
-      filename = mode + ".rta"
+      #filename = mode + ".rta"
+      #filename = mode + ".frt"
+      filename = mode + ".rtf"
       with open(filename) as f:
         data = f.read()
  
@@ -186,7 +195,7 @@ class PersistentData(object):
 
     except:
       self.debug.error_message("Exception in readRotationTablesFromFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-      return None
+      return {}
 
 
 
