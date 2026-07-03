@@ -20,9 +20,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.io.wavfile import write, read
 from datetime import datetime, timedelta
 from scipy.fft import fft
-
 from numpy.fft import ifft
-from scipy.signal import periodogram
+from scipy.signal import periodogram, zoom_fft, lfilter
+from scipy.ndimage import gaussian_filter1d, gaussian_filter
+
 from numpy.polynomial import Chebyshev as T
 from scipy import stats
 from scipy.interpolate import CubicSpline, splrep, splev, PchipInterpolator, UnivariateSpline
@@ -124,8 +125,17 @@ class ModemCoreUtils(object):
     #return np.frombuffer(audio_data, dtype=np.float32)
     #return np.frombuffer(audio_data, dtype=np.float64)
 
+
+  def writeFileWavSR(self, filename, multi_block, sample_rate):
+    self.debug.info_message("writeFileWavSR")
+    return self.writeFileWavCommon(filename, multi_block, sample_rate)
+
   def writeFileWav(self, filename, multi_block):
     self.debug.info_message("writeFileWav")
+    return self.writeFileWavCommon(filename, multi_block, self.osmod.sample_rate)
+
+  def writeFileWavCommon(self, filename, multi_block, sample_rate):
+    self.debug.info_message("writeFileWavCommon")
     self.debug.info_message("multi_block data type: " + str(multi_block.dtype))
     try:
       self.debug.info_message("test1")
@@ -137,11 +147,11 @@ class ModemCoreUtils(object):
       #multi_block = multi_block * (2**6 - 1) / np.max(np.abs(multi_block))
       multi_block = multi_block * (2**3 - 1) / np.max(np.abs(multi_block))
 
-
       self.debug.info_message("writing audio file")
       multi_block = multi_block.astype(np.float32)
       #multi_block = multi_block.astype(np.float64)
-      write(filename, self.osmod.sample_rate, multi_block)
+      #write(filename, self.osmod.sample_rate, multi_block)
+      write(filename, sample_rate, multi_block)
     except:
       self.debug.error_message("Exception in writeFileWav: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
@@ -356,9 +366,14 @@ class ModemCoreUtils(object):
 
 
   """ Define filters """
+  def apply_filterSR(self, signal, params, center_frequency, sample_rate):
+    return self.apply_filter_common(signal, params, center_frequency, sample_rate)
+
+  def apply_filter(self, signal, params, center_frequency):
+    return self.apply_filter_common(signal, params, center_frequency, self.osmod.sample_rate)
 
   # 'tx_filter' : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
-  def apply_filter(self, signal, params, center_frequency):
+  def apply_filter_common(self, signal, params, center_frequency, sample_rate):
     try:
       filter_type = params[0]
       filter_pass_type = params[1]
@@ -372,10 +387,10 @@ class ModemCoreUtils(object):
         if filter_pass_type == ocn.FILTER_BAND_PASS:
           """ filter the output signal """
           for _ in range(repeats):
-            sig1 = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal, center_frequency + filter_width/2, filter_order)
+            sig1 = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal, center_frequency + filter_width/2, filter_order, sample_rate)
             signal = sig1
           for _ in range(repeats):
-            sig2 = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency - filter_width/2, filter_order)
+            sig2 = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency - filter_width/2, filter_order, sample_rate)
             signal = sig2
         return signal
 
@@ -383,20 +398,21 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in apply_filter: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def filter_sharp_cutoff_low_pass(self, signal, cutoff_freq, filter_order):
+  def filter_sharp_cutoff_low_pass(self, signal, cutoff_freq, filter_order, sample_rate):
   #def filter_sharp_cutoff_low_pass(self, signal, cutoff_freq):
     #return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'low',50)
-    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'low',filter_order)
+    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'low',filter_order, sample_rate)
 
-  def filter_sharp_cutoff_high_pass(self, signal, cutoff_freq, filter_order):
+  def filter_sharp_cutoff_high_pass(self, signal, cutoff_freq, filter_order, sample_rate):
   #def filter_sharp_cutoff_high_pass(self, signal, cutoff_freq):
     #return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'highpass',50)
-    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'highpass',filter_order)
+    return self.filter_sharp_cutoff_common(signal, cutoff_freq, 'highpass',filter_order, sample_rate)
 
   """ This method works well """
-  def filter_sharp_cutoff_common(self, signal, cutoff_freq, filter_type, order):
+  def filter_sharp_cutoff_common(self, signal, cutoff_freq, filter_type, order, sample_rate):
     try:
-      nyquist_frequency = 0.5 * self.osmod.sample_rate
+      #nyquist_frequency = 0.5 * self.osmod.sample_rate
+      nyquist_frequency = 0.5 * sample_rate
       normalized_cutoff = cutoff_freq / nyquist_frequency
       sos = butter(order, normalized_cutoff, btype=filter_type, analog=False, output='sos')
       return_value = sosfiltfilt(sos, signal)
@@ -910,9 +926,79 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in interpolatePhaseDrift: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+  def getStrongestNFromFdd(self, fdd, N):
+    #self.debug.info_message("getStrongestNFromFdd")
+
+    fdd_strongest = {}
+    try:
+      frequencies = fdd["frequency"]
+      fft_magnitudes = fdd["magnitude"]
+
+      #self.debug.info_message("argsort: " + str(np.argsort(fft_magnitudes)[:-6:-1]))
+      top_n_indices = np.argsort(fft_magnitudes)[:-6:-1]
+      strongest_frequencies = frequencies[top_n_indices]
+      #self.debug.info_message("BEST  === strongest_frequencies: " + str(strongest_frequencies))
+
+      top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      #self.debug.info_message("top_n_indices: " + str(top_n_indices))
+      strongest_frequencies = frequencies[top_n_indices]
+      strongest_magnitudes  = fft_magnitudes[top_n_indices]
+
+      fdd_strongest["frequency"] = strongest_frequencies
+      fdd_strongest["magnitude"] = strongest_magnitudes
+
+      #self.debug.info_message("strongest_frequencies: " + str(strongest_frequencies))
+      #self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
+    except:
+      self.debug.error_message("Exception in getStrongestNFromFdd: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return fdd_strongest
+
+
+  def createFdd(self, data):
+    self.debug.info_message("createFdd")
+
+    fdd = {}
+    try:
+      fft_output = np.fft.fft(data)
+      fdd["output"]   = fft_output
+      fdd["data_len"] =   len(data)
+    except:
+      self.debug.error_message("Exception in createFdd: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return fdd
+
+
+  #def processFddLoHi(self, data, lo, high):
+  def processFddLoHi(self, fdd, lo, high):
+    #self.debug.info_message("processFddLoHi")
+
+    #fdd = {}
+    try:
+      #fft_output = np.fft.fft(data)
+      #frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
+      fft_output  = fdd["output"]
+      data_len    = fdd["data_len"]
+      #frequencies = np.fft.fftfreq(data_len, 1/self.osmod.sample_rate)
+      frequencies = np.fft.fftfreq(data_len, 1/self.osmod.getRxSampleRate())
+
+      positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+      fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      frequencies = frequencies[positive_frequency_indices]
+      fdd["frequency"] = frequencies
+      fdd["magnitude"] = fft_magnitudes
+      fdd["output"]    = fft_output
+
+    except:
+      self.debug.error_message("Exception in processFddLoHi: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return fdd
+
 
   def getStrongestFrequencies(self, data, N, lo, high):
     self.debug.info_message("getStrongestFrequencies")
+    self.debug.info_message("lo: " + str(lo))
+    self.debug.info_message("high: " + str(high))
     try:
       def mysort(x):
         arg_x = np.sort(x)
@@ -966,11 +1052,13 @@ class ModemCoreUtils(object):
 
   """ This method works fine"""
   def getIsSignalPresent(self, data, watch_freq):
-    self.debug.info_message("getIsSignalPresent")
+    #self.debug.info_message("getIsSignalPresent")
     try:
+      fdd = {}
       delta = 5
       fft_output = np.fft.fft(data)
-      frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
+      #frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
+      frequencies = np.fft.fftfreq(len(data), 1/self.osmod.getRxSampleRate())
       positive_frequency_indices = np.where((frequencies > watch_freq - delta) & (frequencies < watch_freq + delta))[0]
 
       fft_magnitude = np.abs(fft_output)[positive_frequency_indices]
@@ -981,16 +1069,73 @@ class ModemCoreUtils(object):
       strong_freqs = frequencies[strongest_index]
       strong_magnitudes = fft_magnitude[strongest_index]
 
+      #sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
+      #sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
+      #sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
+
+      fdd["output"]   = fft_output
+      fdd["data_len"] = len(data)
+
+    except:
+      self.debug.error_message("Exception in getIsSignalPresent: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+    #finally:
+    #  self.debug.info_message("Completed getIsSignalPresent: ")
+
+    return strong_freqs, strong_magnitudes, fft_output, len(data), fdd
+
+
+  def getStrongestFrequencyCZT(self, signal, lo, high, samplerate, czt_num_points):
+    self.debug.info_message("getStrongestFrequencyCZT")
+    try:
+      #num_points=5000 #number of frequency bins
+      num_points = czt_num_points #50000 #number of frequency bins
+
+      czt_out = zoom_fft(signal, [lo, high], m=num_points, fs=samplerate)
+      freqs = np.linspace(lo, high, num_points)
+      strongest_index = np.argmax(np.abs(czt_out))
+      strongest_freq = freqs[strongest_index]
+
+    except:
+      self.debug.error_message("Exception in getStrongestFrequencyCZT: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+    finally:
+      self.debug.info_message("Completed getStrongestFrequencyCZT: ")
+
+    return strongest_freq
+
+
+
+  """ This method works fine"""
+  def getStrongestFrequency2(self, data, lo, high, samplerate):
+    self.debug.info_message("getStrongestFrequency2")
+    try:
+      fft_output = np.fft.fft(data)
+      frequencies = np.fft.fftfreq(len(data), 1/samplerate)
+      positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+      fft_magnitude = np.abs(fft_output)[positive_frequency_indices]
+
+      frequencies = frequencies[positive_frequency_indices]
+      strongest_index = np.argmax(fft_magnitude)
+
+      """ calculated interpolated frequency """
+      #fft_data = np.abs(fft_output)
+      #interpolated_peak_index = self.fft_parabolic_interpolation(fft_data, np.argmax(fft_data[:len(fft_data)//2]) )
+      #interpolated_frequency = interpolated_peak_index * self.osmod.sample_rate / len(data)
+
+      strong_freqs = frequencies[strongest_index]
+      strong_magnitudes = fft_magnitude[strongest_index]
+
       sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
       sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
+      #sys.stdout.write("strongest interpolated frequency: " + str(interpolated_frequency) + "\n")
       sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
   
     except:
-      self.debug.error_message("Exception in getIsSignalPresent: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in getStrongestFrequency2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
     finally:
-      self.debug.info_message("Completed getIsSignalPresent: ")
+      self.debug.info_message("Completed getStrongestFrequency2: ")
 
-    return strong_freqs, strong_magnitudes
+    return strong_freqs
+
 
 
 
@@ -1007,16 +1152,16 @@ class ModemCoreUtils(object):
       strongest_index = np.argmax(fft_magnitude)
 
       """ calculated interpolated frequency """
-      fft_data = np.abs(fft_output)
-      interpolated_peak_index = self.fft_parabolic_interpolation(fft_data, np.argmax(fft_data[:len(fft_data)//2]) )
-      interpolated_frequency = interpolated_peak_index * self.osmod.sample_rate / len(data)
+      #fft_data = np.abs(fft_output)
+      #interpolated_peak_index = self.fft_parabolic_interpolation(fft_data, np.argmax(fft_data[:len(fft_data)//2]) )
+      #interpolated_frequency = interpolated_peak_index * self.osmod.sample_rate / len(data)
 
       strong_freqs = frequencies[strongest_index]
       strong_magnitudes = fft_magnitude[strongest_index]
 
       sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
       sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
-      sys.stdout.write("strongest interpolated frequency: " + str(interpolated_frequency) + "\n")
+      #sys.stdout.write("strongest interpolated frequency: " + str(interpolated_frequency) + "\n")
       sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
   
     except:
@@ -1329,40 +1474,31 @@ class ModemCoreUtils(object):
     return filtered_signal, fft_signal[mask]
 
 
-  def shiftAllFrequenciesOld(self, signal, freq_shift_amount):
+  def shiftAllFrequenciesExp(self, signal, shift_hz, sample_rate):
+    self.debug.info_message("shiftAllFrequenciesExp")
 
     try:
-      fs = 92800 # self.osmod.sample_rate
-      duration_seconds = len(signal) / fs
-      t = np.linspace(0, duration_seconds, fs, endpoint=False)
-    
-      self.debug.info_message("signal shape: " + str(signal.shape))
-      self.debug.info_message("t shape: " + str(t.shape))
-
-      #t_col = t[:, np.newaxis]
-      #shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t_col)
-
-      #shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
-      #return (shifted_signal.real + shifted_signal.imag ) / 2
-
-      #return shifted_signal
-
-      #for -ve freq shift
-      analytic_signal = hilbert(signal)
-      #shifted_signal = analytic_signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
-      shifted_signal = signal * np.exp(1j * 2 * np.pi * freq_shift_amount * t)
-      #return (shifted_signal.real + shifted_signal.imag ) / 2
-      return shifted_signal.astype(np.float64)
+      #fs = self.osmod.sample_rate
+      fs = sample_rate # self.osmod.getRxSampleRate()
+      num_samples = len(signal)
+      t = np.arange(num_samples) / fs
+      x = np.asarray(signal, dtype = np.float64)
+      analytic_signal = hilbert(x)
+      shift_vector = np.exp(1j * 2 * np.pi * shift_hz * t)
+     
+      shifted_signal = analytic_signal * shift_vector
+      return shifted_signal #.astype(np.float64)
 
     except:
-      self.debug.error_message("Exception in shiftAllFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.error_message("Exception in shiftAllFrequenciesExp: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-  def shiftAllFrequencies(self, signal, shift_hz):
+  def shiftAllFrequencies(self, signal, shift_hz, sample_rate):
     self.debug.info_message("shiftAllFrequencies")
 
     try:
       n = len(signal)
-      fs = self.osmod.sample_rate
+      #fs = self.osmod.sample_rate # * 10
+      fs = sample_rate # self.osmod.getRxSampleRate()
 
       window = np.ones(n)
       #window = np.hanning(n)
@@ -1372,12 +1508,25 @@ class ModemCoreUtils(object):
       #window = np.kaiser(n, beta=10)
 
       #window = np.hanning(n)
+      self.debug.info_message("LOC 1")
+
+      signal = signal.astype(np.float64)
+      window = window.astype(np.float64)
+
       fft_data = np.fft.rfft(signal * window)
 
+      self.debug.info_message("LOC 2")
+
       #fft_signal  = sp.fft.fft(signal)
-      frequencies = np.fft.rfftfreq(len(signal), d=1/self.osmod.sample_rate)
+      frequencies = np.fft.rfftfreq(len(signal), d=1/fs)
+
+      self.debug.info_message("LOC 3")
 
       bins_to_shift = int(round(shift_hz * n / fs))
+      #bins_to_shift = int(round(shift_hz * n / (fs * 10)))
+      #bins_to_shift = int(round(bins_to_shift / 10))
+
+      self.debug.info_message("bins_to_shift: " + str(bins_to_shift))
 
       shifted_fft = np.zeros_like(fft_data, dtype=np.complex128)
 
@@ -1395,6 +1544,9 @@ class ModemCoreUtils(object):
       shifted_signal = np.fft.irfft(shifted_fft)
 
       max_val = np.max(np.abs(shifted_signal))
+
+      self.debug.info_message("max_val: " + str(max_val))
+
       if max_val > 0:
         shifted_signal = shifted_signal / max_val * 0.99
 
@@ -1414,6 +1566,59 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in shiftAllFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+
+  def resampleDopplerShiftFFT(self, signal, ratio):
+    self.debug.info_message("resampleDopplerShiftFFT")
+    try:
+      num_new = int(round(len(signal) * ratio))
+
+      if num_new < 1:
+        return self.resampleDopplerShiftFFT_up(signal, num_new), num_new - len(signal)
+      elif num_new > 1:
+        return self.resampleDopplerShiftFFT_down(signal, num_new), num_new - len(signal)
+      else:
+        return signal, 0
+
+    except:
+      self.debug.error_message("Exception in resampleDopplerShiftFFT: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def resampleDopplerShiftFFT_up(self, signal, num_new):
+    self.debug.info_message("resampleDopplerShiftFFT")
+    try:
+      N = len(signal)
+      X = np.fft.fft(signal)
+
+      X_new = np.zeros(num_new, dtype=complex)
+
+      half_N = (N + 1) // 2
+      X_new[:half_N] = X[:half_N]
+      X_new[-(N // 2):] = X[-(N // 2):]
+
+      return np.fft.ifft(X_new).real * (num_new / N)
+
+    except:
+      self.debug.error_message("Exception in resampleDopplerShiftFFT: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  def resampleDopplerShiftFFT_down(self, signal, num_new):
+    self.debug.info_message("resampleDopplerShiftFFT")
+    try:
+      N = len(signal)
+      X = np.fft.fft(signal)
+
+      half_new = (num_new + 1) // 2
+      x_new = np.concatenate([X[:half_new], X[-(num_new // 2):]])
+
+      if num_new % 2 == 0:
+        X_new[half_new] = X_new[half_new] / 2
+
+      return np.fft.ifft(X_new).real * (num_new / N)
+
+    except:
+      self.debug.error_message("Exception in resampleDopplerShiftFFT: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
   def resampleDopplerShift(self, signal, orig_fs, new_fs):
     self.debug.info_message("resampleDopplerShift")
 
@@ -1421,10 +1626,14 @@ class ModemCoreUtils(object):
       #from scipy import signal
       #orig_fs = self.osmod.sample_rate
       #new_fs = 
-      num_samples_new_signal = int(len(signal) * new_fs / orig_fs)
+      #num_samples_new_signal = int(len(signal) * new_fs / orig_fs)
+      num_samples_new_signal = int(round(len(signal) * new_fs / orig_fs))
       resampled_signal = scipy_signal.resample(signal, num_samples_new_signal)
 
-      return resampled_signal
+      self.debug.info_message("orig_signal-length: " + str(len(signal)))
+      self.debug.info_message("resampled_signal-length: " + str(len(resampled_signal)))
+
+      return resampled_signal, num_samples_new_signal - len(signal)
     except:
       self.debug.error_message("Exception in resampleDopplerShift: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
@@ -1441,11 +1650,12 @@ class ModemCoreUtils(object):
       for _ in range(10):
         adjust_ratio = frequency_test / target_strongest_frequency
         self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
-        new_signal = self.osmod.modulation_object.resampleDopplerShift(test_signal, fs / adjust_ratio, fs)
+        new_signal, _ = self.osmod.modulation_object.resampleDopplerShift(test_signal, fs / adjust_ratio, fs)
         new_frequency_test = self.osmod.modulation_object.getStrongestFrequency(new_signal, target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta)
         error_value = abs((new_frequency_test - frequency_test) * 1000)
         self.debug.info_message("error_value: " + str(error_value))
         if error_value < 5:
+        #if error_value < 3:
           break
         else:
           frequency_test = new_frequency_test
@@ -1457,10 +1667,517 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in linearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+  def nonLinearDopplerShiftAutoCorrect(self, orig_signal, target_strongest_frequency, frequency_delta):
+    self.debug.info_message("nonLinearDopplerShiftAutoCorrect")
+    try:
+      fs = self.osmod.sample_rate
+      upconvert_factor = 10
+      self.debug.info_message("upconvert_factor: " + str(upconvert_factor))
 
+      """ upconvert the signal for processing at higher resolution"""
+      if upconvert_factor != 1:
+        orig_signal = orig_signal.astype(np.complex128)
+        orig_signal = scipy_signal.resample(orig_signal, len(orig_signal) * upconvert_factor)
+        target_strongest_frequency = target_strongest_frequency / upconvert_factor
+        frequency_delta = frequency_delta / upconvert_factor
+
+      orig_signal_len = len(orig_signal)
+
+
+      for loop_count in range(0,2):
+
+        new_signal = np.zeros((len(orig_signal)+1000,), dtype = orig_signal.dtype)
+        sample_factor = 1 / (2**loop_count) 
+        rolling_offset = 0
+
+        self.debug.info_message("dtype: " + str(orig_signal.dtype))
+
+        delta_increments = int(orig_signal_len * sample_factor)
+        self.debug.info_message("delta_increments: " + str(delta_increments))
+
+        loop_max = len(orig_signal)
+        for signal_index in range(0, loop_max, delta_increments):
+
+          signal = orig_signal[signal_index:signal_index + delta_increments]
+          if len(signal) == delta_increments:
+            frequency_test = self.osmod.modulation_object.getStrongestFrequency2(np.append(signal, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+            self.debug.info_message("frequency_test: " + str(frequency_test))
+            error_value = abs((target_strongest_frequency - frequency_test) * 1000)
+            self.debug.info_message("error_value: " + str(error_value))
+
+            test_signal = signal
+            adjust_ratio = frequency_test / target_strongest_frequency
+            self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
+            if error_value > 0.5:
+              new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShift(test_signal, fs / adjust_ratio, fs)
+
+              #new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShift(test_signal, target_strongest_frequency, frequency_test)
+            else:
+              new_signal_part = test_signal
+              diff = 0
+            #new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShift(test_signal, frequency_test, target_strongest_frequency)
+
+            self.debug.info_message("new_signal_part length: " + str(len(new_signal_part)))
+            self.debug.info_message("diff: " + str(diff))
+            if delta_increments + diff == len(new_signal_part) and signal_index + delta_increments + rolling_offset + diff < len(new_signal) :
+              new_signal[signal_index + rolling_offset:signal_index + delta_increments + rolling_offset + diff] = new_signal_part
+              max_signal_len = signal_index + delta_increments + rolling_offset + diff
+            else:
+              self.debug.info_message("broadcast lengths are different")
+              self.debug.info_message("delta_increments + diff: " + str(delta_increments + diff))
+              self.debug.info_message("signal_index + delta_increments + rolling_offset + diff: " + str(signal_index + delta_increments + rolling_offset + diff))
+              self.debug.info_message("len(new_signal): " + str(len(new_signal)))
+
+
+            rolling_offset = rolling_offset + diff
+
+          else:
+            self.debug.info_message("End of signal data.")
+
+        new_signal = new_signal[0:max_signal_len]
+
+        orig_signal = new_signal
+        orig_signal_len = len(orig_signal)
+
+
+      """ downconvert signal back to original sample rate"""
+      if upconvert_factor != 1:
+        new_signal = scipy_signal.resample(new_signal, int(orig_signal_len / upconvert_factor))
+        new_signal = new_signal.astype(np.float64)
+        #orig_signal = np.zeros((len(orig_signal),), dtype = np.float64)
+
+
+      self.debug.info_message("completed nonLinearDopplerShiftAutoCorrect")
+
+      return new_signal
+    except:
+      self.debug.error_message("Exception in nonLinearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def calcAlignmentMetrics(self, signal, frequencies, padding_factor, sample_rate):
+    self.debug.info_message("calcAlignmentMetrics")
+    try:
+      self.debug.info_message("CALCULATING ALIGNMENT METRICS")
+
+      f1 = frequencies[0]
+      f2 = frequencies[1]
+      df1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, 0.5, 8, 0, 10, 1000, sample_rate)
+      df2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, 0.5, 8, 0, 10, 1000, sample_rate)
+
+      metric_1 = abs(f1 - df1)
+      metric_2 = abs(f2 - df2)
+      metric_3 = abs((df2 - df1) - (f2 - f1))
+
+      self.debug.info_message("metric_1: " + str(metric_1))
+      self.debug.info_message("metric_2: " + str(metric_2))
+      self.debug.info_message("metric_3: " + str(metric_3))
+
+      self.osmod.form_gui.window['text_decode_accuracy_metric'].update("LDS: " + str(metric_3))
+      self.osmod.form_gui.window['text_decode_accuracy_metric_2'].update("FS: " + str((metric_1 + metric_2 )/2.0))
+
+      return metric_1, metric_2, metric_3
+
+    except:
+      self.debug.error_message("Exception in calcAlignmentMetrics: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+          
+
+
+  def getDopplerRatioFromDoubleCarrier(self, signal, target_frequencies, padding_factor, upconvert_factor, frequency_delta, czt_num_points, num_dp, sample_rate):
+    self.debug.info_message("getDopplerRatioFromDoubleCarrier")
+    try:
+      f1 = target_frequencies[0]
+      f2 = target_frequencies[1]
+      self.debug.info_message("f1: " + str(f1 * upconvert_factor))
+      self.debug.info_message("f2: " + str(f2 * upconvert_factor))
+      #df1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, 5/upconvert_factor, 8, 0, 10)
+      #df2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, 5/upconvert_factor, 8, 0, 10)
+      #df1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, 10/upconvert_factor, 8, 0, 10)
+      #df2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, 10/upconvert_factor, 8, 0, 10)
+
+      #alpha = 0.97
+      alpha = self.osmod.getBiasFilterValue() # 1.2
+      emphasized_signal = lfilter([1, -alpha], [1], signal)
+
+      #observed_f1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
+      #observed_f2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
+      observed_f1 = self.resolveFrequencyToNDP(emphasized_signal, padding_factor, f1, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
+      observed_f2 = self.resolveFrequencyToNDP(emphasized_signal, padding_factor, f2, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
+
+      self.debug.info_message("observed_f1: " + str(observed_f1 * upconvert_factor))
+      self.debug.info_message("observed_f2: " + str(observed_f2 * upconvert_factor))
+     
+      #term_1 = (f2 / f1)
+      #term_2 = (observed_f2 / observed_f1)
+      term_1 = (f2 - f1)
+      term_2 = (observed_f2 - observed_f1)
+      self.debug.info_message("term_1: " + str(term_1))
+      self.debug.info_message("term_2: " + str(term_2))
+      #ratio = term_1 / term_2
+      #ratio = 1.0
+      lds_ratio = term_2 / term_1
+      #inv_ds = ((observed_f2 / f2) - (observed_f1 / f1))
+      self.debug.info_message("lds_ratio: " + str(lds_ratio))
+      #ds = 1 / inv_ds
+      #self.debug.info_message("ds: " + str(ds))
+      #self.debug.info_message("delta shift: " + str(ds))
+
+      """ now calculate the frequency shift required on both carriers """
+      """ first calculate the new doppler shifted frequencies """
+      observed_f1_ds = observed_f1 / lds_ratio
+      observed_f2_ds = observed_f2 / lds_ratio
+
+      f1_shift_amount = f1 - observed_f1_ds
+      f2_shift_amount = f2 - observed_f2_ds
+ 
+      averaged_doppler_shift_amount = (f1_shift_amount + f2_shift_amount) /2
+      self.osmod.form_gui.window['text_decode_lds_correction_hz'].update("LDS: " + str(averaged_doppler_shift_amount) )
+      if abs(averaged_doppler_shift_amount) > 5:
+        self.osmod.form_gui.window['text_decode_lds_correction_hz'].update(text_color = 'red') 
+      else:
+        self.osmod.form_gui.window['text_decode_lds_correction_hz'].update(text_color = 'light green') 
+
+      frequency_correction_f1 = f1 - (observed_f1 - f1_shift_amount)
+      frequency_correction_f2 = f2 - (observed_f2 - f2_shift_amount)
+
+      averaged_frequency_shift_amount = (frequency_correction_f1 + frequency_correction_f2) /2
+      self.osmod.form_gui.window['text_decode_fs_correction_hz'].update("FS: " + str(averaged_frequency_shift_amount) )
+      if abs(averaged_frequency_shift_amount) > 5:
+        self.osmod.form_gui.window['text_decode_fs_correction_hz'].update(text_color = 'red') 
+      else:
+        self.osmod.form_gui.window['text_decode_fs_correction_hz'].update(text_color = 'light green') 
+
+      frequency_shift_value = ((f2 - observed_f2_ds ) + (f1 - observed_f1_ds)) / 2.0 
+      #frequency_shift_value = ((observed_f2_ds - f2 ) + (observed_f1_ds - f1)) / 2.0 
+
+      fs_only_value = f1 - observed_f1
+      #fs_only_value = observed_f1 - f1
+
+
+      return lds_ratio, frequency_shift_value, fs_only_value
+    except:
+      self.debug.error_message("Exception in getDopplerRatioFromDoubleCarrier: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def getDopplerRatioFromSingleCarrier(self, signal, target_frequencies, padding_factor, upconvert_factor, frequency_delta, czt_num_points, num_dp, sample_rate):
+    self.debug.info_message("getDopplerRatioFromSingleCarrier")
+    try:
+      f1 = target_frequencies[0]
+
+      frequency_test = self.resolveFrequencyToNDP(signal, padding_factor, f1, 5, num_dp, 0, num_dp+2, czt_num_points, sample_rate)
+      adjust_ratio = frequency_test / f1
+      self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
+
+      return adjust_ratio, 0.0, 0.0
+    except:
+      self.debug.error_message("Exception in getDopplerRatioFromSingleCarrier: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def nonLinearDopplerShiftAutoCorrectAlgo3(self, ratio_method, orig_signal, target_strongest_frequencies, doppler_params, sample_rate):
+    self.debug.info_message("nonLinearDopplerShiftAutoCorrectAlgo3")
+    try:
+      #fs = self.osmod.sample_rate
+      fs = sample_rate # self.osmod.getRxSampleRate()
+      error_target = doppler_params[0]  #0.8 #0.7
+      padding_factor = doppler_params[1] # 4
+      upconvert_factor = doppler_params[2]  #25  # this is the best but processing intensive
+      frequency_delta = self.osmod.getAperture() #doppler_params[3] #0.5 
+      source_offset_max = doppler_params[4] # 20
+      czt_num_points = doppler_params[5] # 50000
+      num_dp = doppler_params[6]
+
+
+      doppler_override_checked = self.osmod.form_gui.window['cb_override_doppler_params'].get()
+      if doppler_override_checked:
+        upconvert_factor = int(self.osmod.form_gui.window['in_doppler_upconvert'].get())
+        frequency_delta  = float(self.osmod.form_gui.window['in_doppler_delta'].get())
+        num_dp           = int(self.osmod.form_gui.window['in_doppler_numdp'].get())
+        czt_num_points   = int(self.osmod.form_gui.window['in_doppler_czt'].get())
+        padding_factor   = int(self.osmod.form_gui.window['in_doppler_padding'].get())
+
+      """ upconvert the signal for processing at higher resolution"""
+      use_hifi_tx = self.osmod.form_gui.window['cb_enable_hifi_output_sampling'].get()
+      use_hifi_rx = self.osmod.form_gui.window['cb_enable_hifi_input_sampling'].get()
+
+      #if use_hifi_rx:
+      if use_hifi_tx or use_hifi_rx:
+        self.debug.info_message("processing at 48k")
+        upconvert_factor = 1
+        f1 = target_strongest_frequencies[0]
+        f2 = target_strongest_frequencies[1]
+      elif upconvert_factor != 1:
+        orig_signal = orig_signal.astype(np.complex128)
+        orig_signal = scipy_signal.resample(orig_signal, len(orig_signal) * upconvert_factor)
+        f1 = target_strongest_frequencies[0] / upconvert_factor
+        f2 = target_strongest_frequencies[1] / upconvert_factor
+        frequency_delta = frequency_delta / upconvert_factor
+      else:
+        f1 = target_strongest_frequencies[0]
+        f2 = target_strongest_frequencies[1]
+
+      self.debug.info_message("upconvert_factor: " + str(upconvert_factor))
+
+      orig_signal_len = len(orig_signal)
+        
+      new_signal = np.zeros((orig_signal_len+1000000,), dtype = orig_signal.dtype)
+
+      self.debug.info_message("dtype: " + str(orig_signal.dtype))
+
+      delta_increments = int(orig_signal_len)
+      self.debug.info_message("delta_increments: " + str(delta_increments))
+
+      signal_index = 0
+      signal = orig_signal[signal_index:signal_index + delta_increments]
+
+      adjust_ratio, calculated_frequency_shift_value, fs_only = ratio_method(signal, [f1, f2], padding_factor, upconvert_factor, frequency_delta, czt_num_points, num_dp, sample_rate)
+
+      self.debug.info_message("calculated_frequency_shift_value: " + str(calculated_frequency_shift_value))
+
+
+      lds_and_fs_auto_correct = self.osmod.form_gui.window['cb_enable_block_level_resample_auto_correct'].get()
+      fs_ony_auto_correct = self.osmod.form_gui.window['cb_enable_auto_correct_frequency_only'].get()
+      if lds_and_fs_auto_correct:
+      #if True:
+        new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShift(signal, fs / adjust_ratio, fs)
+        #new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShiftFFT(signal, adjust_ratio)
+
+        new_signal[0:delta_increments + diff] = new_signal_part
+        max_signal_len = delta_increments + diff
+        new_signal = new_signal[0:max_signal_len]
+
+        """ adjust for frequency """
+        #df1 = self.resolveFrequencyToNDP(new_signal, padding_factor, f1 / adjust_ratio, frequency_delta, num_dp, 0, num_dp+2, czt_num_points, sample_rate)
+        #df2 = self.resolveFrequencyToNDP(new_signal, padding_factor, f2 / adjust_ratio, frequency_delta, num_dp, 0, num_dp+2, czt_num_points, sample_rate)
+        #frequency_shift_value = ((f2 - df2 ) + (f1 - df1)) / 2.0   #f1 - actual_low_freq
+        #self.debug.info_message("FFT frequency_shift_value: " + str(frequency_shift_value))
+        #new_signal = self.osmod.modulation_object.shiftAllFrequenciesExp(new_signal, frequency_shift_value, sample_rate)
+        new_signal = self.osmod.modulation_object.shiftAllFrequenciesExp(new_signal, calculated_frequency_shift_value, sample_rate)
+      elif fs_ony_auto_correct:
+        #new_signal = self.osmod.modulation_object.shiftAllFrequenciesExp(signal, fs_only, sample_rate)
+        new_signal = self.osmod.modulation_object.shiftAllFrequencies(signal, fs_only, sample_rate)
+
+
+      #new_signal = self.osmod.modulation_object.shiftAllFrequencies(new_signal, frequency_shift_value, sample_rate)
+
+      new_signal_len = len(new_signal)
+
+      if upconvert_factor != 1:
+        new_signal = scipy_signal.resample(new_signal, int(new_signal_len / upconvert_factor))
+        new_signal = new_signal.astype(np.float64)
+
+      self.debug.info_message("completed nonLinearDopplerShiftAutoCorrect")
+
+      return new_signal
+
+
+    except:
+      self.debug.error_message("Exception in nonLinearDopplerShiftAutoCorrectAlgo3: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def resolveFrequencyToNDP(self, signal, padding_factor, guess, delta, dp, iter_count, max_iter, czt_num_points, sample_rate):
+    self.debug.info_message("resolveFrequencyToNDP")
+    try:
+      max_resolution = False
+      #max_resolution = True
+
+      accuracy_jump = 0.001
+
+      self.debug.info_message("guess: " + str(guess))
+      self.debug.info_message("iter_count: " + str(iter_count))
+      #padding_factor = 0
+
+      if iter_count == 0:
+        signal = np.append(signal, np.zeros((len(signal) * padding_factor,), dtype = signal.dtype)).copy()
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*1,), dtype = audio_array.dtype)).copy(), guess - delta, guess + delta, self.osmod.sample_rate, 10000)
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(signal, guess - delta, guess + delta, self.osmod.sample_rate, 1000)
+      frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(signal, guess - delta, guess + delta, sample_rate, czt_num_points)
+
+      accuracy = abs(frequency_test - guess)
+
+      if (accuracy > 1/(10**dp)  and iter_count <= max_iter) or (max_resolution == True and iter_count < 15):
+        frequency_test = self.resolveFrequencyToNDP(signal, padding_factor, frequency_test, delta * accuracy_jump, dp, iter_count+1, max_iter, czt_num_points, sample_rate)
+        return frequency_test
+      else:
+        if iter_count > max_iter:
+          self.debug.info_message("FAIL. accuracy is : " + str(accuracy))
+        else:
+          self.debug.info_message("SUCCESS! accuracy is : " + str(accuracy))
+        return frequency_test
+
+    except:
+      self.debug.error_message("Exception in resolveFrequencyToNDP: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """ doppler_params = [error_target, padding_factor, upconvert_factor, frequency_delta, loop_count, source_offset_max, czt_num_points]"""
+  """ doppler_params = [0.0075, 4, 25, 0.50, 20, 50000]"""
+  def nonLinearDopplerShiftAutoCorrectParams(self, orig_signal, target_strongest_frequency, doppler_params):
+    self.debug.info_message("nonLinearDopplerShiftAutoCorrect")
+    try:
+      # error target should ideally be around 0.004 to 0.007
+      #error_target = 0.2 #0.8 #0.7
+      #error_target = 0.02 #0.8 #0.7
+      #error_target = 0.01 #0.8 #0.7
+      #error_target = 0.011 #0.8 #0.7
+      #error_target = 0.0075 #0.8 #0.7
+      error_target = doppler_params[0]  #0.8 #0.7
+      #error_target = 0.004 #0.8 #0.7
+      #error_target = 0.7
+
+      czt_num_points = doppler_params[5] # 50000
+
+      #padding_factor = 2
+      padding_factor = doppler_params[1] # 4
+
+      fs = self.osmod.sample_rate
+      #upconvert_factor = 10
+      upconvert_factor = doppler_params[2] #25  # this is the best but processing intensive
+      #upconvert_factor = 35  # this is the best but processing intensive
+
+      #frequency_delta = 2 / upconvert_factor
+      #frequency_delta = 1.5 / upconvert_factor
+      frequency_delta = doppler_params[3] #0.5
+ 
+      source_offset_max = doppler_params[4] # 20
+
+      self.debug.info_message("upconvert_factor: " + str(upconvert_factor))
+
+      """ upconvert the signal for processing at higher resolution"""
+      if upconvert_factor != 1:
+        orig_signal = orig_signal.astype(np.complex128)
+        orig_signal = scipy_signal.resample(orig_signal, len(orig_signal) * upconvert_factor)
+        target_strongest_frequency = target_strongest_frequency / upconvert_factor
+        frequency_delta = frequency_delta / upconvert_factor
+
+      orig_signal_len = len(orig_signal)
+
+      #for loop_count in range(0,2):
+      if True:
+        loop_count = 0
+        
+        #delta_increments = 928005
+
+        #new_signal = np.zeros((len(orig_signal)+1000,), dtype = orig_signal.dtype)
+        new_signal = np.zeros((orig_signal_len+1000,), dtype = orig_signal.dtype)
+        sample_factor = 1 / (2**loop_count) 
+        rolling_offset = 0
+        rolling_source_offset = 0
+
+
+        self.debug.info_message("dtype: " + str(orig_signal.dtype))
+
+        delta_increments = int(orig_signal_len * sample_factor)
+        #delta_increments = int(((orig_signal_len * sample_factor) // 400) * 400)
+
+        #delta_increments = 928005
+        #delta_increments = 748000
+        self.debug.info_message("delta_increments: " + str(delta_increments))
+
+        loop_max = len(orig_signal)
+        for signal_index in range(0, loop_max, delta_increments):
+
+          #signal = orig_signal[signal_index - rolling_source_offset - rolling_offset:signal_index - rolling_source_offset + delta_increments - rolling_offset]
+          signal = orig_signal[signal_index - rolling_source_offset:signal_index - rolling_source_offset + delta_increments]
+          if len(signal) == delta_increments:
+            #frequency_test = self.osmod.modulation_object.getStrongestFrequency2(np.append(signal, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+            frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(signal, np.zeros((len(orig_signal)*padding_factor,), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate, czt_num_points)
+            #frequency_test = self.resolveFrequencyToNDP(signal, padding_factor, target_strongest_frequency, 5, 8, 0, 10)
+
+            error_value = abs((target_strongest_frequency - frequency_test) * 1000)
+            self.debug.info_message("error_value: " + str(error_value))
+            self.debug.info_message("frequency_test: " + str(frequency_test))
+
+            if error_value > error_target:
+              test_signal = signal
+              for source_offset in range(source_offset_max):
+                #test_signal = orig_signal[signal_index - rolling_source_offset:signal_index - rolling_source_offset - source_offset + delta_increments]
+                #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(test_signal, np.zeros((len(orig_signal)*padding_factor,), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate, czt_num_points)
+
+                adjust_ratio = frequency_test / target_strongest_frequency
+                self.debug.info_message("adjust_ratio: " + str(adjust_ratio))
+                new_signal_part, diff = self.osmod.modulation_object.resampleDopplerShift(test_signal, fs / adjust_ratio, fs)
+                #new_frequency_test = self.osmod.modulation_object.getStrongestFrequency2(np.append(new_signal_part, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                #new_frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(new_signal_part, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                #new_frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(new_signal_part, target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                new_frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(new_signal_part, np.zeros((len(orig_signal)*padding_factor,), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate, czt_num_points)
+                #new_frequency_test = self.resolveFrequencyToNDP(new_signal_part, padding_factor, target_strongest_frequency, 5, 8, 0, 10)
+                error_value = abs((target_strongest_frequency - new_frequency_test) * 1000)
+                self.debug.info_message("new error_value: " + str(error_value))
+                #if error_value < 0.7:
+                if error_value <= error_target:
+                  diff = len(new_signal_part) - delta_increments # len(signal) #delta_increments
+                  rolling_source_offset = rolling_source_offset + source_offset
+                  source_offset = 0
+                  #new_signal_part = signal
+                  self.debug.info_message("Success 1!" )
+                  break
+                else:
+                  signal = orig_signal[signal_index - rolling_source_offset:signal_index - rolling_source_offset - source_offset + delta_increments]
+                  #frequency_test = self.osmod.modulation_object.getStrongestFrequency2(np.append(signal, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                  #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(signal, np.zeros((len(orig_signal*10),), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                  #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(signal, target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate)
+                  frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(signal, np.zeros((len(orig_signal)*padding_factor,), dtype = orig_signal.dtype)).copy(), target_strongest_frequency - frequency_delta, target_strongest_frequency + frequency_delta, self.osmod.sample_rate, czt_num_points)
+                  #frequency_test = self.resolveFrequencyToNDP(signal, padding_factor, target_strongest_frequency, 5, 8, 0, 10)
+
+
+                  test_signal = signal
+                  #frequency_test = new_frequency_test
+                  #test_signal = new_signal_part
+            else:
+              new_signal_part = signal
+              #rolling_offset = rolling_offset + diff
+              diff = 0
+              self.debug.info_message("Success 2!" )
+
+            self.debug.info_message("new_signal_part length: " + str(len(new_signal_part)))
+            self.debug.info_message("diff: " + str(diff))
+            self.debug.info_message("rolling_offset: " + str(rolling_offset))
+            self.debug.info_message("signal_index: " + str(signal_index))
+            self.debug.info_message("delta_increments: " + str(delta_increments))
+            #if delta_increments + diff == len(new_signal_part) and signal_index + delta_increments + rolling_offset + diff < len(new_signal) :
+            new_signal[signal_index + rolling_offset:signal_index + delta_increments + rolling_offset + diff] = new_signal_part
+            max_signal_len = signal_index + delta_increments + rolling_offset + diff
+            #else:
+            #  self.debug.info_message("broadcast lengths are different")
+            #  self.debug.info_message("delta_increments + diff: " + str(delta_increments + diff))
+            #  self.debug.info_message("signal_index + delta_increments + rolling_offset + diff: " + str(signal_index + delta_increments + rolling_offset + diff))
+            #  self.debug.info_message("len(new_signal): " + str(len(new_signal)))
+
+            rolling_offset = rolling_offset + diff
+            #diff = 0
+
+          else:
+            self.debug.info_message("End of signal data.")
+
+        new_signal = new_signal[0:max_signal_len]
+
+        orig_signal = new_signal
+        #orig_signal_len = len(new_signal) #len(orig_signal)
+        orig_signal_len = len(orig_signal)
+
+      """ downconvert signal back to original sample rate"""
+      if upconvert_factor != 1:
+        new_signal = scipy_signal.resample(new_signal, int(orig_signal_len / upconvert_factor))
+        new_signal = new_signal.astype(np.float64)
+
+      self.debug.info_message("completed nonLinearDopplerShiftAutoCorrect")
+
+      return new_signal
+    except:
+      self.debug.error_message("Exception in nonLinearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def adjustFrequencyShiftAndDopplerShiftSR(self, noise_free_signal, values, center_frequency, sample_rate):
+    self.debug.info_message("adjustFrequencyShiftAndDopplerShift")
+    return self.adjustFrequencyShiftAndDopplerShiftCommon(noise_free_signal, values, center_frequency, sample_rate)
 
 
   def adjustFrequencyShiftAndDopplerShift(self, noise_free_signal, values, center_frequency):
+    self.debug.info_message("adjustFrequencyShiftAndDopplerShift")
+    return self.adjustFrequencyShiftAndDopplerShiftCommon(noise_free_signal, values, center_frequency, self.osmod.sample_rate)
+
+
+  def adjustFrequencyShiftAndDopplerShiftCommon(self, noise_free_signal, values, center_frequency, sample_rate):
 
     self.debug.info_message("adjustFrequencyShiftAndDopplerShift")
     try:
@@ -1472,7 +2189,7 @@ class ModemCoreUtils(object):
       enable_fine_tune_frequency = self.osmod.form_gui.window['cb_enable_fine_tune_frequency'].get()
       if enable_fine_tune_frequency:
         frequency_shift_value = values['slider_freq_fine_tune']
-        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value)
+        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value, sample_rate)
         #noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, -1 * frequency_shift_value)
       enable_fine_tune_resample = self.osmod.form_gui.window['cb_enable_fine_tune_resample'].get()
 
@@ -1480,10 +2197,10 @@ class ModemCoreUtils(object):
       enable_resample_auto_correct = self.osmod.form_gui.window['cb_enable_resample_auto_correct'].get()
       enable_frequency_shift_auto_correct = self.osmod.form_gui.window['cb_enable_frequency_shift_auto_correct'].get()
       if enable_frequency_shift_auto_correct and enable_resample_auto_correct == False:
-        target_freq_low = center_frequency + self.osmod.resample_params[1]
+        target_freq_low = center_frequency + self.osmod.getTxResampleParams()[1]
         actual_low_freq = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, target_freq_low - 5, target_freq_low + 5)
         frequency_shift_value = target_freq_low - actual_low_freq
-        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value)
+        noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, frequency_shift_value, sample_rate)
 
       """ Apply manual doppler shift """
       if enable_fine_tune_resample:
@@ -1492,46 +2209,75 @@ class ModemCoreUtils(object):
         #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 800000, 800002). # need to be this accurate for correct decode
         #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8000, 8100)
         #noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, 8100, 8000)
-        noise_free_signal = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, self.osmod.sample_rate, self.osmod.sample_rate * doppler_shift_value)
+        #noise_free_signal, _ = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, self.osmod.sample_rate, self.osmod.sample_rate * doppler_shift_value)
+        noise_free_signal, _ = self.osmod.modulation_object.resampleDopplerShift(noise_free_signal, sample_rate, sample_rate * doppler_shift_value)
+
+
+      """ auto correct non-linear doppler shift"""
+      enable_nonllinear_doppler_auto_correct = self.osmod.form_gui.window['cb_enable_block_level_resample_auto_correct'].get()
+      fs_ony_auto_correct = self.osmod.form_gui.window['cb_enable_auto_correct_frequency_only'].get()
+
+      if enable_nonllinear_doppler_auto_correct or fs_ony_auto_correct:
+        if self.osmod.getTxResampleParams()[0] == ocn.RESAMPLE_AVAILABLE:
+          self.debug.info_message("RESAMPLE_AVAILABLE ")
+          self.debug.info_message("correcting for non-linear doppler shift only")
+          target_freq_low = center_frequency + self.osmod.getTxResampleParams()[1]
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  #this for 12800 mode
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectParams(noise_free_signal, target_freq_low, [0.0075, 4, 25, 0.50, 20, 50000])  #this for 12800 mode
+
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectParams(noise_free_signal, target_freq_low, [0.004, 6, 35, 0.25, 2, 50000])  #this for 12800 mode
+
+          f1 = center_frequency + self.osmod.getTxResampleParams()[1]
+          f2 = center_frequency + self.osmod.getTxResampleParams()[2]
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromSingleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 10, 0.25, 2, 5000])  #this for 12800 mode
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromDoubleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 10, 6, 2, 5000, 8])  #this for 12800 mode
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromDoubleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 1, 6, 2, 1000, 10])  #this for 12800 mode
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromDoubleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 12, 0.25, 2, 4000, 10])  #this for 12800 mode
+          noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromDoubleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 4, 3, 2, 4000, 4], sample_rate)  #this for 12800 mode
+          #noise_free_signal = self.osmod.modulation_object.nonLinearDopplerShiftAutoCorrectAlgo3(self.getDopplerRatioFromDoubleCarrier, noise_free_signal, [f1, f2], [0.002, 1, 10, 0.25, 2, 5000])  #this for 12800 mode
+
+
+          #self.calcAlignmentMetrics(noise_free_signal, [center_frequency + self.osmod.getTxResampleParams()[1], center_frequency + self.osmod.getTxResampleParams()[2]], 1, sample_rate)
 
       """ automatic adjust for linear doppler shift """
       enable_resample_auto_correct = self.osmod.form_gui.window['cb_enable_resample_auto_correct'].get()
       if enable_resample_auto_correct:
-        if self.osmod.resample_params[0] == ocn.RESAMPLE_AVAILABLE and self.osmod.resample_params[3] != 0:
+        if self.osmod.getTxResampleParams()[0] == ocn.RESAMPLE_AVAILABLE:
           self.debug.info_message("RESAMPLE_AVAILABLE ")
           if enable_frequency_shift_auto_correct == False:
-            target_freq_low = center_frequency + self.osmod.resample_params[1]
+            self.debug.info_message("correcting for doppler shift only")
+            target_freq_low = center_frequency + self.osmod.getTxResampleParams()[1]
             #noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, 1382.5, 5)   #this for 6400 mode
             #noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, 1381.875, 5)  #this for 12800 mode
             noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  #this for 12800 mode
           else:
             self.debug.info_message("correcting for frequency shift and doppler shift ")
 
-            if self.osmod.resample_params[0] == ocn.RESAMPLE_AVAILABLE:
+            if self.osmod.getTxResampleParams()[3] != 0:
 
               """ first doppler shift correct """
-              target_freq_low = center_frequency + self.osmod.resample_params[1]
+              target_freq_low = center_frequency + self.osmod.getTxResampleParams()[1]
               noise_free_signal_temp = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  
 
               """ second calc residual frequency shift component"""
               frequency_test_lower  = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal_temp, 1380, 1385)
               frequency_test_higher = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal_temp, 1414, 1424)
-              difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.resample_params[2] - self.osmod.resample_params[1])) * 10000
+              difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.getTxResampleParams()[2] - self.osmod.getTxResampleParams()[1])) * 10000
               self.debug.info_message("difference: " + str(difference))
 
               partial_result = difference 
               self.debug.info_message("partial_result: " + str(partial_result))
-              calculated_freq_offset = partial_result / self.osmod.resample_params[3] 
+              calculated_freq_offset = partial_result / self.osmod.getTxResampleParams()[3] 
               self.debug.info_message("calculated_freq_offset: " + str(calculated_freq_offset))
 
               """ third apply frequency shift component to original signal """
-              noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, calculated_freq_offset)
+              noise_free_signal = self.osmod.modulation_object.shiftAllFrequencies(noise_free_signal, calculated_freq_offset, sample_rate)
 
               """ fourth reapply auto doppler shift correction """
-              target_freq_low = center_frequency + self.osmod.resample_params[1]
+              target_freq_low = center_frequency + self.osmod.getTxResampleParams()[1]
               noise_free_signal = self.osmod.modulation_object.linearDopplerShiftAutoCorrect(noise_free_signal, target_freq_low, 5)  
             else:
-              self.debug.info_message("RESAMPLE_UNAVAILABLE ")
+              self.debug.info_message("RESAMPLE_UNAVAILABLE - getTxResampleParams()[3] == 0")
 
         else:
           self.debug.info_message("RESAMPLE_UNAVAILABLE ")
@@ -1575,3 +2321,183 @@ class ModemCoreUtils(object):
 
     except:
       self.debug.error_message("Exception in appendTableRow: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """ index min is 99  and phase wave min is 200  for 8k sampled """
+  """ index min is 142 and phase wave min is 1242 for 48k sampled """
+  def alignTimePointT0(self, signal, sample_rate, symbol_block_size):
+    self.debug.info_message("alignTimePointT0")
+    try:
+      #instantaneous_phase = np.unwrap(np.angle(analytic_signal))
+      #instantaneous_frequencu = (np.diff(instantaneous_phase) / (2.0 * np.pi)) * fs
+      #self.debug.info_message("instantaneous_amplitude\: "+ str(instantaneous_amplitude))
+      #for count in range (10000, 10000 + 1200):
+      #  self.debug.info_message("count: "+ str(count) + "   ---   " + str(instantaneous_amplitude[count]))
+      #test_signal = gaussian_filter(np.abs(audio_array[start:]), sigma=pulse_start_sigma_template)
+
+      #pulse_train_sigma = 7
+      #pulse_train_sigma = 0.77
+      #pulse_train_sigma = 8.5
+      #pulse_train_sigma = 20.39 
+      #pulse_train_sigma = 11.49
+      pulse_train_sigma = 23.7
+
+      override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
+      if override_pulse_train_sigma:
+        pulse_train_sigma = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
+      
+
+      def getStats(test_signal, local_pulse_length, exact):
+        sum_points = []
+
+        for location in range(0, local_pulse_length): 
+          sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % local_pulse_length == location])
+          sum_points.append(sum_at_location)
+
+        if exact == True:
+          index_min = np.where(sum_points == np.min(sum_points))
+          index_max = np.where(sum_points == np.max(sum_points))
+        else:
+          index_min = np.where(sum_points <= 1.001 * np.min(sum_points))
+          index_max = np.where(sum_points >= 0.999 * np.max(sum_points))
+
+        #self.debug.info_message("min sum_points: " + str(np.min(sum_points)))
+        #self.debug.info_message("max sum_points: " + str(np.max(sum_points)))
+
+        self.debug.info_message("index_min: " + str(index_min[0]))
+        self.debug.info_message("index max: " + str(index_max[0]))
+
+        #self.debug.info_message("all index max: " + str(index_max))
+
+        self.debug.info_message("mean index min: " + str(np.mean(index_min)))
+        self.debug.info_message("mean index max: " + str(np.mean(index_max)))
+
+        for count in range(0, len(index_min)):
+          averages = splitRanges(index_min[count])
+          self.debug.info_message("averages: " + str(averages))
+
+        #splitRanges(index_min[0])
+        #splitRanges(index_max[0])
+        #return int(round(averages[0]))
+        return int(round(averages))
+
+        #self.debug.info_message("diff: " + str(index_max - index_min))
+
+      def splitRanges(data):
+        averages_array = np.array([])
+        jumps = np.diff(data) > 1
+        jump_indices = np.where(jumps)[0] + 1
+        ranges = np.split(data, jump_indices)
+        self.debug.info_message("ranges: " + str(ranges))
+
+        max_range_len = 0
+        max_range_index = -1
+        for i in range(len(ranges)):
+          self.debug.info_message("test range: " + str(ranges[i]))
+          if len(ranges[i]) > max_range_len:
+            max_range_len = len(ranges[i])
+            max_range_index = i
+
+        self.debug.info_message("max_range_len: " + str(max_range_len))
+        self.debug.info_message("max_range_index: " + str(max_range_index))
+
+
+        current_index = 0
+        for i, r in enumerate(ranges):
+          end_index = current_index + len(r) - 1
+          average = np.mean(r)
+          averages_array = np.append(averages_array, average)
+          self.debug.info_message("average: " + str(average))
+          current_index = end_index + 1
+        #self.debug.info_message("averages 1: " + str(averages_array))
+
+        return averages_array[max_range_index]
+        #return averages_array
+
+      pulse_length    = int(symbol_block_size / self.osmod.pulses_per_block)
+
+      """ locate the amplified phase wave..."""
+      #self.debug.info_message("PHASE WAVE GAUSSIAN... ")
+      #getStats(gaussian_filter(np.abs(signal), sigma=7), pulse_length * 3)
+
+      exact_type = True
+      #exact_type = False
+
+      #""" process hilbert """
+      #self.debug.info_message("HILBERT... ")
+      #analytic_signal = hilbert(signal.real)
+      #instantaneous_amplitude = np.abs(analytic_signal)
+      #getStats(instantaneous_amplitude, pulse_length, exact_type)
+
+      #""" process gaussian """
+      #self.debug.info_message("GAUSSIAN 7 real... ")
+      #getStats(gaussian_filter(np.abs(signal.real), sigma=7), pulse_length, exact_type)
+      
+      """ process gaussian """
+      self.debug.info_message("GAUSSIAN 7... ")
+      index_min = getStats(gaussian_filter(np.abs(signal), sigma=pulse_train_sigma), pulse_length, exact_type)
+      #index_min = getStats(gaussian_filter(np.abs(signal), sigma=7.2), pulse_length, exact_type)
+
+      #""" process gaussian """
+      #self.debug.info_message("GAUSSIAN 10... ")
+      #getStats(gaussian_filter(np.abs(signal), sigma=10), pulse_length, exact_type)
+
+      #""" process gaussian """
+      #self.debug.info_message("GAUSSIAN... ")
+      #getStats(gaussian_filter(np.abs(signal), sigma=7), pulse_length, exact_trpe)
+
+      """ process gaussian """
+      #self.debug.info_message("GAUSSIAN pulse_length / 2 ... ")
+      #getStats(gaussian_filter(np.abs(signal), sigma=7), int(pulse_length / 2))
+
+      #self.debug.info_message("GAUSSIAN 150 pulse length... ")
+      #getStats(gaussian_filter(np.abs(signal), sigma=7), 150)
+
+      #self.debug.info_message("PHASE WAVE HILBERT... ")
+      #analytic_signal = hilbert(signal.real)
+      #instantaneous_amplitude = np.abs(analytic_signal)
+      #getStats(instantaneous_amplitude, pulse_length * 3)
+
+      if sample_rate == 8000:
+        difference = int((index_min - 26 + pulse_length) % pulse_length)
+        return signal[difference::]
+      elif  sample_rate == 48000:
+        difference = int((index_min - 90 + pulse_length) % pulse_length)
+        return signal[difference::]
+
+
+
+      """
+      if True:
+        pulse_length_phase_wave = pulse_length * 3
+        sum_points = []
+        range_lo = 0
+        range_hi = pulse_length_phase_wave
+
+        for location in range(range_lo, range_hi, 1): 
+          sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % pulse_length_phase_wave == location])
+          sum_points.append(sum_at_location)
+
+        phase_wave_index_min = np.where(sum_points == np.min(sum_points))[0]
+        self.debug.info_message("phase wave min sum_points: " + str(np.min(sum_points)))
+        self.debug.info_message("phase wave index_min: " + str(phase_wave_index_min))
+      """
+
+
+      """
+      if sample_rate == 8000:
+        difference = int((index_min - 99 + pulse_length) % pulse_length)
+        #difference = int((index_min - 200 + pulse_length_phase_wave) % pulse_length_phase_wave)
+
+        #difference = difference + (2 * pulse_length) + 13
+        return signal[difference::]
+      elif sample_rate == 48000:
+        difference = int((index_min - 142 + pulse_length) % pulse_length)
+        #difference = int((index_min - 1242 + pulse_length_phase_wave) % pulse_length_phase_wave)
+
+        #difference = difference + (2 * pulse_length) + 0
+        return signal[difference::]
+      """
+
+    except:
+      self.debug.error_message("Exception in alignTimePointT0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))

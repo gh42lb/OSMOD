@@ -51,6 +51,46 @@ class OsmodProdParams(object):
     """ prod modes use simplified naming. full test name in the info comments"""
     self.prodmode_initialization_block = { 
 
+        #""" I modes """
+        # LB28-25600-512-2-15-I
+        # LB28-16-2-15-I
+        # LB28-16-2-10-I
+        # LB28-3200-32-2-15-I
+        # LB28-32-2-10-I
+        # LB28-6400-64-2-15-I
+        # LB28-320-8-2-50-N
+        # LB28-240-2-2-100-N. DONE
+        #"""
+        'LB28-240-N' :{ 
+                    'info'                 : 'mode - based on LB28-240-2-2-100-N lo carrier must be on 100Hz boundary.  33.333 characters per second, 200 baud (bits per second). -31.7dB SNR approx',
+                    'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
+                    'decoder_callback'     : self.osmod.demod_2fsk8psk.demodulate_2fsk_8psk,
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTriplet,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextResults,
+                    'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
+                    'info'                 : '33.33 characters per second, 200 baud (bits per second)',
+                    'symbol_block_size'    : 240,
+                    'symbol_wave_function' : self.osmod.mod_2fsk8psk.halves_symbol_wave_function,
+                    'modulation_object'    : self.osmod.mod_2fsk8psk,
+                    'demodulation_object'  : self.osmod.demod_2fsk8psk,
+                    'symbols_per_block'    : 1,  # per carrier!
+                    'extraction_points'    : (0.0, 0.5),
+                    'sample_rate'          : 8000,
+                    'num_carriers'         : 2,
+                    'carrier_separation'   : 100,
+                    'detector_function'    : 'median',
+                    'baseband_conversion'  : 'costas_loop',
+                    'process_debug'        : False,
+                    'phase_extraction'     : ocn.EXTRACT_NORMAL,
+                    'fft_filter'           : (-20, 16, -16, 20),
+                    'fft_interpolate'      : (-3, 2, -2, 3),
+                    'pulses_per_block'     : 2,
+                    'parameters'           : (700, 0.8, 0.6, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) ,  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+
+
+        }, 
+        #"""
+
         'LB28-51200-I3' :{ 
                     'inherit_from'          : 'LB28-I3-BASE',
                     'info'                  : '0.15625 characters per second, 0.9375 baud (bits per second). -31.7dB SNR approx',
@@ -154,7 +194,7 @@ class OsmodProdParams(object):
                     'symbol_block_size'     : 6400,
                     'pulses_per_block'      : 64,
                     'symbol_wave_function'  : self.osmod.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.5, 18.556, 250], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.5, 18.556, 257.8458], # available, low freq relative center, hi freq relative center
 
                     #'extrapolate'           : 'yes',
         }, 
@@ -200,11 +240,55 @@ class OsmodProdParams(object):
                     'fft_filter'            : (-4, 4, -4, 4),
                     'fft_interpolate'       : (-3, 2, -2, 3),
                     #'extrapolate'           : 'yes',
-                    'downconvert_shift'     : 0.422,
+
+                    #'dcs_type'              : ocn.DCS_GENERAL,
+                    'dcs_type'              : ocn.DCS_FREQUENCY_SPECIFIC,
+                    'dcs_by_frequency'      : {'160':0.159, '200':0.601, '320':0.27, '640':0.27, '800':0.922, '960':0.291, '1000':0.622, '1010':0.616, '1040':0.78, '1080':0.707, '1120':0.51, '1160':0.12, '2000':0.76, '2640':0.866, '2720':0.97 },
+
+                    'downconvert_shift'     : 0.32,     # 1.1 of 3,  0.4 of 3,   0.5 of 3,  0.5 of 3
+
+                    #'downconvert_shift'     : 0.017,    #0.75 of 3.   0.5 of 3,    0.75 of 3,   0 of 3
+                    #'downconvert_shift'     : 0.422,    #0.3 of 3, 0.5 of 3
+
+                    #'downconvert_shift'     : 0.425,   # 0 of 3
+                    #'downconvert_shift'     : 0.946,     # 0 of 3
+                    #'downconvert_shift'     : 0.54,     # 0 of 3
+                    #'downconvert_shift'     : 0.992,     #0.6 of 3
+
+
                     #'parameters'            : (1500, 0.939, 0.96, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.312),
                     #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, 1382.5, 1417.112, 0], # available, low freq, hi freq
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.5, 17.112, 0], # available, low freq, hi freq
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.5, 17.112, 247.1610], # available, low freq, hi freq
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.49521515, 17.51528191, 247.1610], # available, low freq, hi freq
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.495215152030596,  17.515281914900925, 247.1610], # available, low freq, hi freq
+                    #'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.495489912272888,  17.515166345342777, 247.1610], # available, low freq, hi freq
+                    'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515653291377703, 247.1610], # available, low freq, hi freq
+                    #'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515678885166608, 247.1610], # available, low freq, hi freq
+
+                    #'parameters'            : (1500, 0.238, 0.999, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),    #0.5 of 3
+                    #'parameters'            : (1500, 0.545, 0.925, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),     #0 of 3
+
+
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.823),   # 0.2 of 3
+
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.033),   # 0.1
+
+
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.035),    #1.6 of 3, 0.25 of 3, 0.5 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.266),    # 1 of 3,   0.6 of 3, 0 of 3
+
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.617),    #0 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.68),     # 0.5 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.548),     #0 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.093),    #0.25 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.41),     # 0.75 of 3, 0.6
+
+                    #next only for 48k search
+                    'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
+
+                    'rotation_increments'  : 100,
+
 
         }, 
 

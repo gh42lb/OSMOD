@@ -884,18 +884,25 @@ class DemodulatorPSK(ModemCoreUtils):
           else:
             adjustment     = combined_range_values[0][0]
             rotation_phase_eighth = combined_range_values[0][1]
+
+
+          rotation_angle = rotation_phase_eighth * (np.pi / 4)
+
           self.debug.info_message("********************")
           self.debug.info_message("mid_point: " + str(mid_point))
           self.debug.info_message("rotation_phase_eighth: " + str(rotation_phase_eighth))
           self.debug.info_message("adjustment: " + str(adjustment))
           self.debug.info_message("total angle: " + str(rotation_phase_eighth - adjustment))
+          self.debug.info_message("rotation angle: " + str(self.normalizeAngle(rotation_angle - adjustment)))
+          self.debug.info_message("rotation angle 2: " + str(self.normalizeAngle(rotation_angle + adjustment)))
           self.debug.info_message("********************")
 
-          rotation_angle = rotation_phase_eighth * (np.pi / 4)
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_phase_eighth - adjustment)
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle - adjustment)
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(0 - rotation_angle - adjustment)
-          self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle + adjustment)
+          #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(adjustment - rotation_angle)
+          self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle - adjustment)
+          #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle + adjustment)
 
 
       """ start of code thread..."""
@@ -956,7 +963,10 @@ class DemodulatorPSK(ModemCoreUtils):
           residual_amount = residuals[low_high][block_count]
 
         #index = int((int((self.normalizeAngle(angle - adjustment) / (2 * np.pi)) * 8) - rotation_phase_eighth + 8) % 8)
+
         index = int((int((self.normalizeAngle(angle - adjustment - residual_amount) / (2 * np.pi)) * 8) - rotation_phase_eighth + 8) % 8)
+        #index = int((int((self.normalizeAngle(angle + adjustment - residual_amount) / (2 * np.pi)) * 8) - rotation_phase_eighth + 8) % 8)
+        #index = int((int((self.normalizeAngle(angle + adjustment - residual_amount) / (2 * np.pi)) * 8) + rotation_phase_eighth + 8) % 8)
 
         intlist.append(index)
         binary = format(index, "06b")[0:6]
@@ -1354,11 +1364,13 @@ class DemodulatorPSK(ModemCoreUtils):
     pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
 
     """ apply receive side RRC filter"""
-    for block_count in range(0, int(len(audio_block) // self.osmod.symbol_block_size)): 
-      offset = (block_count * self.osmod.pulses_per_block) * pulse_length
-      for pulse_count in range(0, self.osmod.pulses_per_block): 
-        if (offset + pulse_start_index + ( (pulse_count+1) * pulse_length)) < int(len(audio_block)):
-          audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] = audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] * self.osmod.filtRRC_coef_main
+    if True:
+    #if False:
+      for block_count in range(0, int(len(audio_block) // self.osmod.symbol_block_size)): 
+        offset = (block_count * self.osmod.pulses_per_block) * pulse_length
+        for pulse_count in range(0, self.osmod.pulses_per_block): 
+          if (offset + pulse_start_index + ( (pulse_count+1) * pulse_length)) < int(len(audio_block)):
+            audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] = audio_block[offset + pulse_start_index+(pulse_count * pulse_length):offset + pulse_start_index + ((pulse_count+1) * pulse_length)] * self.osmod.filtRRC_coef_main
 
     self.osmod.getDurationAndReset('apply RRC to wave')
 
@@ -1965,7 +1977,10 @@ class DemodulatorPSK(ModemCoreUtils):
       time = np.arange(pulse_length) / self.osmod.sample_rate
 
       #downconvert_shift = 0.5
-      downconvert_shift = self.osmod.downconvert_shift
+      #downconvert_shift = self.osmod.downconvert_shift
+      downconvert_shift = self.osmod.getDownconvertShift()
+
+
 
       override_downconvert_shift = self.osmod.form_gui.window['cb_overridedownconvertshift'].get()
       if override_downconvert_shift:

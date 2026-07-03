@@ -17,6 +17,7 @@ from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
     hstack, repeat, tile, dot, shape, concatenate, exp, \
     log, vectorize, empty, eye, kron, inf, full, abs, newaxis, minimum, clip, fromiter
 from scipy.io.wavfile import write, read
+from scipy import signal as scipy_signal
 
 from modulators import ModulatorPSK 
 from demodulators import DemodulatorPSK 
@@ -513,12 +514,28 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav")
       noise_free_signal = audio_array*0.00001 * float(amplitude)
 
-      how_many_blocks = max(1, int(len(text) // int(chunk_num)))
+      how_many_blocks = 1 #max(1, int(len(text) // int(chunk_num)))
       audio_block = np.array_split( noise_free_signal , how_many_blocks, axis=0)
+      #audio_block = noise_free_signal.copy()
 
       """ filter the output signal """
       tx_filter_params = self.osmod.tx_filter
       audio_block = self.osmod.modulation_object.apply_filter(audio_block, tx_filter_params, center_frequency)
+
+
+      """ adjust for doppler shift """
+      audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(audio_block, values, center_frequency)
+
+      """ filter the input signal """
+      rx_filter_params = self.osmod.rx_filter
+      audio_block = self.osmod.modulation_object.apply_filter(audio_block, rx_filter_params, center_frequency)
+
+
+      """ locate pulse start index """
+      #ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_block, audio_block], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
+      #pulse_start_index = ret_values[0]
+
+
 
 
       base_signal = audio_block[0].copy()
@@ -565,6 +582,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
           total_block_residual_lower  = [0] * num_full_blocks
           total_block_residual_higher = [0] * num_full_blocks
           residuals = [total_block_residual_lower, total_block_residual_higher]
+
 
           fft_filtered_lower, fft_filtered_higher = self.osmod.demodulation_object.receive_pre_filters_filter_wave(pulse_start_index, test_signal, frequency)
 
@@ -664,12 +682,16 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.osmod.startTimer('init')
 
       """ initialize the block"""
-      self.osmod.setInitializationBlock(mode)
+      #self.osmod.setInitializationBlock(mode)
+      self.osmod.setInitializationBlockSR(mode, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
       """ figure out the carrier frequencies"""
       center_frequency = self.values['slider_frequency']
       #center_frequency = 1400
-      frequency = self.osmod.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+
+      #frequency = self.osmod.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      frequency = self.osmod.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.osmod.getTxSampleRate())
+
       self.debug.info_message("center frequency: " + str(center_frequency))
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
@@ -727,11 +749,12 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.debug.info_message("encoding text: " + str(text))
 
       bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
-      data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
+      data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
       """ filter the output signal """
       tx_filter_params = self.osmod.tx_filter
-      data2 = self.osmod.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+      #data2 = self.osmod.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.osmod.getTxSampleRate())
 
       """
       signal_width = 48 # 50 actually works at 1.5 AWGN to 0.06 BER
@@ -746,7 +769,9 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))
       #if len(data2) < 10000000:
-      self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
+
+      #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
+      self.osmod.modulation_object.writeFileWavSR(mode + ".wav", data2, self.osmod.getTxSampleRate())
 
       """ read file """
       use_audio_sample = self.osmod.form_gui.window['cb_test_routine_use_audio_sample'].get()
@@ -756,6 +781,10 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       else:
         audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav") #'8psktest11.wav')
 
+      #TEST DEBUG CODE
+      #audio_array = data2
+
+
       self.debug.info_message("audio data type: " + str(audio_array.dtype))
       self.debug.info_message("demodulating")
       total_audio_length = len(audio_array)
@@ -764,24 +793,6 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #noise_free_signal = audio_array*0.00001
       noise_free_signal = audio_array*0.00001 * float(amplitude)   #* 0.7
 
-
-      noise_free_signal = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(noise_free_signal, self.values, center_frequency)
-
-
-      frequency_test_lower  = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1380, 1385)
-      frequency_test_higher = self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1414, 1424)
-      """ freq diff for 37 showing as 36.056 from fft values. changes depending on mode"""
-      difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.resample_params[2] - self.osmod.resample_params[1])) * 10000
-      self.debug.info_message("difference: " + str(difference))
-
-      #partial_result = difference + 9439.0 # this value changes depending on mode
-      partial_result = difference # - 0.344827586 # this value changes depending on mode
-      self.debug.info_message("partial_result: " + str(partial_result))
-      calculated_freq_offset = partial_result / 250    #255  #271
-      self.debug.info_message("calculated_freq_offset: " + str(calculated_freq_offset))
-
-      self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1180, 1185)
-      self.osmod.modulation_object.getStrongestFrequency(noise_free_signal, 1214, 1224)
 
       """ 9439 is at 0 freq diff , 9466 is at 0.1 freq diff, 9490 is at 0.2 freq diff"""
       """ (difference - 9439) / 255 """
@@ -809,16 +820,123 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       self.debug.info_message("size of noise data: " + str(len(audio_array)))
       #if len(audio_array) < 10000000:
-      self.osmod.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
+      self.osmod.modulation_object.writeFileWavSR(mode + "_with_noise.wav", audio_array, self.osmod.getTxSampleRate())
+      #self.osmod.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
 
       audio_array_with_unfiltered_noise = audio_array.copy()
+
+      """ this is where propagation occurrs """
+
+
+      """ THIS IS TEST CODE"""
+      #target_freq = 1382.504850097002
+      #target_freq = 1382.504785095702
+      #target_freq = 1382.504787095742
+      #target_freq = 1382.5047848956979
+      #target_freq = 1382.5047848756974
+      #target_freq = 1382.504784849697
+      #target_freq = 1382.504784848297
+      #freq_delta = 0.25
+      #freq_delta = 0.1
+      #freq_delta = 0.01
+      #freq_delta = 0.001
+      #freq_delta = 0.0001
+      #freq_delta = 0.00001
+      #most accurate but cpu intensive...
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*20,), dtype = audio_array.dtype)).copy(), target_freq - freq_delta, target_freq + freq_delta, self.osmod.sample_rate, 50000)
+      # 8 DP accuracy...
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*20,), dtype = audio_array.dtype)).copy(), target_freq - freq_delta, target_freq + freq_delta, self.osmod.sample_rate, 25000)
+      # 9 DP accuracy..
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*2,), dtype = audio_array.dtype)).copy(), target_freq - freq_delta, target_freq + freq_delta, self.osmod.sample_rate, 25000)
+      # 8 DP accuracy
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*1,), dtype = audio_array.dtype)).copy(), target_freq - freq_delta, target_freq + freq_delta, self.osmod.sample_rate, 10000)
+      #self.debug.info_message("FREQUENCY BEFORE FILTER: " + str(frequency_test))
+
+      """
+      def resolveFrequencyToNDP(guess, delta, dp, iter_count, max_iter):
+        self.debug.info_message("guess: " + str(guess))
+        self.debug.info_message("iter_count: " + str(iter_count))
+        #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*1,), dtype = audio_array.dtype)).copy(), guess - delta, guess + delta, self.osmod.sample_rate, 10000)
+        frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*1,), dtype = audio_array.dtype)).copy(), guess - delta, guess + delta, self.osmod.sample_rate, 1000)
+        accuracy = abs(frequency_test - guess)
+        if accuracy > 1/(10**dp)  and iter_count <= max_iter:
+          frequency_test = resolveFrequencyToNDP(frequency_test, delta*0.1, dp, iter_count+1, max_iter)
+          return frequency_test
+        else:
+          if iter_count > max_iter:
+            self.debug.info_message("FAIL. accuracy is : " + str(accuracy))
+          else:
+            self.debug.info_message("SUCCESS! accuracy is : " + str(accuracy))
+
+          return frequency_test
+      """
+      #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1382.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+      #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1417.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+
+      """ END OF TEST CODE """
+
+      """ add and correct for doppler shift """
+      self.debug.info_message("processing doppler shift and downconvert...")
+      audio_array = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(audio_array, self.values, center_frequency, self.osmod.getTxSampleRate())
+      #audio_array = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(audio_array, self.values, center_frequency, self.osmod.sample_rate)
+
+
+
+      """ DEBUG CODE ONLY"""
+      #audio_array = self.osmod.modulation_object.alignTimePointT0(audio_array, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+
+      """ TEST CODE ONLY debug code for FFT analysis"""
+      #self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.FFT_ANALYSIS)
+
+
+
+
+      # do the downconvert here
+      use_hifi_tx = self.osmod.form_gui.window['cb_enable_hifi_output_sampling'].get()
+      use_hifi_rx = self.osmod.form_gui.window['cb_enable_hifi_input_sampling'].get()
+      if use_hifi_tx == True and use_hifi_rx == False:
+        audio_array = scipy_signal.resample(audio_array, int(len(audio_array) * 1/6))
+
+
+      #self.osmod.setInitializationBlockSR(mode, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+      self.osmod.setInitializationBlock(mode)
+
+      frequency = self.osmod.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.osmod.getRxSampleRate())
+
+
+
+      #frequency_test_lower  = self.osmod.modulation_object.getStrongestFrequency(audio_array, 1380, 1385)
+      #frequency_test_higher = self.osmod.modulation_object.getStrongestFrequency(audio_array, 1414, 1424)
+      """ freq diff for 37 showing as 36.056 from fft values. changes depending on mode"""
+      #difference = ((frequency_test_higher - frequency_test_lower) - (self.osmod.resample_params[2] - self.osmod.resample_params[1])) * 10000
+      #self.debug.info_message("difference: " + str(difference))
+      #partial_result = difference # - 0.344827586 # this value changes depending on mode
+      #self.debug.info_message("partial_result: " + str(partial_result))
+      #calculated_freq_offset = partial_result / 250    #255  #271
+      #self.debug.info_message("calculated_freq_offset: " + str(calculated_freq_offset))
+      #self.osmod.modulation_object.getStrongestFrequency(audio_array, 1180, 1185)
+      #self.osmod.modulation_object.getStrongestFrequency(audio_array, 1214, 1224)
+
+
+
 
 
       """ receive section """
 
       """ filter the input signal """
       rx_filter_params = self.osmod.rx_filter
-      audio_array = self.osmod.modulation_object.apply_filter(audio_array, rx_filter_params, center_frequency)
+      #audio_array = self.osmod.modulation_object.apply_filter(audio_array, rx_filter_params, center_frequency)
+      audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, rx_filter_params, center_frequency, self.osmod.getRxSampleRate())
+
+
+      if use_hifi_tx == True and use_hifi_rx == True:
+        audio_array = scipy_signal.resample(audio_array, int(len(audio_array) * 1/6))
+
+
+      """ THIS IS TEST CODE """
+      #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*20,), dtype = audio_array.dtype)).copy(), 1380, 1385, self.osmod.sample_rate, 50000)
+      #self.debug.info_message("FREQUENCY AFTER FILTER: " + str(frequency_test))
+      """ END OF TEST CODE"""
 
       """ reset the remainder"""
       self.osmod.demod_2fsk8psk.remainder = np.array([])
@@ -1042,7 +1160,9 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       if override_pulse_train_sigma:
         pulse_train_sigma = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
 
-      downconvert_shift = self.osmod.downconvert_shift
+      #downconvert_shift = self.osmod.downconvert_shift
+      downconvert_shift = self.osmod.getDownconvertShift()
+
       override_downconvert_shift = self.osmod.form_gui.window['cb_overridedownconvertshift'].get()
       if override_downconvert_shift:
           downconvert_shift = float(self.osmod.form_gui.window['in_downconvertshift'].get())

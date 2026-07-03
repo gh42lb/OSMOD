@@ -167,7 +167,7 @@ class ModulatorPSK(ModemCoreUtils):
 
 
 
-  def modulate_2fsk_npsk_optimized(self, frequency, bit_sequence, n_bits, n_sections):
+  def modulate_2fsk_npsk_optimized(self, frequency, bit_sequence, n_bits, n_sections, sample_rate, symbol_block_size):
     self.debug.info_message("modulate_2fsk_npsk_optimized: ")
 
     #self.debug.info_message("full bit_sequence: " + str(bit_sequence) )
@@ -192,24 +192,31 @@ class ModulatorPSK(ModemCoreUtils):
 
       #self.debug.info_message("phase_sequence1: " + str(phase_sequence1) )
 
-      return self.modulatePhases([phase_sequence1, phase_sequence2, phase_sequence3], frequency, n_sections)
+      return self.modulatePhases([phase_sequence1, phase_sequence2, phase_sequence3], frequency, n_sections, sample_rate, symbol_block_size)
 
     except:
       self.debug.error_message("Exception in modulate_2fsk_npsk_optimized: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
   
 
-  def modulatePhases(self, sequences, frequency, n_sections):
+  def modulatePhases(self, sequences, frequency, n_sections, sample_rate, symbol_block_size):
     self.debug.info_message("modulatePhases")
+    self.debug.info_message("sample_rate: " + str(sample_rate))
+    self.debug.info_message("symbol_block_size: " + str(symbol_block_size))
+
     try:
       #if False:
       if self.osmod.use_compiled_c_code == True:
         self.debug.info_message("calling compiled C code")
 
-        num_samples              = self.osmod.symbol_block_size
-        time                     = np.arange(num_samples) / self.osmod.sample_rate
+        #num_samples              = self.osmod.symbol_block_size
+        num_samples              = symbol_block_size
+        #time                     = np.arange(num_samples) / self.osmod.sample_rate
+        time                     = np.arange(num_samples) / sample_rate
         c_time                   = ptoc_double_array(time)
-        modulated_block_signal   = np.zeros(self.osmod.symbol_block_size)
-        wave_signal_size         = self.osmod.symbol_block_size * len(sequences[0])
+        #modulated_block_signal   = np.zeros(self.osmod.symbol_block_size)
+        modulated_block_signal   = np.zeros(symbol_block_size)
+        #wave_signal_size         = self.osmod.symbol_block_size * len(sequences[0])
+        wave_signal_size         = symbol_block_size * len(sequences[0])
         modulated_wave_signal    = np.zeros(wave_signal_size)
         c_modulated_block_signal = ptoc_double_array(modulated_block_signal)
         c_modulated_wave_signal  = ptoc_double_array(modulated_wave_signal)
@@ -229,22 +236,24 @@ class ModulatorPSK(ModemCoreUtils):
         if self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_SINGLE:
           self.osmod.compiled_lib.modulate_phases.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int]
           self.osmod.compiled_lib.modulate_phases.restype = ctypes.c_int
-          self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
+          #self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
+          self.osmod.compiled_lib.modulate_phases(c_modulated_block_signal, symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections)
         elif self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_TRIPLE:
           self.osmod.compiled_lib.modulate_phases_intra_three.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
           #self.osmod.compiled_lib.modulate_phases_intra_three.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.POINTER(ctypes.c_float)]
           self.osmod.compiled_lib.modulate_phases_intra_three.restype = ctypes.c_int
-          self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_filtRRC_coef_main, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
+          #self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_filtRRC_coef_main, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
+          self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_filtRRC_coef_main, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
           #self.osmod.compiled_lib.modulate_phases_intra_three(c_modulated_block_signal, self.osmod.symbol_block_size, c_modulated_wave_signal, wave_signal_size, c_phases1, c_phases2, c_phases3, c_filtRRC_coef_main, c_time, len(sequences[0]), self.osmod.pulses_per_block, c_frequency, n_sections, c_offsets)
 
         return modulated_wave_signal
       else:
-        return self.modulatePhasesInterpretedPython(sequences, frequency, n_sections)
+        return self.modulatePhasesInterpretedPython(sequences, frequency, n_sections, sample_rate, symbol_block_size)
     except:
       sys.stdout.write("Exception in modulatePhases: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
-  def modulatePhasesInterpretedPython(self, sequences, frequency, n_sections):
+  def modulatePhasesInterpretedPython(self, sequences, frequency, n_sections, sample_rate, symbol_block_size):
 
     try:
 
@@ -254,8 +263,10 @@ class ModulatorPSK(ModemCoreUtils):
       phase_sequence2 = sequences[1]
       phase_sequence3 = sequences[2]
 
-      num_samples = self.osmod.symbol_block_size
-      time = np.arange(num_samples) / self.osmod.sample_rate
+      #num_samples = self.osmod.symbol_block_size
+      num_samples = symbol_block_size
+      #time = np.arange(num_samples) / self.osmod.sample_rate
+      time = np.arange(num_samples) / sample_rate
 
       term5 = 2 * np.pi * time
       term6 = term5 * frequency[0]
@@ -295,10 +306,11 @@ class ModulatorPSK(ModemCoreUtils):
     hasData = not self.osmod.isDataQueueEmpty()
 
     if hasData:
-      self.debug.info_message("sending data to output device")
+      #self.debug.info_message("sending data to output device")
       data = self.osmod.popDataQueue()
 
-      reshaped_audio_data = data.reshape(self.osmod.get_sd_blocksize(),).astype(np.float32)
+      #reshaped_audio_data = data.reshape(self.osmod.get_sd_blocksize(),).astype(np.float32)
+      reshaped_audio_data = data.reshape(self.osmod.get_sd_blocksize_tx(),).astype(np.float32)
       outdata[:,0] = reshaped_audio_data #self.modulateChunk8PSK(1500, data) 
 
 
@@ -310,10 +322,13 @@ class ModulatorPSK(ModemCoreUtils):
       #self.debug.info_message("data: " + str(data))
       #return outdata
     else:
-      self.debug.info_message("done sending data to output device")
-      syms = np.zeros(self.osmod.symbol_block_size)
+      #self.debug.info_message("done sending data to output device")
+      #syms = np.zeros(self.osmod.symbol_block_size)
+      syms = np.zeros(self.osmod.get_sd_blocksize_tx())
       outdata[:,0] = syms
-      self.osmod.stopEncoder()
+
+      #?????????????????????????
+      #self.osmod.stopEncoder()
 
     return None
 

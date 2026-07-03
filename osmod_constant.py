@@ -273,3 +273,6 @@ FILTER_NOTCH                    = 10
 
 RESAMPLE_UNAVAILABLE            = 0
 RESAMPLE_AVAILABLE              = 1
+
+DCS_GENERAL                     = 0
+DCS_FREQUENCY_SPECIFIC          = 1

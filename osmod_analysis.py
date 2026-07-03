@@ -222,7 +222,7 @@ class OsmodAnalysis(object):
             #rand_num = random.randint(0,len(self.osmod.best_pulse_shapes)-1)
             #rrc_alpha = self.osmod.best_pulse_shapes[rand_num][0]
             #rrc_T     = self.osmod.best_pulse_shapes[rand_num][1]
-            pulse_train_sigma = 0.1 + (random.randint(0,3000) / 100)
+            pulse_train_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsetrainsigma'].update(pulse_train_sigma)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
@@ -728,6 +728,9 @@ DATA_CALC_2                = 23
             dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]] = color_count
             #dict_preset_pattern[str(data[point][ocn.DATA_DOWNCONVERT_SHIFT])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'Pulse Train Sigma' and data[point][ocn.DATA_PULSE_TRAIN_SIGMA] not in dict_preset_pattern:
+            dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]] = color_count
+            color_count = color_count + 1
           elif legend_type == 'Generator Polynomials' and str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])] = color_count
             color_count = color_count + 1
@@ -841,6 +844,9 @@ DATA_CALC_2                = 23
           elif legend_type == 'DC Shift':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Pulse Train Sigma':
+            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'FDM Separator':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]]
             #occurrences[plot_color_index] = occurrences[plot_color_index] + 1
@@ -939,6 +945,15 @@ DATA_CALC_2                = 23
             count = count + 1
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
+      elif legend_type == 'Pulse Train Sigma':
+        #filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if True: # occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            #debug_string = debug_string + ',(' + pattern_location_name + ')'
+            count = count + 1
       elif legend_type == 'FDM Separator':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[color_index]

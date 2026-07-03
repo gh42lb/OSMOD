@@ -25,6 +25,9 @@ from osmod_2fsk_8psk import mod_2FSK8PSK, demod_2FSK8PSK
 from modem_core_utils import ModemCoreUtils
 from queue import Queue
 from datetime import datetime, timedelta
+from scipy import signal as scipy_signal
+
+from scipy.signal import hilbert
 
 from osmod_dictionary import PersistentData
 from osmod_analysis import OsmodAnalysis
@@ -56,7 +59,10 @@ class osModem(object):
   previousBlocksizeOut = 0
   inStreamRunning      = False
   outStreamRunning     = False
-  signal_squelch_value = 0.25
+  signal_squelch_value = 0.0  # 0.25
+  bias_filter_value    = 1.3
+  input_gain = 1.0
+  output_gain = 0.1
 
   spectral_density_queue_counter = 0
   spectral_density_block = None
@@ -86,6 +92,8 @@ class osModem(object):
     self.bits_per_symbol = int(np.log2(self.symbols))
 
     self.test_counter = 0
+
+    self.aperture = 1.5
 
     self.mode = None
 
@@ -1560,9 +1568,92 @@ class osModem(object):
                                     'rx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
                                     'tx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
                                     'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
+                                    'resample_params_48k'  : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
+                                    'dcs_type'             : ocn.DCS_GENERAL,
+                                    'dcs_by_frequency'     : {},
 
 
                                    }
+
+
+
+  def setAperture(self, aperture):
+    self.aperture = aperture
+
+  def getAperture(self):
+    return self.aperture
+
+  def setBiasFilterValue(self, bias):
+    self.bias_filter_value = bias
+
+  def getBiasFilterValue(self):
+    return self.bias_filter_value
+
+  def setInputGain(self, gain):
+    self.input_gain = gain
+
+  def getInputGain(self):
+    return self.input_gain
+
+  def setOutputGain(self, gain):
+    self.output_gain = gain
+
+  def getOutputGain(self):
+    return self.output_gain
+
+  def getDownconvertShift(self):
+    if self.dcs_type == ocn.DCS_GENERAL:
+      return self.downconvert_shift
+    elif self.dcs_type == ocn.DCS_FREQUENCY_SPECIFIC:
+      key_name = str(self.center_frequency)
+      if key_name in self.dcs_by_frequency:
+        return self.dcs_by_frequency[key_name]
+      else:
+        return self.downconvert_shift
+
+  def getRxSampleRate(self):
+    use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+    if use_hifi_rx:
+      return self.rx_sample_rate * 6  # 8000 * 6  #self.sample_rate * 6
+    else:
+      return self.rx_sample_rate  #8000 # self.sample_rate
+
+  def getRxSymbolBlockSize(self):
+    use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+    if use_hifi_rx:
+      return self.rx_symbol_block_size * 6  #3200 * 6 #self.symbol_block_size * 6
+    else:
+      return self.rx_symbol_block_size  # 3200 # self.symbol_block_size
+
+  def getTxSampleRate(self):
+    use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+    if use_hifi_tx:
+      return self.tx_sample_rate * 6  #8000 * 6 #self.sample_rate * 6
+    else:
+      return self.tx_sample_rate #8000 #self.sample_rate
+
+  def getTxSymbolBlockSize(self):
+    use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+    if use_hifi_tx:
+      return self.tx_symbol_block_size * 6 #3200 * 6 #self.symbol_block_size * 6
+    else:
+      return self.tx_symbol_block_size # 3200 #self.symbol_block_size
+
+  def getTxResampleParams(self):
+    use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+    if use_hifi_tx:
+      return self.resample_params_48k
+    else:
+      return self.resample_params
+
+  def getRealMode(self, values, form_gui):
+    if values['cb_use_prod_modes'] == True:
+      form_gui.osmod.useProdMode()
+      mode = values['combo_main_modem_prod_modes']
+    else:
+      form_gui.osmod.useTestMode()
+      mode = values['combo_main_modem_modes']
+    return mode
 
 
   def getSignalSquelch(self):
@@ -1663,8 +1754,28 @@ class osModem(object):
       self.debug.error_message("Exception in C_setCurrentMode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+  def resetDecoder(self):
+    self.debug.info_message("resetDecoder")
+    try:
+      self.demod_2fsk8psk.remainder = np.array([])
+
+      """ reset rotation angles """
+      self.detector.rotation_angles[0] = 0.0
+      self.detector.rotation_angles[1] = 0.0
+
+    except:
+      self.debug.error_message("Exception in resetDecoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def setInitializationBlockSR(self, mode, sample_rate, symbol_block_size):
+    self.debug.info_message("setInitializationBlock")
+    self.setInitializationBlockCommon(mode, sample_rate, symbol_block_size, True)
 
   def setInitializationBlock(self, mode):
+    self.debug.info_message("setInitializationBlock")
+    self.setInitializationBlockCommon(mode, 0, 0, False)
+
+  def setInitializationBlockCommon(self, mode, sample_rate, symbol_block_size, override_sr_and_sbs):
     self.debug.info_message("setInitializationBlock")
     try:
       gc.collect()
@@ -1741,10 +1852,27 @@ class osModem(object):
       self.rx_filter           = self.getParam(mode, 'rx_filter')
       self.tx_filter           = self.getParam(mode, 'tx_filter')
       self.resample_params     = self.getParam(mode, 'resample_params')
+      self.resample_params_48k = self.getParam(mode, 'resample_params_48k')
+      self.dcs_type            = self.getParam(mode, 'dcs_type')
+      self.dcs_by_frequency    = self.getParam(mode, 'dcs_by_frequency')
+
+
+      # these used for hi-hi settings
+      self.rx_sample_rate = self.sample_rate
+      self.tx_sample_rate = self.sample_rate
+      self.rx_symbol_block_size = self.symbol_block_size
+      self.tx_symbol_block_size = self.symbol_block_size
+
+
 
       sys.stdout.write("          }, \n")
       sys.stdout.write("\n")
       sys.stdout.write("\n")
+
+
+      if override_sr_and_sbs:
+        self.sample_rate = sample_rate
+        self.symbol_block_size = symbol_block_size
 
 
       fdmsep_override_checked = self.form_gui.window['cb_overridefdmseparation'].get()
@@ -2254,7 +2382,7 @@ class osModem(object):
 
     self.opd.main_settings.get('params')[mode] = updated_data
 
-
+  """
   def calcCarrierFrequenciesFromFFT(self, fft_frequency, separation_override):
     self.debug.info_message("calcCarrierFrequenciesFromFFT")
     try:
@@ -2296,10 +2424,22 @@ class osModem(object):
 
     except:
       self.debug.error_message("Exception in calcCarrierFrequenciesFromFFT: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+  """
+
+
+  def calcCarrierFrequenciesSR(self, center_frequency, separation_override, sample_rate):
+    self.debug.info_message("calcCarrierFrequenciesSR")
+    #sample_rate = self.sample_rate
+    return self.calcCarrierFrequenciesCommon(center_frequency, separation_override, sample_rate)
 
 
   def calcCarrierFrequencies(self, center_frequency, separation_override):
     self.debug.info_message("calcCarrierFrequencies")
+    sample_rate = self.sample_rate
+    return self.calcCarrierFrequenciesCommon(center_frequency, separation_override, sample_rate)
+
+  def calcCarrierFrequenciesCommon(self, center_frequency, separation_override, sample_rate):
+    self.debug.info_message("calcCarrierFrequenciesCommon")
     try:
       enable_align_checked = self.form_gui.window['cb_enable_align'].get()
       carrier_alignment = self.form_gui.window['option_carrier_alignment'].get()
@@ -2340,7 +2480,7 @@ class osModem(object):
       self.form_gui.window['text_info_freq2'].update(frequency[1])
 
 
-      self.setStandingWaveValues(frequency)
+      self.setStandingWaveValues(frequency, sample_rate)
 
 
       self.debug.info_message("calcCarrierFrequencies. frequencies: " + str(frequency))
@@ -2351,13 +2491,13 @@ class osModem(object):
       self.debug.error_message("Exception in calcCarrierFrequencies: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def setStandingWaveValues(self, frequency):
+  def setStandingWaveValues(self, frequency, sample_rate):
     self.debug.info_message("calcCarrierFrequencies")
 
     try:
 
       def set_sw_values():
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, standingwave_location)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, standingwave_location, sample_rate)
         if   standingwave_pattern == 'A-B':
           self.i3_offsets = phase_list_low[0], phase_list_low[1], phase_list_high[0], phase_list_high[1]
         elif standingwave_pattern == 'A-C':
@@ -2511,172 +2651,172 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       """ 5 patterns with lowest single test result followed by 5 patterns with lowest 3-in-a-row test result"""
       if pattern == ocn.OFFSETS_PATTERN1: # 1
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.358)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.358, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN2:   # 2
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.666)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.666, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN3:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.133)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.133, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN4:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.338)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.338, sample_rate)
         return phase_list_low[1], phase_list_low[2], phase_list_high[1], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN5:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.233)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.233, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN6:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.144)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.144, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN7:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.839)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.839, sample_rate)
         return phase_list_low[4], phase_list_low[4], phase_list_high[4], phase_list_high[4]
       elif pattern == ocn.OFFSETS_PATTERN8:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.506)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.506, sample_rate)
         return phase_list_low[2], phase_list_low[4], phase_list_high[2], phase_list_high[4]
       elif pattern == ocn.OFFSETS_PATTERN9:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.429)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.429, sample_rate)
         return phase_list_low[2], phase_list_low[2], phase_list_high[2], phase_list_high[2]
       elif pattern == ocn.OFFSETS_PATTERN10:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.839)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.839, sample_rate)
         return phase_list_low[1], phase_list_low[1], phase_list_high[1], phase_list_high[1]
 
       elif pattern == ocn.OFFSETS_PATTERN11:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.821)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.821, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN12:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.827)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.827, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN13:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.193)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.193, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN14:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.196)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.196, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN15:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.312)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.312, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN16:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.749)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.749, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN17:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.827)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.827, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN18:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.562)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.562, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN19:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.657)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.657, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN20:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.248)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.248, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN21:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.883)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.883, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN22:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.589)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.589, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN23:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.171)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.171, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN24:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.943)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.943, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN25:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.822)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.822, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN26:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.425)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.425, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
 
       elif pattern == ocn.OFFSETS_PATTERN27:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.026)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.026, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
 
 
       elif pattern == ocn.OFFSETS_PATTERN28:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.467)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.467, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN29:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.612)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.612, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN30:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.616)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.616, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN31:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.719)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.719, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN32:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.889)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.889, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN33:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.256)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.256, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN34:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.758)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.758, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN35:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.616)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.616, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN36:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.527)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.527, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN37:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.594)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.594, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN38:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.144)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.144, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN39:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.551)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.551, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
 
       elif pattern == ocn.OFFSETS_PATTERN40:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.303)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.303, sample_rate)
         return phase_list_low[3], phase_list_low[3], phase_list_high[4], phase_list_high[4]
 
       elif pattern == ocn.OFFSETS_PATTERN41:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.653)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.653, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN42:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.195)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.195, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN43:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.865)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.865, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN44:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.373)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.373, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
       elif pattern == ocn.OFFSETS_PATTERN45:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.366)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.366, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN46:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.313)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.313, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN47:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.482)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.482, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN48:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.364)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.364, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
       elif pattern == ocn.OFFSETS_PATTERN49:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.698)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.698, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
 
       elif pattern == ocn.OFFSETS_PATTERN50:
-        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.605)
+        phase_list_low, phase_list_high = self.calcPhaseAngles(frequency, 0.605, sample_rate)
         return phase_list_low[0], phase_list_low[0], phase_list_high[3], phase_list_high[3]
 
 
@@ -2684,7 +2824,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.error_message("Exception in getOffsetsForPattern: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def calcPhaseAngles(self, frequency, standingwaveoffset):
+  def calcPhaseAngles(self, frequency, standingwaveoffset, sample_rate):
     self.debug.info_message("calcPhaseAngles")
 
     try:
@@ -2694,7 +2834,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         """ calculate the phases for the pulses at fixed pulse distance from pulse C """
         """ pulse separation is equivalent to pulse_length """
         offset_samples = pulse_length_in_samples * offset_ratio
-        wavelength_in_samples   = self.sample_rate / freq
+        #wavelength_in_samples   = self.sample_rate / freq
+        wavelength_in_samples   = sample_rate / freq
         phase_for_pulse_A = (((2*pulse_length_in_samples) - wavelength_in_samples + offset_samples) %  wavelength_in_samples ) / wavelength_in_samples
         phase_for_pulse_B = ((pulse_length_in_samples - wavelength_in_samples + offset_samples) %  wavelength_in_samples) / wavelength_in_samples
         phase_for_pulse_C = ((0 - wavelength_in_samples + offset_samples) %  wavelength_in_samples) / wavelength_in_samples
@@ -2827,7 +2968,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.info_message("total elapsed time for " + key + ": " + str(self.timer_dict_elapsed[key]))
 
      
-  def startEncoder(self, values, text, mode):
+  def startEncoder(self, values, text, mode, use_existing_txblocks, txblocks):
     self.debug.info_message("startEncoder")
 
     try:
@@ -2838,19 +2979,20 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       self.debug.info_message("encoding text: " + str(text))
 
-      noise = values['btn_slider_awgn']
-      text_num = values['combo_text_options'].split(':')[0]
-      amplitude = values['slider_amplitude']
-      carrier_separation_override = values['slider_carrier_separation']
+      if use_existing_txblocks == False:
+        noise = values['btn_slider_awgn']
+        text_num = values['combo_text_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        carrier_separation_override = values['slider_carrier_separation']
 
-      #message_text = 
-      use_preset_message = self.form_gui.window['cb_use_preset_message'].get()
-      if use_preset_message:
-        txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, True, "")
-      else:
-        send_text = self.form_gui.window['ml_txrx_sendtext'].get()
-        txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
-        #txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, "Hi there this is me")
+        #message_text = 
+        use_preset_message = self.form_gui.window['cb_use_preset_message'].get()
+        if use_preset_message:
+          txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, True, "")
+        else:
+          send_text = self.form_gui.window['ml_txrx_sendtext'].get()
+          txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
+          #txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, "Hi there this is me")
 
 
       #test1 = np.max(np.abs(txblocks))
@@ -2858,8 +3000,13 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks))
       txblocks = txblocks.astype(np.float32)
 
-      output_signal_gain = values['slider_signal_outgain']
-      txblocks = txblocks * output_signal_gain
+      #output_signal_gain = float(values['slider_signal_outgain'])
+      txblocks = txblocks * self.getOutputGain()  #output_signal_gain
+
+      self.debug.info_message("getOutputGain() : " + str(self.getOutputGain()))
+
+      self.resetDataQueue()
+
 
       #self.pushDataQueue(txblocks)
 
@@ -2867,11 +3014,16 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       #for location in range(0, len(reshaped_blocks) , 8000):
       #  self.pushDataQueue(reshaped_blocks[location:location+8000])
 
+      use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+      if use_hifi_tx == False:
+        local_sample_rate = self.sample_rate #8000
+      else:
+        local_sample_rate = 48000
 
-      for location in range(0, len(txblocks) , 8000):
-        block_item = txblocks[location:location+8000]
-        if len(block_item) < 8000:
-          new_item =  np.zeros((8000,), dtype = np.float32)
+      for location in range(0, len(txblocks) , local_sample_rate):
+        block_item = txblocks[location:location+local_sample_rate]
+        if len(block_item) < local_sample_rate:
+          new_item =  np.zeros((local_sample_rate,), dtype = np.float32)
           new_item[0:len(block_item)] = block_item
           block_item = new_item
           #block_item.resize(8000)
@@ -2882,7 +3034,11 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       #  self.debug.info_message("pushing triplet: " + str(triplet) )
       #  self.pushDataQueue(triplet)
 
-      self.initOutputStream(values, self.sample_rate)
+      self.debug.info_message("local_sample_rate: " + str(local_sample_rate))
+      self.debug.info_message("self.sample_rate: " + str(self.sample_rate))
+
+      #self.initOutputStream(values, self.sample_rate)
+      self.initOutputStream(values, local_sample_rate)
 
     except:
       self.debug.error_message("Exception in startEncoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -2898,18 +3054,50 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       mode = values['combo_main_modem_prod_modes']
 
       self.setInitializationBlock(mode)
-      self.initInputStream(self.sample_rate, window, values)
+
+      use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+      if use_hifi_rx == False:
+        local_sample_rate = self.sample_rate #8000
+      else:
+        local_sample_rate = 48000
+
+
+      #self.initInputStream(self.sample_rate, window, values)
+      self.initInputStream(local_sample_rate, window, values)
 
     except:
       self.debug.error_message("Exception in startDecoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
+
+  def resetAll(self):
+    self.debug.info_message("resetAll")
+    self.opd = PersistentData(self)
+    self.analysis     = OsmodAnalysis(self)
+    self.detector     = OsmodDetector(self)
+    self.simulator    = OsmodSimulator(self)
+    self.interpolator = OsmodInterpolator(self)
+    self.test         = OsmodTest(self, form_gui.window)
+    self.fec          = OsmodFEC(self, form_gui.window)
+    self.core_utils   = ModemCoreUtils(self)
+    self.mod_2fsk8psk   = mod_2FSK8PSK(self)
+    self.demod_2fsk8psk = demod_2FSK8PSK(self)
+    self.prodparams   = OsmodProdParams(self)
+
+
   def stopEncoder(self):
     self.debug.info_message("stopEncoder")
 
-    if self.outStreamRunning == True:
-      self.outStream.stop()
-      self.outStreamRunning = False
-      self.outStream.close()
+    try:
+      if self.outStreamRunning == True:
+        self.outStreamRunning = False
+        self.outStream.stop()
+        self.outStream.close()
+        self.outStream = None
+        gc.enable()
+        gc.collect()
+
+    except:
+      self.debug.error_message("Exception in stopEncoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   def stopDecoder(self):
@@ -2921,7 +3109,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.inStream.stop()
       self.inStreamRunning = False
       self.inStream.close()
-
+      self.inStream = None
+      gc.enable()
+      gc.collect()
 
   def resetInputBuffer(self):
     self.inputBuffer = Queue()
@@ -2971,15 +3161,66 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def popDataQueue(self):
     return self.dataQueue.get_nowait()
 
+  def resetDataQueue(self):
+    self.dataQueue = Queue()
+
+
   def get_sd_blocksize(self):
     #return self.symbol_block_size
     return self.sample_rate
+
+  def set_sd_blocksize_tx(self):
+    use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+    if use_hifi_tx:
+      self.sd_blocksize_tx = self.sample_rate * 6
+    else:
+      self.sd_blocksize_tx = self.sample_rate
+
+
+  def get_sd_blocksize_tx(self):
+    return self.sd_blocksize_tx
+    """
+    use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+    if use_hifi_tx:
+      return self.sample_rate * 6
+    else:
+      return self.sample_rate
+    """
+
+
+  def set_sd_blocksize_rx(self):
+    use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+    if use_hifi_rx:
+      self.sd_blocksize_rx = self.sample_rate * 6
+    else:
+      self.sd_blocksize_rx = self.sample_rate
+
+  def get_sd_blocksize_rx(self):
+    return self.sd_blocksize_rx
+
+
+  def set_symbol_blocksize_rx(self):
+    use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+    if use_hifi_rx:
+      self.symbol_blocksize_rx = self.symbol_block_size * 6
+    else:
+      self.symbol_blocksize_rx = self.symbol_block_size
+
+  def get_symbol_blocksize_rx(self):
+    return self.symbol_blocksize_rx
+
+
 
   def isDataQueueEmpty(self):
     return self.dataQueue.empty()
 
   def initInputStream(self, sample_rate, window, values):
     self.debug.info_message("initInputStream" )
+
+    self.set_sd_blocksize_rx()
+    self.set_symbol_blocksize_rx()
+
+    self.previous_mag = 0.0
 
     center_frequency = values['slider_frequency']
     separation_override = values['slider_carrier_separation']
@@ -3013,8 +3254,17 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       input_device = self.form_gui.window['combo_main_modem_input_device'].get()
 
-      self.inStream = sd.InputStream(device=input_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #self.inStream = sd.InputStream(device=input_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #                               dtype=np.float32, callback = self.sd_instream_callback)
+
+      gc.disable()
+
+      self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
                                      dtype=np.float32, callback = self.sd_instream_callback)
+
+      #self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
+      #                               latency=0.0, dtype=np.float32, callback = self.sd_instream_callback)
+
 
       #self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
       #                               dtype=np.float32, callback = self.sd_instream_callback)
@@ -3050,6 +3300,10 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
     #self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude)
 
+    self.set_sd_blocksize_tx()
+
+
+
     devices = sd.query_devices()
     for device in devices:
       self.debug.info_message("device ID: " + str(device['index']) + " device Name: " + str(device['name'])  )
@@ -3057,9 +3311,12 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
     #if self.symbol_block_size != self.previousBlocksizeOut or self.outStreamRunning == False:
     #  self.previousBlocksizeOut = self.symbol_block_size
+    if True:
 
       if self.outStreamRunning == True:
-        self.outStream.stop()
+        self.debug.info_message("stopping outStream")
+        self.stopEncoder()
+        #self.outStream.stop()
 
       #self.outStream = sd.OutputStream(samplerate=self.sample_rate, blocksize=self.symbol_block_size,
       #                                 channels=1, callback=self.sd_callback, dtype=np.float32)
@@ -3069,8 +3326,22 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       output_device = self.form_gui.window['combo_main_modem_output_device'].get()
 
-      self.outStream = sd.OutputStream(device=output_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #self.outStream = sd.OutputStream(device=output_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
+      #                               dtype=np.float32, callback = self.sd_callback)
+
+      gc.disable()
+
+      # blocksize = sample_rate for 1 second samples
+      self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
                                      dtype=np.float32, callback = self.sd_callback)
+
+      #self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
+      #                                 latency=0.0, dtype=np.float32, callback = self.sd_callback)
+
+
+      self.debug.info_message("tx audio sample_rate: " + str(sample_rate))
+      self.debug.info_message("tx audio blocksize: " + str(self.get_sd_blocksize_tx()))
+
 
       #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
       #                               dtype=np.float32, callback = self.sd_callback)
@@ -3105,138 +3376,186 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
   """ This method is the focal point of the detector. Looks for signals then starts putting blocks in the decoder queue"""
   def sd_instream_callback(self, indata, frames, time, status):
-    self.debug.info_message("sd_instream_callback. num frames: " + str(frames))
-    self.debug.info_message("time_info capture time of first sample: " + str(time.inputBufferAdcTime))
+    #self.debug.info_message("sd_instream_callback. num frames: " + str(frames))
+    #self.debug.info_message("time_info capture time of first sample: " + str(time.inputBufferAdcTime))
 
     try:
 
       """ send data to demodulator """
-      #"""
       if self.runDecoder == True:
-
-        #strong_freqs = self.detector.getStrongestFrequencyOverRange(indata)
-        #self.debug.info_message("strong_freqs: " + str(strong_freqs))
-
         block = np.array(indata)
-        #self.debug.info_message("in loop strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(block.reshape(self.symbol_block_size,).astype(np.float64), 1370, 1390)))
-        #self.debug.info_message("in loop strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(block.reshape(self.symbol_block_size,).astype(np.float64), 1350, 1450)))
-        #present_freq, present_mag = self.modulation_object.getIsSignalPresent(block.reshape(self.symbol_block_size,).astype(np.float64), 1382.5)
-
-
-        present_freq, present_mag = self.modulation_object.getIsSignalPresent(block.reshape(self.get_sd_blocksize(),).astype(np.float64), self.watch_frequency + 0.5)
-
-
-        #signal_squelch_value
+        detected_signal = self.getInputGain() * block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
+        present_freq, present_mag, fft_output, data_len, fdd = self.modulation_object.getIsSignalPresent(detected_signal, self.watch_frequency + 0.5)
 
         self.form_gui.window['text_input_signal_magnitude_passband'].update(str(present_mag))
-
+        #self.form_gui.window['text_input_signal_magnitude_passband_smoothed'].update(str(self.previous_mag))
+        #self.previous_mag = (present_mag/5) + (self.previous_mag * (4/5))
 
         if present_mag > self.getSignalSquelch():
-        #if present_mag > 0.25:
           self.pushInputBuffer(np.array(indata))
 
-        #self.form_gui.spectralDensityQueue.put(indata)
-        self.form_gui.spectralDensityQueue.put(block.reshape(self.get_sd_blocksize(),).astype(np.float64))
+        self.form_gui.spectralDensityQueue.put(fdd)
 
     except:
       self.debug.error_message("Exception in sd_instream_callback: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-        #self.pushInputBuffer(np.array(indata).astype(np.float64))
-        #self.pushInputBuffer(indata.astype(np.float64))
-      #"""
-
-      """ send data to spectrum display """
-      #self.form_gui.spectralDensityQueue.put(indata)
-      """
-      if self.inStreamRunning == True:
-        if self.spectral_density_queue_counter == 0:
-          self.spectral_density_block = indata
-          self.spectral_density_queue_counter += 1
-        elif self.spectral_density_queue_counter > 0:
-          #self.debug.info_message("pushing data for spectral density plot")
-          self.spectral_density_block = np.append(self.spectral_density_block, indata)
-          self.form_gui.spectralDensityQueue.put(self.spectral_density_block)
-          self.spectral_density_queue_counter = 0
-        else:
-          self.spectral_density_block = np.append(self.spectral_density_block, indata)
-          self.spectral_density_queue_counter += 1
-      """
-
-
     return None
 
   def decoder_thread(self, window, values):
-    self.debug.info_message("decoder_thread")
+    #self.debug.info_message("decoder_thread")
 
-    max_blocks = int(58 * (self.symbol_block_size / self.get_sd_blocksize()))
+    #max_blocks = int(58 * (self.symbol_block_size / self.get_sd_blocksize_rx()))
+    max_blocks = int(58 * (self.get_symbol_blocksize_rx() / self.get_sd_blocksize_rx()))
 
     while self.runDecoder == True:
       num_items = self.getInputBufferItemCount()
-      self.debug.info_message("decoder_thread num items: "+ str(num_items))
+      #self.debug.info_message("decoder_thread num items: "+ str(num_items))
       if  num_items >= max_blocks:
-        self.debug.info_message("we have 30 items in queue...starting decode")
+        #self.debug.info_message("we have 30 items in queue...starting decode")
         for i in range(0, max_blocks): 
           block = self.popInputBuffer()
           if i == 0:
-            self.debug.info_message("i: " + str(i))
-            self.debug.info_message("self.symbol_block_size: " + str(self.symbol_block_size))
-            multi_block = np.zeros((max_blocks * self.get_sd_blocksize(),), dtype = np.float64)
-            multi_block[0:self.get_sd_blocksize()] = block.reshape(self.get_sd_blocksize(),).astype(np.float64)
+            #self.debug.info_message("i: " + str(i))
+            #self.debug.info_message("self.symbol_block_size: " + str(self.symbol_block_size))
+            multi_block = np.zeros((max_blocks * self.get_sd_blocksize_rx(),), dtype = np.float64)
+            multi_block[0:self.get_sd_blocksize_rx()] = block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
           else:
-            self.debug.info_message("i: " + str(i))
-            multi_block[i*self.get_sd_blocksize():(i+1) * self.get_sd_blocksize()] = block.reshape(self.get_sd_blocksize(),).astype(np.float64)
+            #self.debug.info_message("i: " + str(i))
+            multi_block[i*self.get_sd_blocksize_rx():(i+1) * self.get_sd_blocksize_rx()] = block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
+
+
+
+        """ downconvert sample from 48k to 8k """
+        #use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+        #if use_hifi_rx:
+        #  multi_block = multi_block.astype(np.complex128)
+        #  multi_block = scipy_signal.resample(multi_block[0:int(len(multi_block)//6)*6], int(len(multi_block) // 6))
+        #  multi_block = multi_block.astype(np.float64)
+
+        """ stop the decoder """
+        if self.form_gui.window['cb_continuous_decode'].get() == False:
+          self.stopDecoder()
+          self.stopEncoder()
+          self.resetInputBuffer()
+          self.resetDataQueue()
 
 
 
         multi_block = multi_block * 1
         #self.modulation_object.writeFileWav2("TEST_AUDIO.wav", multi_block)
-        self.modulation_object.writeFileWav("TEST_AUDIO.wav", multi_block)
+        self.modulation_object.writeFileWavSR("sampled_audio.wav", multi_block, self.getRxSampleRate())
 
         save_sampled_signal_checked = self.form_gui.window['cb_savesampledsignal'].get()
         if save_sampled_signal_checked:
           sampled_signal_name = self.form_gui.window['in_sampledsignalname'].get()
-          self.modulation_object.writeFileWav(sampled_signal_name, multi_block)
+          self.modulation_object.writeFileWavSR(sampled_signal_name, multi_block, self.getRxSampleRate())
 
 
         # test increase amplitude...
         #multi_block = 0.0001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
 
-        input_signal_gain = values['slider_signal_ingain']
-
-
-        multi_block = input_signal_gain * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
+        #input_signal_gain = values['slider_signal_ingain']
+        #multi_block = input_signal_gain * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
+        multi_block = self.getInputGain() * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
 
         center_frequency = values['slider_frequency']
         separation_override = values['slider_carrier_separation']
 
         #self.debug.info_message("strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(multi_block, 1160, 1450)))
-        self.debug.info_message("strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(multi_block, 1350, 1450)))
-        self.debug.info_message("strongest frequencies over range is: " + str(self.modulation_object.getStrongestFrequencies(multi_block, 20, 1160, 1450)))
+        #self.debug.info_message("strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(multi_block, 1350, 1450)))
+        #self.debug.info_message("strongest frequencies over range is: " + str(self.modulation_object.getStrongestFrequencies(multi_block, 20, 1160, 1450)))
 
-        fft_frequency = self.modulation_object.getStrongestFrequency(multi_block, 1160, 1450)
-        #fft_frequency = 1280 #1300.166666
-        fft_frequency = 1382 #1300.166666
-        self.form_gui.window['text_info_fftfreq'].update(fft_frequency)
+        #fft_frequency = self.modulation_object.getStrongestFrequency(multi_block, 1160, 1450)
+        #fft_frequency = 1382 #1300.166666
+        #self.form_gui.window['text_info_fftfreq'].update(fft_frequency)
 
-        frequency = self.calcCarrierFrequencies(center_frequency, separation_override)
+        #frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
         #frequency = self.calcCarrierFrequenciesFromFFT(fft_frequency, separation_override)
 
 
         #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
 
+        #""" adjust for doppler shift """
+        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
+
+        """ DEBUG CODE """
+        #self.debug.info_message("FREQUENCY LO BEFORE RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1382.5, 5, 8, 0, 10, 1000)))
+        #self.debug.info_message("FREQUENCY HI BEFORE RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1417.5, 5, 8, 0, 10, 1000)))
+
+
+        """ adjust for doppler shift """
+        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(multi_block, values, center_frequency, self.getRxSampleRate())
+        multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(multi_block, values, center_frequency, self.getTxSampleRate())
+
+        # do the downconvert here
+        #use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
+        #if use_hifi_tx == True and use_hifi_rx == False:
+        #  multi_block = scipy_signal.resample(multi_block, int(len(multi_block) * 1/6))
+
+
+        """ DEBUG CODE ONLY"""
+        #multi_block = self.modulation_object.alignTimePointT0(multi_block, self.getRxSampleRate(), self.getRxSymbolBlockSize())
+
+
+
+        mode = self.getRealMode(values, self.form_gui)
+        self.setInitializationBlock(mode)
+        frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
+
+
+
+        """ TEST CODE ONLY debug code for FFT analysis"""
+        #self.detector.detectStandingWavePulseNew([multi_block, multi_block], frequency, 0, 0, ocn.FFT_ANALYSIS)
+
+
+
         """ filter the input signal """
         rx_filter_params = self.rx_filter
-        multi_block = self.modulation_object.apply_filter(multi_block, rx_filter_params, center_frequency)
+        #multi_block = self.modulation_object.apply_filter(multi_block, rx_filter_params, center_frequency)
+        multi_block = self.modulation_object.apply_filterSR(multi_block, rx_filter_params, center_frequency, self.getRxSampleRate())
 
-        multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
 
+
+
+        use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
+        if use_hifi_rx == True:
+          multi_block = scipy_signal.resample(multi_block, int(len(multi_block) * 1/6))
+
+
+        """ reset the decoder """
+        """ reset the remainder"""
+        self.resetDecoder()
+
+
+        #self.osmod.demod_2fsk8psk.remainder = np.array([])
+        #self.demodulation_object.remainder = np.array([])
+        """ reset the remainder"""
+        #self.demod_2fsk8psk.remainder = np.array([])
+
+
+
+        """ stop the decoder """
+        #self.resetInputBuffer()
+        #if self.form_gui.window['cb_continuous_decode'].get() == False:
+        #  self.stopDecoder()
+
+        """ DEBUG CODE """
+        #self.debug.info_message("FREQUENCY LO AFTER RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1382.5, 5, 8, 0, 10, 1000)))
+        #self.debug.info_message("FREQUENCY HI AFTER RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1417.5, 5, 8, 0, 10, 1000)))
+
+
+        #""" adjust for doppler shift """
+        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
 
         self.decoder_callback(multi_block, frequency)
 
-        self.resetInputBuffer()
+        #""" stop the decoder """
+        #self.resetInputBuffer()
+        #if self.form_gui.window['cb_continuous_decode'].get() == False:
+        #  self.stopDecoder()
 
-        if self.form_gui.window['cb_continuous_decode'].get() == False:
-          self.stopDecoder()
+
+
 
       else:
         time.sleep(1)
@@ -3269,12 +3588,16 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.startTimer('init')
 
       """ initialize the block"""
-      self.setInitializationBlock(mode)
+      #self.setInitializationBlock(mode)
+      self.setInitializationBlockSR(mode, self.getTxSampleRate(), self.getTxSymbolBlockSize())
 
       """ figure out the carrier frequencies"""
       center_frequency = values['slider_frequency']
 
-      frequency = self.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      #frequency = self.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      frequency = self.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.getTxSampleRate())
+
+
       self.debug.info_message("center frequency: " + str(center_frequency))
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
@@ -3326,15 +3649,19 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.info_message("encoding text: " + str(text))
 
       bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
-      data2 = self.modulation_object.modulate(frequency, bit_groups)
+      #data2 = self.modulation_object.modulate(frequency, bit_groups)
+      data2 = self.modulation_object.modulate(frequency, bit_groups, self.getTxSampleRate(), self.getTxSymbolBlockSize())
 
       """ filter the output signal """
       tx_filter_params = self.tx_filter
-      data2 = self.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+      #data2 = self.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
+      data2 = self.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.getTxSampleRate())
 
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))
-      self.modulation_object.writeFileWav(mode + ".wav", data2)
+      #self.modulation_object.writeFileWav(mode + ".wav", data2)
+      #self.modulation_object.writeFileWavSR(mode + ".wav", data2, self.getTxSampleRate())
+      self.modulation_object.writeFileWavSR(mode + ".wav", data2, self.getTxSampleRate())
 
       """ read file """
       use_audio_sample = self.form_gui.window['cb_test_routine_use_audio_sample'].get()
@@ -3363,7 +3690,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         audio_array = self.modulation_object.addPhaseNoise2(audio_array)
 
       self.debug.info_message("size of noise data: " + str(len(audio_array)))
-      self.modulation_object.writeFileWav(mode + "_with_noise.wav", audio_array)
+      #self.modulation_object.writeFileWavSR(mode + "_with_noise.wav", audio_array, self.getTxSampleRate())
+      self.modulation_object.writeFileWavSR(mode + "_with_noise.wav", audio_array, self.getTxSampleRate())
 
       audio_array_with_unfiltered_noise = audio_array.copy()
 

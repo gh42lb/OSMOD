@@ -603,6 +603,9 @@ class OsmodDetector(object):
         self.debug.info_message("revised_pulse_length: " + str(revised_pulse_length))
         """
 
+        prev_min = 0
+        prev_max = 0
+
         block_offsets = []
         num_full_blocks = int((len(signal)) // self.osmod.symbol_block_size)
         for block_count in range(0, num_full_blocks): 
@@ -611,9 +614,15 @@ class OsmodDetector(object):
             division_offset = int(((division_count / divisions) * self.osmod.pulses_per_block) * pulse_length) 
             block_signal = signal[offset + division_offset:offset + division_offset + int((self.osmod.pulses_per_block * pulse_length)/divisions)]
 
-            start_index, _ = identifyStrongestPeaks(block_signal, 1, 1, False, (0,0))
-            self.debug.info_message("start_index: " + str(start_index))
-
+            index_max, index_min = identifyStrongestPeaks(block_signal, 1, 1, False, (0,0))
+            self.debug.info_message("DIFF: " + str(index_max - index_min))
+            diff_from_previous_a = prev_min - index_max
+            diff_from_previous_b = prev_max - index_min
+            self.debug.info_message("diff_from_previous_a: " + str(diff_from_previous_a))
+            self.debug.info_message("diff_from_previous_b: " + str(diff_from_previous_b))
+            self.debug.info_message("DIFF2: " + str(diff_from_previous_a - diff_from_previous_b))
+            prev_min = index_min
+            prev_max = index_max
             #self.osmod.modulation_object.getStrongestFrequencies(block_signal, 10, 0, 500)
 
             #self.osmod.modulation_object.getStrongestFrequencies(block_signal, 10, 50, 100)
@@ -1300,9 +1309,9 @@ class OsmodDetector(object):
         #pulse_train_sigma_template = 1.6
         pulse_train_sigma_template = 5.0
 
-        override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
-        if override_pulse_train_sigma:
-          pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
+        #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
+        #if override_pulse_train_sigma:
+        #  pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
 
         test_signal = gaussian_filter(np.abs(audio_array[pulse_start_index:]), sigma=pulse_train_sigma_template)
 
@@ -2126,9 +2135,9 @@ class OsmodDetector(object):
 
       def get_min_diff_angle(angle_a, angle_b):
         if angle_a > angle_b:
-          return min(angle_a - angle_b, angle_b - angle_a + (2*np.pi) )
+          return min(angle_a - angle_b, abs(angle_b - angle_a + (2*np.pi)) )
         elif angle_a < angle_b:
-          return min(angle_b - angle_a, angle_a - angle_b + (2*np.pi) )
+          return min(angle_b - angle_a, abs(angle_a - angle_b + (2*np.pi)) )
         else:
           return 0.0
 
@@ -2159,19 +2168,22 @@ class OsmodDetector(object):
         self.debug.info_message("rotation_lo: " + str(rotation_lo))
         self.debug.info_message("rotation_hi: " + str(rotation_hi))
 
-        adjust_lo = 0
-        adjust_hi = 0
-        if rotation_lo > 4:
-          adjust_lo = - 2
-        elif rotation_lo < 2:
-          adjust_lo = 2
-        if rotation_hi > 4:
-          adjust_hi = - 2
-        elif rotation_hi < 2:
-          adjust_hi = 2
+        #adjust_lo = 0
+        #adjust_hi = 0
+        #if rotation_lo > 4:
+        #  adjust_lo = - 2
+        #elif rotation_lo < 2:
+        #  adjust_lo = 2
+        #if rotation_hi > 4:
+        #  adjust_hi = - 2
+        #elif rotation_hi < 2:
+        #  adjust_hi = 2
 
-        rotation_lo  = self.osmod.modulation_object.normalizeAngle(rotation_lo + adjust_lo)
-        rotation_hi  = self.osmod.modulation_object.normalizeAngle(rotation_hi + adjust_hi)
+        #rotation_lo  = self.osmod.modulation_object.normalizeAngle(rotation_lo + adjust_lo)
+        #rotation_hi  = self.osmod.modulation_object.normalizeAngle(rotation_hi + adjust_hi)
+        rotation_lo  = self.osmod.modulation_object.normalizeAngle(rotation_lo)
+        rotation_hi  = self.osmod.modulation_object.normalizeAngle(rotation_hi)
+ 
         self.debug.info_message("adjusted rotation_lo: " + str(rotation_lo))
         self.debug.info_message("adjusted rotation_hi: " + str(rotation_hi))
 
@@ -2192,12 +2204,15 @@ class OsmodDetector(object):
           #if found_match == True:
           #  break
 
-          abs_accuracy = (np.pi / 4) * 2 #0.5
+          #abs_accuracy = (np.pi / 4) * 2 #0.5
           #abs_accuracy = (np.pi / 4) * 3 #0.5
+          abs_accuracy = (np.pi / 4) * 4 #0.5
 
           for test_disposition in range(0, len(active_table)):
-            test_disp_lo  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][0] + adjust_lo)
-            test_disp_hi  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][1] + adjust_hi)
+            #test_disp_lo  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][0] + adjust_lo)
+            #test_disp_hi  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][1] + adjust_hi)
+            test_disp_lo  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][0])
+            test_disp_hi  = self.osmod.modulation_object.normalizeAngle(active_table[test_disposition][1])
             #self.debug.info_message("adjusted test_disp_lo: " + str(test_disp_lo))
             #self.debug.info_message("adjusted test_disp_hi: " + str(test_disp_hi))
 

@@ -494,8 +494,8 @@ class OsmodInterpolator(object):
       self.debug.info_message("modified interpolated_higher: " + str(interpolated_higher))
 
 
-      self.osmod.form_gui.window['text_indices_lower'].update(str(interpolated_lower))
-      self.osmod.form_gui.window['text_indices_higher'].update(str(interpolated_higher))
+      #self.osmod.form_gui.window['text_indices_lower'].update(str(interpolated_lower))
+      #self.osmod.form_gui.window['text_indices_higher'].update(str(interpolated_higher))
 
 
     except:
