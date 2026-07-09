@@ -27,6 +27,7 @@ view the console debug info to check compiled code loads correctly
 
 testing confirms successful run on Apple Mac Book. 
 
+<img width="2536" height="2122" alt="image" src="https://github.com/user-attachments/assets/f32e4e6e-c852-4af7-b417-1170dc5a0856" />
 
 ![osmod4](https://github.com/user-attachments/assets/b5d5b5c2-c3f9-48d6-b11d-a5ee97836be7)
 
