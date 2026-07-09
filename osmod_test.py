@@ -493,24 +493,38 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       fine_tune_adjust[1] = 0
 
       """ initialize the block"""
-      self.osmod.setInitializationBlock(mode)
+      #self.osmod.setInitializationBlock(mode)
+      self.osmod.setInitializationBlockSR(mode, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
       self.osmod.extrapolate = 'no'
 
       """ figure out the carrier frequencies"""
-      center_frequency = values['slider_frequency']
+      #center_frequency = values['slider_frequency']
+      center_frequency = self.osmod.center_frequency #values['slider_frequency']
 
       self.debug.info_message("center_frequency: " + str(center_frequency))
       self.debug.info_message("carrier_separation_override: " + str(carrier_separation_override))
 
-      frequency = self.osmod.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      #frequency = self.osmod.calcCarrierFrequencies(center_frequency, carrier_separation_override)
+      frequency = self.osmod.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.osmod.getTxSampleRate())
 
       """ convert text to bits"""
       text = 'aaaaaaaa' + " peter piper picked a peck of pickled peppercorn "
       bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
-      data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
+      #data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
+      data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
-      self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
+
+      """ filter the output signal """
+      tx_filter_params = self.osmod.tx_filter
+      #audio_block = self.osmod.modulation_object.apply_filter(audio_block, tx_filter_params, center_frequency)
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.osmod.getTxSampleRate())
+
+
+
+      #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
+      self.osmod.modulation_object.writeFileWavSR(mode + ".wav", data2, self.osmod.getTxSampleRate())
+
       audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav")
       noise_free_signal = audio_array*0.00001 * float(amplitude)
 
@@ -518,18 +532,18 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       audio_block = np.array_split( noise_free_signal , how_many_blocks, axis=0)
       #audio_block = noise_free_signal.copy()
 
-      """ filter the output signal """
-      tx_filter_params = self.osmod.tx_filter
-      audio_block = self.osmod.modulation_object.apply_filter(audio_block, tx_filter_params, center_frequency)
+
+
 
 
       """ adjust for doppler shift """
-      audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(audio_block, values, center_frequency)
+      #audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(audio_block, values, center_frequency)
+      audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(audio_block, values, center_frequency, self.osmod.getTxSampleRate())
 
       """ filter the input signal """
       rx_filter_params = self.osmod.rx_filter
-      audio_block = self.osmod.modulation_object.apply_filter(audio_block, rx_filter_params, center_frequency)
-
+      #audio_block = self.osmod.modulation_object.apply_filter(audio_block, rx_filter_params, center_frequency)
+      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, rx_filter_params, center_frequency, self.osmod.getRxSampleRate())
 
       """ locate pulse start index """
       #ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_block, audio_block], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
@@ -997,7 +1011,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         self.debug.info_message("random offset modulo pulse_length: " + str((random_start_index2 - random_start_index1 + pulse_length) % pulse_length) )
         self.debug.info_message("random offset modulo 3*pulse_length: " + str((random_start_index2 - random_start_index1 + (3*pulse_length)) % (3*pulse_length)) ) 
  
-
+      how_many_blocks = 1
       audio_block = np.array_split( audio_array , how_many_blocks, axis=0)
       for block_count in range (how_many_blocks):
         self.debug.info_message("num_divisor: " + str(how_many_blocks))
@@ -1090,7 +1104,8 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.osmod.form_gui.window['text_ber_value'].update("BER: " + str(ber))
       self.osmod.form_gui.window['text_ebn0_value'].update("Eb/N0: " + str(ebn0))
       self.osmod.form_gui.window['text_ebn0db_value'].update("Eb/N0 (dB): " + str(ebn0_db))
-      self.osmod.form_gui.window['text_snr_value'].update("SNR dB: " + str(SNR_equiv_db))
+      #self.osmod.form_gui.window['text_snr_value'].update("SNR dB: " + str(SNR_equiv_db))
+      self.osmod.form_gui.window['text_snr_value'].update("SNR dB: "f"{SNR_equiv_db:.3f}")
 
       self.osmod.getSummary()
 

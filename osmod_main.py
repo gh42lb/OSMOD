@@ -12,6 +12,7 @@ import sys
 import gc
 import pyaudio
 import ctypes
+import pkgutil
 
 from numpy import pi
 from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
@@ -37,6 +38,7 @@ from osmod_interpolation import OsmodInterpolator
 from osmod_test import OsmodTest
 from osmod_fec import OsmodFEC
 from osmod_prod_params import OsmodProdParams
+from osmod_sonic import OsmodSonic
 
 class osModem(object):
 
@@ -51,7 +53,8 @@ class osModem(object):
   mod_fsk   = None
   demod_fsk = None
 
-  runDecoder = False
+  decoderRunning = False
+  encoderRunning = False
 
   fec_params = (400, 361, 2, 20, 500)
 
@@ -72,6 +75,10 @@ class osModem(object):
   def __init__(self, form_gui):  
     self.debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
     self.debug.info_message("__init__")
+
+    for module in pkgutil.iter_modules():
+      self.debug.info_message("module: " + str(module[1]))
+
 
     self.opd = PersistentData(self)
 
@@ -110,6 +117,15 @@ class osModem(object):
     #self.demod_2fsk4psk = demod_2FSK4PSK(self)
 
     self.prodparams   = OsmodProdParams(self)
+
+    self.sonic = OsmodSonic(self)
+
+
+    """ start the decoder thread """
+    #self.t1_decoder = threading.Thread(target=self.decodeProcessing, args=(window, values, ))
+    #self.t1_decoder.start()
+    self.t1_decoder = None
+    self.exit_decoder_processing = False
 
 
     self.dataQueue = Queue()
@@ -2971,6 +2987,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def startEncoder(self, values, text, mode, use_existing_txblocks, txblocks):
     self.debug.info_message("startEncoder")
 
+    self.encoderRunning = True
+
     try:
       self.useProdMode()
       mode = values['combo_main_modem_prod_modes']
@@ -2985,40 +3003,31 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         amplitude = values['slider_amplitude']
         carrier_separation_override = values['slider_carrier_separation']
 
-        #message_text = 
         use_preset_message = self.form_gui.window['cb_use_preset_message'].get()
         if use_preset_message:
           txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, True, "")
         else:
           send_text = self.form_gui.window['ml_txrx_sendtext'].get()
           txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
-          #txblocks = self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, "Hi there this is me")
-
 
       #test1 = np.max(np.abs(txblocks))
       #test2 = txblocks * (2**15 - 1)
       txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks))
       txblocks = txblocks.astype(np.float32)
 
-      #output_signal_gain = float(values['slider_signal_outgain'])
-      txblocks = txblocks * self.getOutputGain()  #output_signal_gain
+      txblocks = txblocks * self.getOutputGain()
 
       self.debug.info_message("getOutputGain() : " + str(self.getOutputGain()))
 
       self.resetDataQueue()
 
-
-      #self.pushDataQueue(txblocks)
-
-      #reshaped_blocks = txblocks.reshape(self.get_sd_blocksize(),).astype(np.float32)
-      #for location in range(0, len(reshaped_blocks) , 8000):
-      #  self.pushDataQueue(reshaped_blocks[location:location+8000])
-
       use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
       if use_hifi_tx == False:
-        local_sample_rate = self.sample_rate #8000
+        local_sample_rate = self.sample_rate
       else:
         local_sample_rate = 48000
+
+      #gc.disable()
 
       for location in range(0, len(txblocks) , local_sample_rate):
         block_item = txblocks[location:location+local_sample_rate]
@@ -3026,18 +3035,11 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           new_item =  np.zeros((local_sample_rate,), dtype = np.float32)
           new_item[0:len(block_item)] = block_item
           block_item = new_item
-          #block_item.resize(8000)
         self.pushDataQueue(block_item)
-
-      #triplets = self.text_encoder(text)
-      #for triplet in triplets:
-      #  self.debug.info_message("pushing triplet: " + str(triplet) )
-      #  self.pushDataQueue(triplet)
 
       self.debug.info_message("local_sample_rate: " + str(local_sample_rate))
       self.debug.info_message("self.sample_rate: " + str(self.sample_rate))
 
-      #self.initOutputStream(values, self.sample_rate)
       self.initOutputStream(values, local_sample_rate)
 
     except:
@@ -3047,7 +3049,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def startDecoder(self, mode, window, values):
     self.debug.info_message("startDecoder")
 
-    self.runDecoder = True
+    self.decoderRunning = True
 
     try:
       self.useProdMode()
@@ -3086,15 +3088,39 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
   def stopEncoder(self):
     self.debug.info_message("stopEncoder")
+    self.encoderRunning = False
 
+    if self.form_gui.window['cb_continuous_decode'].get() == False:
+      self.stopOutputStream()
+    else:
+      self.outStream.stop()
+
+
+
+  def stopInputStream(self):
+    self.debug.info_message("stopInputStream")
+    # leave the in stream running
+    if self.inStreamRunning == True:
+      self.inStream.stop()
+      self.inStreamRunning = False
+      self.inStream.close()
+      self.inStream = None
+      #gc.enable()
+      #gc.collect()
+
+
+  def stopOutputStream(self):
+    self.debug.info_message("stopOutputStream")
     try:
       if self.outStreamRunning == True:
         self.outStreamRunning = False
         self.outStream.stop()
         self.outStream.close()
         self.outStream = None
-        gc.enable()
-        gc.collect()
+        #gc.enable()
+        #gc.collect()
+      #else:
+      #  self.outStream.stop()
 
     except:
       self.debug.error_message("Exception in stopEncoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -3102,16 +3128,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
   def stopDecoder(self):
     self.debug.info_message("stopDecoder")
-    self.runDecoder = False
-
-    # leave the in stream running
-    if self.inStreamRunning == True:
-      self.inStream.stop()
-      self.inStreamRunning = False
-      self.inStream.close()
-      self.inStream = None
-      gc.enable()
-      gc.collect()
+    self.decoderRunning = False
+    if self.form_gui.window['cb_continuous_decode'].get() == False:
+      self.stopInputStream()
 
   def resetInputBuffer(self):
     self.inputBuffer = Queue()
@@ -3217,181 +3236,88 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def initInputStream(self, sample_rate, window, values):
     self.debug.info_message("initInputStream" )
 
-    self.set_sd_blocksize_rx()
-    self.set_symbol_blocksize_rx()
+    if  self.inStreamRunning == False:
+      self.set_sd_blocksize_rx()
+      self.set_symbol_blocksize_rx()
+      self.previous_mag = 0.0
 
-    self.previous_mag = 0.0
-
-    center_frequency = values['slider_frequency']
-    separation_override = values['slider_carrier_separation']
-    self.watch_frequency = self.calcCarrierFrequencies(center_frequency, separation_override)[0]
-    self.debug.info_message("watch_frequency: " + str(self.watch_frequency) )
-
-
-    if self.symbol_block_size != self.previousBlocksizeIn or self.inStreamRunning == False:
-      self.previousBlocksizeIn = self.symbol_block_size
-
-      if self.inStreamRunning == True:
-        self.inStream.stop()
-        #self.inStream.stop_stream()
+      center_frequency = values['slider_frequency']
+      separation_override = values['slider_carrier_separation']
+      self.watch_frequency = self.calcCarrierFrequencies(center_frequency, separation_override)[0]
+      self.debug.info_message("watch_frequency: " + str(self.watch_frequency) )
 
       self.resetInputBuffer()
 
-      #p = pyaudio.PyAudio()
-      #for i in range(p.get_device_count()):
-      #  device_info = p.get_device_info_by_index(i)
-      #  self.debug.info_message("device_info: index(" + str(i) + ") name = " + str(device_info['name']) )
-      #instream = p.open(format=pyaudio.paFloat32, channels=1, rate = 48000, input = True, input_device_index=2, stream_callback=self.pa_instream_callback, frames_per_buffer=self.symbol_block_size)
-      #instream.start_stream()
-
-      devices = sd.query_devices()
-      for device in devices:
-        self.debug.info_message("device ID: " + str(device['index']) + " device Name: " + str(device['name'])  )
-
-      #self.inStream = sd.InputStream(samplerate=48000, channels = 1, blocksize=self.symbol_block_size,
-      #self.inStream = sd.InputStream(samplerate=16000, channels = 1, blocksize=self.symbol_block_size,
-      #self.inStream = sd.InputStream(samplerate=8000, channels = 1, blocksize=self.symbol_block_size,
-
       input_device = self.form_gui.window['combo_main_modem_input_device'].get()
 
-      #self.inStream = sd.InputStream(device=input_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
-      #                               dtype=np.float32, callback = self.sd_instream_callback)
-
-      gc.disable()
+      #gc.disable()
 
       self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
                                      dtype=np.float32, callback = self.sd_instream_callback)
 
       #self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
-      #                               latency=0.0, dtype=np.float32, callback = self.sd_instream_callback)
+      #                               latency='low', dtype=np.float32, callback = self.sd_instream_callback)
 
-
-      #self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
-      #                               dtype=np.float32, callback = self.sd_instream_callback)
-
-      #self.inStream = sd.InputStream(samplerate=int(self.sample_rate), channels = 1, blocksize=self.sample_rate,
-      #                               dtype=np.float32, callback = self.sd_instream_callback)
-
-
-
-      #device_id = 2
-      #self.inStream = sd.InputStream(samplerate=48000, channels = 2, device = device_id, blocksize=self.symbol_block_size,
-      #                               dtype=np.float32, callback = self.sd_instream_callback)
+      gc.disable()
 
       self.inStream.start()
-
       self.inStreamRunning = True
+    else:
+      #gc.disable()
+      self.resetInputBuffer()
+      gc.disable()
 
     """ start the decoder thread """
-    t1 = threading.Thread(target=self.decoder_thread, args=(window, values, ))
-    t1.start()
+    if self.t1_decoder == None: 
+      self.exit_decoder_processing = False
+      self.t1_decoder = threading.Thread(target=self.decodeProcessing, args=(window, values, ))
+      self.t1_decoder.start()
+
 
   def initOutputStream(self, values, sample_rate):
     self.debug.info_message("initOutputStream" )
 
-    """
-    noise = values['btn_slider_awgn']
-    text_num = values['combo_text_options'].split(':')[0]
-    amplitude = values['slider_amplitude']
-    carrier_separation_override = values['slider_carrier_separation']
-    self.useProdMode()
-    mode = values['combo_main_modem_prod_modes']
-    """
-
-    #self.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude)
-
-    self.set_sd_blocksize_tx()
-
-
-
-    devices = sd.query_devices()
-    for device in devices:
-      self.debug.info_message("device ID: " + str(device['index']) + " device Name: " + str(device['name'])  )
-
-
-    #if self.symbol_block_size != self.previousBlocksizeOut or self.outStreamRunning == False:
-    #  self.previousBlocksizeOut = self.symbol_block_size
-    if True:
-
-      if self.outStreamRunning == True:
-        self.debug.info_message("stopping outStream")
-        self.stopEncoder()
-        #self.outStream.stop()
-
-      #self.outStream = sd.OutputStream(samplerate=self.sample_rate, blocksize=self.symbol_block_size,
-      #                                 channels=1, callback=self.sd_callback, dtype=np.float32)
-
-      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=self.sample_rate, blocksize=self.symbol_block_size,
-      #                                 channels=1, callback=self.sd_callback, dtype=np.float32)
+    if  self.outStreamRunning == False:
+      self.set_sd_blocksize_tx()
 
       output_device = self.form_gui.window['combo_main_modem_output_device'].get()
 
-      #self.outStream = sd.OutputStream(device=output_device, samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
-      #                               dtype=np.float32, callback = self.sd_callback)
-
-      gc.disable()
+      #gc.disable()
 
       # blocksize = sample_rate for 1 second samples
       self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
                                      dtype=np.float32, callback = self.sd_callback)
 
       #self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
-      #                                 latency=0.0, dtype=np.float32, callback = self.sd_callback)
-
+      #                                 latency='low', dtype=np.float32, callback = self.sd_callback)
 
       self.debug.info_message("tx audio sample_rate: " + str(sample_rate))
       self.debug.info_message("tx audio blocksize: " + str(self.get_sd_blocksize_tx()))
 
-
-      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
-      #                               dtype=np.float32, callback = self.sd_callback)
-
-      #self.outStream = sd.OutputStream(device="MacBook Air Speakers", samplerate=int(self.sample_rate), channels = 1, blocksize=self.get_sd_blocksize(),
-      #                               dtype=np.float64, callback = self.sd_callback)
-
-
+      gc.disable()
       self.outStream.start()
       self.outStreamRunning = True
-
-
-  def pa_instream_callback(self, in_data, frame_count, time_info, flag):
-    self.debug.info_message("pa_instream_callback")
-    self.debug.info_message("frame_count: " + str(frame_count))
-    self.debug.info_message("len(in_data): " + str(len(in_data)))
-    self.debug.info_message("flag: " + str(flag))
-    try:
-      if self.runDecoder == True:
-        #if in_data.shape[1] == 2:
-        #  single_channel_data[:, 0] = in_data[:, 0]
-        #  audio_data = np.frombuffer(single_channel_data, dtype=np.float32)
-        #  self.pushInputBuffer(audio_data)
-        #else:
-        audio_data = np.frombuffer(in_data, dtype=np.float32)
-        self.pushInputBuffer(audio_data)
-      return (in_data, pyaudio.paContinue)
-    except:
-      self.debug.error_message("Exception in pa_instream_callback: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
+    else:
+      gc.disable()
+      self.outStream.start()
 
 
   """ This method is the focal point of the detector. Looks for signals then starts putting blocks in the decoder queue"""
   def sd_instream_callback(self, indata, frames, time, status):
-    #self.debug.info_message("sd_instream_callback. num frames: " + str(frames))
-    #self.debug.info_message("time_info capture time of first sample: " + str(time.inputBufferAdcTime))
-
     try:
 
       """ send data to demodulator """
-      if self.runDecoder == True:
+      if self.decoderRunning == True:
         block = np.array(indata)
         detected_signal = self.getInputGain() * block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
         present_freq, present_mag, fft_output, data_len, fdd = self.modulation_object.getIsSignalPresent(detected_signal, self.watch_frequency + 0.5)
 
-        self.form_gui.window['text_input_signal_magnitude_passband'].update(str(present_mag))
+        #self.form_gui.window['text_input_signal_magnitude_passband'].update(str(present_mag))
+        self.form_gui.window['text_input_signal_magnitude_passband'].update(f"{present_mag:.3f}")
         #self.form_gui.window['text_input_signal_magnitude_passband_smoothed'].update(str(self.previous_mag))
         #self.previous_mag = (present_mag/5) + (self.previous_mag * (4/5))
 
-        if present_mag > self.getSignalSquelch():
+        if present_mag > self.signal_squelch_value: # self.getSignalSquelch():
           self.pushInputBuffer(np.array(indata))
 
         self.form_gui.spectralDensityQueue.put(fdd)
@@ -3401,15 +3327,15 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
     return None
 
-  def decoder_thread(self, window, values):
-    #self.debug.info_message("decoder_thread")
+  def decodeProcessing(self, window, values):
+    #self.debug.info_message("decodeProcessing")
 
     #max_blocks = int(58 * (self.symbol_block_size / self.get_sd_blocksize_rx()))
     max_blocks = int(58 * (self.get_symbol_blocksize_rx() / self.get_sd_blocksize_rx()))
 
-    while self.runDecoder == True:
+    while self.exit_decoder_processing == False:
       num_items = self.getInputBufferItemCount()
-      #self.debug.info_message("decoder_thread num items: "+ str(num_items))
+      #self.debug.info_message("decodeProcessing num items: "+ str(num_items))
       if  num_items >= max_blocks:
         #self.debug.info_message("we have 30 items in queue...starting decode")
         for i in range(0, max_blocks): 
@@ -3422,8 +3348,6 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           else:
             #self.debug.info_message("i: " + str(i))
             multi_block[i*self.get_sd_blocksize_rx():(i+1) * self.get_sd_blocksize_rx()] = block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
-
-
 
         """ downconvert sample from 48k to 8k """
         #use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
@@ -3439,7 +3363,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           self.resetInputBuffer()
           self.resetDataQueue()
 
-
+        gc.enable()
+        gc.collect()
 
         multi_block = multi_block * 1
         #self.modulation_object.writeFileWav2("TEST_AUDIO.wav", multi_block)
@@ -3461,17 +3386,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         center_frequency = values['slider_frequency']
         separation_override = values['slider_carrier_separation']
 
-        #self.debug.info_message("strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(multi_block, 1160, 1450)))
-        #self.debug.info_message("strongest frequency is: " + str(self.modulation_object.getStrongestFrequency(multi_block, 1350, 1450)))
-        #self.debug.info_message("strongest frequencies over range is: " + str(self.modulation_object.getStrongestFrequencies(multi_block, 20, 1160, 1450)))
-
-        #fft_frequency = self.modulation_object.getStrongestFrequency(multi_block, 1160, 1450)
-        #fft_frequency = 1382 #1300.166666
-        #self.form_gui.window['text_info_fftfreq'].update(fft_frequency)
 
         #frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
         #frequency = self.calcCarrierFrequenciesFromFFT(fft_frequency, separation_override)
-
 
         #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
 
@@ -3497,25 +3414,18 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         #multi_block = self.modulation_object.alignTimePointT0(multi_block, self.getRxSampleRate(), self.getRxSymbolBlockSize())
 
 
-
         mode = self.getRealMode(values, self.form_gui)
         self.setInitializationBlock(mode)
         frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
-
 
 
         """ TEST CODE ONLY debug code for FFT analysis"""
         #self.detector.detectStandingWavePulseNew([multi_block, multi_block], frequency, 0, 0, ocn.FFT_ANALYSIS)
 
 
-
         """ filter the input signal """
         rx_filter_params = self.rx_filter
-        #multi_block = self.modulation_object.apply_filter(multi_block, rx_filter_params, center_frequency)
         multi_block = self.modulation_object.apply_filterSR(multi_block, rx_filter_params, center_frequency, self.getRxSampleRate())
-
-
-
 
         use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
         if use_hifi_rx == True:
@@ -3526,18 +3436,10 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         """ reset the remainder"""
         self.resetDecoder()
 
-
         #self.osmod.demod_2fsk8psk.remainder = np.array([])
         #self.demodulation_object.remainder = np.array([])
         """ reset the remainder"""
         #self.demod_2fsk8psk.remainder = np.array([])
-
-
-
-        """ stop the decoder """
-        #self.resetInputBuffer()
-        #if self.form_gui.window['cb_continuous_decode'].get() == False:
-        #  self.stopDecoder()
 
         """ DEBUG CODE """
         #self.debug.info_message("FREQUENCY LO AFTER RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1382.5, 5, 8, 0, 10, 1000)))
@@ -3547,18 +3449,14 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         #""" adjust for doppler shift """
         #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
 
-        self.decoder_callback(multi_block, frequency)
-
-        #""" stop the decoder """
-        #self.resetInputBuffer()
-        #if self.form_gui.window['cb_continuous_decode'].get() == False:
-        #  self.stopDecoder()
-
-
-
+        try:
+          self.decoder_callback(multi_block, frequency)
+        except:
+          self.debug.error_message("Exception in decodeProcessing: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
       else:
         time.sleep(1)
+        #self.debug.info_message("decodeProcessing sleep")
 
 
   """ realtime conversion of pre-processed bitstream into wave audio. input data queued in FIFO buffer """
@@ -3592,13 +3490,13 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.setInitializationBlockSR(mode, self.getTxSampleRate(), self.getTxSymbolBlockSize())
 
       """ figure out the carrier frequencies"""
-      center_frequency = values['slider_frequency']
+      #center_frequency = values['slider_frequency']
 
       #frequency = self.calcCarrierFrequencies(center_frequency, carrier_separation_override)
-      frequency = self.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.getTxSampleRate())
+      frequency = self.calcCarrierFrequenciesSR(self.center_frequency, carrier_separation_override, self.getTxSampleRate())
 
 
-      self.debug.info_message("center frequency: " + str(center_frequency))
+      self.debug.info_message("center frequency: " + str(self.center_frequency))
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
       """ convert text to bits"""
@@ -3655,7 +3553,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       """ filter the output signal """
       tx_filter_params = self.tx_filter
       #data2 = self.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
-      data2 = self.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.getTxSampleRate())
+      data2 = self.modulation_object.apply_filterSR(data2, tx_filter_params, self.center_frequency, self.getTxSampleRate())
 
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))

@@ -276,3 +276,10 @@ RESAMPLE_AVAILABLE              = 1
 
 DCS_GENERAL                     = 0
 DCS_FREQUENCY_SPECIFIC          = 1
+
+KERNEL_EXIT                     = 0
+KERNEL_TX_NOW                   = 1
+KERNEL_RX_SQUELCH               = 2
+KERNEL_TX_TIME_SYNC             = 3
+KERNEL_RX_TIME_SYNC             = 4
+KERNEL_TXRX_NOW                 = 5

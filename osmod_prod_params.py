@@ -354,6 +354,8 @@ class OsmodProdParams(object):
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.029),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.854),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.96),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.969),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.914),
                     'downconvert_shift'     : 0.945,
                     'parameters'            : (1500, 0.734, 0.76, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
                     'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range

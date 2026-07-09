@@ -27,6 +27,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy import signal
 from scipy.signal import find_peaks
 from osmod_test import OsmodTest
+from datetime import datetime, timedelta
 
 """
 MIT License
@@ -251,12 +252,13 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.2.1 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.2.2 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
-MIT License\n\
+Open Source MODem (OSMOD) License\n\
 \n\
+Copyright (c) 2022-2026 Lawrence Byng\n\
 \n\
 Permission is hereby granted, free of charge, to any person obtaining a copy\n\
 of this software and associated documentation files (the "Software"), to deal\n\
@@ -491,7 +493,7 @@ SOFTWARE.\n\
 
                           [sg.Graph(key='graph_density', canvas_size = (1170, 250), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
 
-                        ], size=(1200, 400))],
+                        ], size=(1200, 290))],
 
 
                         ] 
@@ -664,7 +666,7 @@ SOFTWARE.\n\
                           [sg.InputText('osmod_v0-1-0_results_data.csv', key='in_resultsdatafilename', size=(50, 1), enable_events=True),
                            sg.FileBrowse('Select File', file_types=(('CSV Files', '*.csv'), ('All Files', '*.*')))],
  
-                        ], size=(1200, 100) )],
+                        ], size=(1200, 80) )],
 
 
                         [sg.Frame('AWGN Factor', [
@@ -709,6 +711,10 @@ SOFTWARE.\n\
                         #sg.Button('Reset All Modes', size=(8, 1), key='btn_reset_all'),
 
 
+                       sg.Frame('Aperture Hz +/-', [
+                           [sg.Slider(range=(0.1, 10), default_value = 1.5, orientation='h', resolution=0.1, expand_x = False, expand_y = True, enable_events = True, key='slider_fft_aperture')],
+
+                        ], size=(110, 60)),
 
 
                         sg.Frame('Linear Doppler Shift', [
@@ -717,21 +723,21 @@ SOFTWARE.\n\
                             sg.CBox('Enable', key='cb_enable_fine_tune_resample', default=False, enable_events=True ),
                             sg.CBox('Auto Correct', key='cb_enable_resample_auto_correct', default=False, enable_events=True, disabled=True, visible = False )],
 
-                        ], size=(240, 60)),
+                        ], size=(220, 60)),
 
                         sg.Frame('Frequency Shift', [
                            [sg.Slider(range=(-2, 2), default_value = 0, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_freq_fine_tune'),
                             sg.CBox('Enable', key='cb_enable_fine_tune_frequency', default=False, enable_events=True ),
                             sg.CBox('Auto Correct', key='cb_enable_frequency_shift_auto_correct', default=False, enable_events=True, disabled=True, visible = False )],
 
-                        ], size=(240, 60)),
+                        ], size=(220, 60)),
 
 
                         sg.Frame('Auto Correct', [
                            [sg.CBox('LDS & FS', key='cb_enable_block_level_resample_auto_correct', default=False, enable_events=True, disabled=False )],
                            [sg.CBox('FS Only', key='cb_enable_auto_correct_frequency_only', default=False, enable_events=True, disabled=False )],
 
-                        ], size=(120, 60)),
+                        ], size=(100, 60)),
 
                         sg.Frame('Deviation', [
                            [sg.Text('LDS: ', size=(25, 1), font=("Helvetica", 12), key='text_decode_accuracy_metric' )] ,
@@ -743,12 +749,19 @@ SOFTWARE.\n\
                            [sg.Text('LDS: ', size=(25, 1), font=("Helvetica", 12), key='text_decode_lds_correction_hz' )] ,
                            [sg.Text('FS: ', size=(25, 1), font=("Helvetica", 12), key='text_decode_fs_correction_hz' )] ,
 
-                        ], size=(200, 60)),
+                        ], size=(110, 60)),
 
                         sg.Frame('Frequency Bias', [
-                           [sg.Slider(range=(0.5, 2), default_value = 1.3, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
+                           [sg.Slider(range=(0.5, 2), default_value = 1.10, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
 
-                        ], size=(200, 60)),
+                        ], size=(140, 60)),
+
+
+                           sg.Frame('UTC', [
+                              [sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
+
+                           ], size=(110, 60)),
+
 
 
                         sg.Text('', expand_x = True),
@@ -776,26 +789,33 @@ SOFTWARE.\n\
 
                         ], size=(140, 60)),
 
-                        sg.Frame('Aperture Hz +/-', [
-                           [sg.Slider(range=(0.1, 10), default_value = 1.5, orientation='h', resolution=0.1, expand_x = False, expand_y = True, enable_events = True, key='slider_fft_aperture')],
+                            sg.Frame('Rx / Decode Timing', [
+                               [sg.CBox('Sync', key='cb_enable_sync_rx_processing_timing', font=("Helvetica", 12), default=False, enable_events=True ),
+                                sg.Slider(range=(-1, 1),size=(20, 25),  default_value = 0, orientation='h', resolution=0.1, expand_x = False, expand_y = False, enable_events = True, key='slider_listen_process_cycle')],
 
-                        ], size=(180, 60)),
+                           ], size=(160, 60)),
 
 
-                           sg.Frame('Squelch', [
-                              [sg.Slider(range=(0, 10),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
+                           sg.Frame('Squelch Trigger', [
+                               [sg.CBox('Squelch', key='cb_enable_squelch_rx_processing', font=("Helvetica", 12), default=True, enable_events=True ),
+                                sg.Slider(range=(0, 20),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
 
                            ], size=(180, 60)),
+
+                           sg.Frame('Squelch Reset', [
+                              [sg.Slider(range=(-20, 0),size=(20, 25),  default_value = -3, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch_reset')],
+
+                           ], size=(140, 60)),
 
 
                            #sg.Text('Squelch:', font=("Helvetica", 12), expand_x = False),
                            #sg.Slider(range=(0, 10),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch'),
 
-                           sg.Frame('Passband Magnitude', [
+                           sg.Frame('Signal Magnitude', [
                               [sg.Text('Current -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband' )],
                               #[sg.Text('Avg -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband_smoothed' )],
 
-                           ], size=(180, 60)),
+                           ], size=(100, 60)),
 
 
                            #sg.Text('Passband Magnitude: ', size=(16, 1), font=("Helvetica", 12) ) ,
@@ -803,10 +823,10 @@ SOFTWARE.\n\
 
                            sg.Frame('Input Gain', [
                               #[sg.Text('-----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband' )],
-                              [sg.CBox('hi-fi', key='cb_enable_hifi_input_sampling', font=("Helvetica", 12), default=False, enable_events=True ),
+                              [sg.CBox('hi-fi', key='cb_enable_hifi_input_sampling', font=("Helvetica", 12), default=False, enable_events=True, visible=False ),
                                sg.Slider(range=(0, 10),size=(20, 25),  default_value = 1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_ingain')],
 
-                           ], size=(180, 60)),
+                           ], size=(140, 60)),
 
                            #sg.Text('Input Gain:', font=("Helvetica", 12), expand_x = False),
                            #sg.CBox('hi-fi', key='cb_enable_hifi_input_sampling', font=("Helvetica", 12), default=True, enable_events=True ),
@@ -814,10 +834,13 @@ SOFTWARE.\n\
 
 
                            sg.Frame('Output Gain', [
-                              [sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=False, enable_events=True ),
+                              [sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=False, enable_events=True, visible=False ),
                                sg.Slider(range=(0, 1),size=(20, 25),  default_value = 0.1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
 
-                           ], size=(180, 60))],
+                           ], size=(140, 60))],
+
+
+
 
                            #sg.Text('Output Gain:', font=("Helvetica", 12), expand_x = False),
                            #sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=True, enable_events=True ),
@@ -853,20 +876,24 @@ SOFTWARE.\n\
 
 
                         [
-                            sg.MLine('', size=(64, 4), font=("Courier New", 9), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
+                            sg.MLine('', size=(64, 2), font=("Courier New", 9), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
 
                           [
-                           sg.Button('Rx / Decode', size=(11, 1), key='btn_8pskdecoder'),
-                           sg.CBox('Continuous', key='cb_continuous_decode', default=False ),
-                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder'),
+                           sg.Button('Rx / Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
+                           sg.CBox('Continuous', key='cb_continuous_decode', default=False , visible=False),
+                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=False),
                            #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
                            #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
-                           sg.Button('Tx / Send', size=(11, 1), key='btn_init_test'),
-                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx'),
-                           sg.Button('Stop Tx', size=(11, 1), key='btn_stop_tx'),
+                           sg.Button('Tx / Send', size=(11, 1), key='btn_init_test', visible=True),
+                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
+                           sg.Button('Stop Tx', size=(11, 1), key='btn_stop_tx', visible=False),
+                           sg.Button('TxRx 1', size=(6, 1), key='btn_txrx_c_code', visible=False),
+
+                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
+
                            sg.CBox('Preset Message', key='cb_use_preset_message', default=True ),
 
-                           sg.Text('SNR dB: --------', size=(30, 1), key='text_snr_value' ) ,
+                           sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value' ) ,
 
                            sg.Text('Input: ', size=(5, 1) ) ,
                            sg.Combo(combo_modem_devices, key='combo_main_modem_input_device', size=(20, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_input_device_index], enable_events=True),
@@ -923,7 +950,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.2.1 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.2.2 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
 
     #self.window = sg.Window("OSMOD de WH6GGO v0.0.6 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
@@ -999,7 +1026,10 @@ class ReceiveControlsProc(object):
       #SNR_equiv_db = noise_energy
       #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
       snr = 10 * np.log10( signal_energy / noise_energy)
-      form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(snr))
+      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(snr))
+      form_gui.window['text_snr_value'].update("SNR dB: "f"{snr:.3f}")
+
+
       #self.debug.info_message("SNR: " + "{:.2f}".format(snr) + "dB")
 
     def drawBackground():
@@ -1018,7 +1048,7 @@ class ReceiveControlsProc(object):
       if (self.chart_timer) == 0:
         #for y in range(0,101):
         #  window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=4, color=low_signal_color)
-        for x in range(0,3000, 100):
+        for x in range(0,3100, 100):
           window['graph_density'].draw_line(point_from=(x,0), point_to=(x,100), width=2, color=lines_color)
         for y in range(0,100, 20):
           window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=2, color=lines_color)
@@ -1026,7 +1056,7 @@ class ReceiveControlsProc(object):
         window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=2, color=lines_color)
       else:
         #window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=4, color=low_signal_color)
-        for x in range(0,3000, 100):
+        for x in range(0,3100, 100):
           window['graph_density'].draw_line(point_from=(x,0), point_to=(x,1), width=2, color=lines_color)
 
 
@@ -1109,6 +1139,9 @@ class ReceiveControlsProc(object):
               """
             calcSNR(fdd)
 
+          mytime = datetime.utcnow().strftime("%H:%M:%S")
+          form_gui.window['text_utc_clock'].update(mytime)
+
           drawLines()
 
             #strong_freqs = form_gui.osmod.detector.getStrongestFrequencyOverRange(data)
@@ -1187,16 +1220,44 @@ class ReceiveControlsProc(object):
       t1 = threading.Thread(target=form_gui.osmod.mod_psk.plotWaveCanvas, args=(2400, data, window['chart_canvas_oneoffour'].tk_canvas, ))
       t1.start()
 
+
+
   def event_8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_8pskdecoder\n")
+    #form_gui.window['cb_use_prod_modes'].update(True)
+    #form_gui.osmod.startTimer('init')
+    #mode = values['combo_main_modem_modes']
+    #form_gui.osmod.startDecoder(mode, window, values)
+    kernel_action = ocn.KERNEL_RX_SQUELCH
+    form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+    form_gui.osmod.sonic.send(window, values, form_gui)
 
-    form_gui.window['cb_use_prod_modes'].update(True)
 
-    form_gui.osmod.startTimer('init')
+  def event_inittest(self, window, values, form_gui):
+    #sys.stdout.write("event_inittest\n")
+    #form_gui.window['cb_use_prod_modes'].update(True)    
+    """ start encoder / modulator """
+    #form_gui.osmod.startEncoder(values, "HELLO!", "8psk", False, None)
+    kernel_action = ocn.KERNEL_TX_NOW
+    form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+    form_gui.osmod.sonic.send(window, values, form_gui)
 
-    mode = values['combo_main_modem_modes']
 
-    form_gui.osmod.startDecoder(mode, window, values)
+  def event_txrx_c_code(self, window, values, form_gui):
+    sys.stdout.write("event_txrx_c_code\n")
+    kernel_action = ocn.KERNEL_TXRX_NOW
+    form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+    form_gui.osmod.sonic.send(window, values, form_gui)
+
+
+  def event_txrx_c_code_2(self, window, values, form_gui):
+    sys.stdout.write("event_txrx_c_code_2\n")
+    try:
+      kernel_action = ocn.KERNEL_TXRX_NOW
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+    except:
+      sys.stdout.write("Exception in event_txrx_c_code_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
   def event_stoptx(self, window, values, form_gui):
@@ -1510,6 +1571,15 @@ class ReceiveControlsProc(object):
     form_gui.window['cb_enable_block_level_resample_auto_correct'].update(False)
 
 
+  def event_enable_sync_rx_processing_timing(self, window, values, form_gui):
+    sys.stdout.write("event_enable_sync_rx_processing_timing\n")
+    form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+
+  def event_enable_squelch_rx_processing(self, window, values, form_gui):
+    sys.stdout.write("event_enable_squelch_rx_processing\n")
+    form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
+
+
 
   def event_overridecostasloop(self, window, values, form_gui):
     sys.stdout.write("event_overridecostasloop\n")
@@ -1695,6 +1765,8 @@ class ReceiveControlsProc(object):
       sys.stdout.write("Exception in event_analysisclearmatchtable: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
+
+
   def event_plotsimulation(self, window, values, form_gui):
     sys.stdout.write("event_plotsimulation\n")
 
@@ -1720,10 +1792,13 @@ class ReceiveControlsProc(object):
 
   def event_frequencysliderresolution_10hz(self, window, values, form_gui):
     sys.stdout.write("event_frequencysliderresolution_10hz\n")
+    form_gui.window['cb_frequency_slider_resolution'].update(False)
+
 
 
   def event_frequencysliderresolution(self, window, values, form_gui):
     sys.stdout.write("event_frequencysliderresolution\n")
+    form_gui.window['cb_frequency_slider_resolution_10hz'].update(False)
 
     fixed_increments_enabled_40 = form_gui.window['cb_frequency_slider_resolution'].get()
     fixed_increments_enabled_10 = form_gui.window['cb_frequency_slider_resolution_10hz'].get()
@@ -1849,18 +1924,6 @@ class ReceiveControlsProc(object):
 
 
 
-  def event_inittest(self, window, values, form_gui):
-    sys.stdout.write("event_inittest\n")
-
-    form_gui.window['cb_use_prod_modes'].update(True)
-    
-    """ start encoder / modulator """
-    form_gui.osmod.startEncoder(values, "HELLO!", "8psk", False, None)
-
-    #mode = values['combo_main_modem_modes']
-
-    """ start decoder / demodulator """
-    #form_gui.osmod.startDecoder(mode, window, values)
 
 
   def event_initostream(self, window, values, form_gui):
@@ -1939,6 +2002,10 @@ class ReceiveControlsProc(object):
       'slider_signal_outgain' : event_slidersignaloutgain,
       'cb_enable_block_level_resample_auto_correct' : event_enable_block_level_resample_auto_correct,
       'cb_enable_auto_correct_frequency_only' : event_enable_auto_correct_frequency_only,
+      'cb_enable_sync_rx_processing_timing'   : event_enable_sync_rx_processing_timing,
+      'cb_enable_squelch_rx_processing'       : event_enable_squelch_rx_processing,
+      'btn_txrx_c_code'                       : event_txrx_c_code,
+      'btn_txrx_c_code_2'                       : event_txrx_c_code_2,
 
   }
   

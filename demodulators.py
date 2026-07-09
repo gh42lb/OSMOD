@@ -901,8 +901,9 @@ class DemodulatorPSK(ModemCoreUtils):
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle - adjustment)
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(0 - rotation_angle - adjustment)
           #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(adjustment - rotation_angle)
-          self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle - adjustment)
-          #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle + adjustment)
+          #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle - adjustment)
+          self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(rotation_angle + adjustment)
+          #self.osmod.detector.rotation_angles[low_high] = self.normalizeAngle(adjustment)
 
 
       """ start of code thread..."""
