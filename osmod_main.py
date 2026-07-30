@@ -4,7 +4,7 @@ import time
 import debug as db
 import constant as cn
 import osmod_constant as ocn
-import sounddevice as sd
+#import sounddevice as sd
 import numpy as np
 #import matplotlib.pyplot as plt
 import threading
@@ -13,6 +13,12 @@ import gc
 import pyaudio
 import ctypes
 import pkgutil
+import os
+import platform
+import osmod_net_gui
+import getopt
+import osmod_net_events
+import json
 
 from numpy import pi
 from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
@@ -39,6 +45,10 @@ from osmod_test import OsmodTest
 from osmod_fec import OsmodFEC
 from osmod_prod_params import OsmodProdParams
 from osmod_sonic import OsmodSonic
+
+#from osmod_net_gui import MainNetWindow
+from osmod_net_client import OSMOD_Net
+
 
 class osModem(object):
 
@@ -67,10 +77,62 @@ class osModem(object):
   input_gain = 1.0
   output_gain = 0.1
 
+  slider_awgn = 0.0
+  slider_amplitude = 1.0
+  slider_carrier_separation = 37
+
+  all_messages = {}
+  messages_by_frequency = {}
+  messages_by_callsign = {}
+
+  test_mode_enabled = True
+
+  received_data_table = None
+  received_data_table_callsign = None
+
   spectral_density_queue_counter = 0
   spectral_density_block = None
 
   debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
+
+  """ Transmit times:
+                           BEACON                                           TIMED GENERAL MESSAGE
+      LB28-1600-I3-FEC   30 characters     15 seconds     15           60 characters          30 seconds
+
+      LB28-1600-I3       68 characters     15 seconds     20          136 characters          40 seconds 
+
+      LB28-3200-I3-FEC   62 characters                    25          124 characters          50 seconds
+
+      LB28-3200-I3       58 characters     25 seconds     30          116 characters          50 seconds
+
+      LB28-6400-I3-FEC   52 characters                    35          104 characters          70 seconds
+
+      LB28-6400-I3       48 characters     40 seconds     40           96 characters           80 seconds
+
+      LB28-12800-I3-FEC  42 characters                    45           84 characters           90 seconds
+
+      LB28-12800-I3      38 characters     1 minute                    76 characters           2 minutes
+
+      LB28-25600-I3      28 characters     1 minute 30 seconds        56 characters           3 minutes
+
+
+message types...
+
+Beacon General       - BG(<Locator>)
+Beacon Net           - BN(<Locator>, <Time UTC>, <Freq>, <Mode>)
+Beacon Text Msg      - BT(<Locator>, <Text Msg>)
+Beacon CQCQ          - BC(<Locator>, <Freq>, <Mode>)
+Beacon Alert (RED)   - BR(<Locator>, <Message>)
+Beacon Alert (GREEN) - BA(<Locator>, <Message>)
+
+message formats...
+
+28 characters...
+<rotation sequence. 8 chars><message 10 chars><end of message 1 char><callsign 6 chrs><space 1 char><checksum 2 chars>
+
+28 characters...
+
+  """
 
   def __init__(self, form_gui):  
     self.debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
@@ -120,6 +182,10 @@ class osModem(object):
 
     self.sonic = OsmodSonic(self)
 
+    #self.net = OSMOD_Net()
+    self.osmod_net_dispatcher = None
+    self.osmod_net = None
+    self.osmod_net_main()
 
     """ start the decoder thread """
     #self.t1_decoder = threading.Thread(target=self.decodeProcessing, args=(window, values, ))
@@ -138,6 +204,7 @@ class osModem(object):
     self.timer_last_name = ''
 
     self.dict_rcvd = {}
+    self.dict_rcvd_callsign = {}
 
     """ generator polynomials for range 7 thru 21 defined in the following dictionary """
     fec_gp = { 7: (0o171, 0o133), 8: (0o235, 0o331), 9: (0o557, 0o663), 10: (0o473, 0o725), 11: (0o557, 0o731),
@@ -200,7 +267,10 @@ class osModem(object):
 
     #self.test_pulse_shapes = [(0.595 , 0.255),(0.727 , 0.225),(0.491 , 0.29),(0.945 , 0.346),(0.954 , 0.289),(0.979 , 0.34),(0.657 , 0.173),(0.183 , 0.148),(0.552 , 0.288),(0.569 , 0.191),(0.692 , 0.241),(0.138 , 0.176),(0.285 , 0.268),(0.904 , 0.305),(0.412 , 0.224),(0.785 , 0.323),(0.658 , 0.241),(0.737 , 0.238),(0.336 , 0.223),(0.475 , 0.242),(0.604 , 0.295),(0.824 , 0.34),(0.519 , 0.177),(0.707 , 0.244),(0.557 , 0.252),(0.804 , 0.25),(0.601 , 0.175),(0.638 , 0.32),(0.833 , 0.309),(0.104 , 0.187),(0.887 , 0.322),(0.722 , 0.288),(0.352 , 0.165),(0.367 , 0.25)]
 
-    self.test_pulse_shapes = [(0.323 , 0.054),(0.115 , 0.028),(0.07 , 0.025),(0.402 , 0.048),(0.3 , 0.085),(0.708 , 0.076),(0.745 , 0.093),(0.051 , 0.009)]
+    #self.test_pulse_shapes = [(0.323 , 0.054),(0.115 , 0.028),(0.07 , 0.025),(0.402 , 0.048),(0.3 , 0.085),(0.708 , 0.076),(0.745 , 0.093),(0.051 , 0.009)]
+
+    self.test_pulse_shapes = [(0.065 , 0.458),(0.261 , 0.74),(0.227 , 0.965),(0.892 , 0.977),(0.518 , 0.826),(0.876 , 0.425),(0.163 , 0.918),(0.623 , 0.919),(0.22 , 0.453),(0.388 , 0.551),(0.159 , 0.732),(0.595 , 0.777),(0.06 , 0.924),(0.876 , 0.956),(0.975 , 0.853),(0.516 , 0.863),(0.336 , 0.908),(0.787 , 0.628),(0.902 , 0.389),(0.319 , 0.946),(0.468 , 0.512),(0.985 , 0.781),(0.615 , 0.531),(0.077 , 0.731),(0.816 , 0.978),(0.564 , 0.406),(0.354 , 0.863),(0.371 , 0.678),(0.305 , 0.775),(0.021 , 0.954),(0.512 , 0.466),(0.914 , 0.479)]
+
 
     self.best_pulse_shapes = [(0.104 , 0.187), (0.336 , 0.223), (0.804 , 0.25), (0.722 , 0.288), (0.595 , 0.255), (0.945 , 0.346), (0.737 , 0.238), (0.638 , 0.318), (0.662 , 0.228), (0.161 , 0.209), (0.612 , 0.353), (0.783 , 0.282), (0.735 , 0.221), (0.215 , 0.091)]
 
@@ -213,17 +283,19 @@ class osModem(object):
 
     #[,(0.519 , 0.177),(0.569 , 0.191),(0.945 , 0.346),(0.785 , 0.323),(0.887 , 0.322),(0.824 , 0.34),(0.104 , 0.187),(0.183 , 0.148),(0.336 , 0.223),(0.475 , 0.242),(0.737 , 0.238),(0.804 , 0.25),(0.722 , 0.288),(0.904 , 0.305),(0.601 , 0.175),(0.595 , 0.255),(0.833 , 0.309),(0.557 , 0.252),(0.707 , 0.244),(0.979 , 0.34),(0.954 , 0.289),(0.138 , 0.176),(0.285 , 0.268),(0.604 , 0.295),(0.367 , 0.25),(0.657 , 0.173),(0.692 , 0.241),(0.491 , 0.29),(0.552 , 0.288)]
 
-    self.test_sw_patterns_1 = [('A-D', 0.594), ('A-D', 0.657), ('A-D', 0.312), ('A-D', 0.562), ('A-D', 0.605), ('A-D', 0.827), ('A-D', 0.822), ('A-D', 0.373), ('A-D', 0.827)]
-    self.test_sw_patterns_2 = [('C-C', 0.133),('B-C', 0.338),('C-C', 0.233),('C-C', 0.144),('C-E', 0.506),('C-C', 0.429),('A-D', 0.821),('A-D', 0.196),('A-D', 0.312),('A-D', 0.827),('A-D', 0.562),('A-D', 0.026),('A-D', 0.612),('A-D', 0.616)]
+    self.test_sw_patterns_1  = [('A-D', 0.594), ('A-D', 0.657), ('A-D', 0.312), ('A-D', 0.562), ('A-D', 0.605), ('A-D', 0.827), ('A-D', 0.822), ('A-D', 0.373), ('A-D', 0.827)]
+    self.test_sw_patterns_2  = [('C-C', 0.133),('B-C', 0.338),('C-C', 0.233),('C-C', 0.144),('C-E', 0.506),('C-C', 0.429),('A-D', 0.821),('A-D', 0.196),('A-D', 0.312),('A-D', 0.827),('A-D', 0.562),('A-D', 0.026),('A-D', 0.612),('A-D', 0.616)]
     self.test_sw_patterns_3  = [('A-D', 0.768),('A-D', 0.656),('A-D', 0.456),('A-D', 0.913),('A-D', 0.385),('A-D', 0.113),('A-D', 0.577),('A-D', 0.426),('A-D', 0.493),('A-D', 0.675),('A-D', 0.747),('A-D', 0.882),('A-D', 0.636),('B-C', 0.581),('A-C', 0.843),('A-D', 0.417),('B-C', 0.314),('A-D', 0.933),('A-D', 0.565),('A-D', 0.678),('A-D', 0.501),('A-D', 0.621),('A-D', 0.492),('A-D', 0.659),('A-D', 0.825),('A-D', 0.939)]
-
     self.test_sw_patterns_4  = [('B-B', 0.791),('C-C', 0.462),('B-D', 0.875),('B-C', 0.435),('A-E', 0.327),('D-E', 0.742),('E-E', 0.212),('B-C', 0.324),('A-C', 0.685),('C-C', 0.1),('A-D', 0.201),('A-D', 0.61),('C-C', 0.148),('B-E', 0.752),('B-D', 0.38),('D-D', 0.811),('A-E', 0.049),('A-C', 0.43),('B-E', 0.921),('B-B', 0.88),('C-E', 0.777),('B-E', 0.561),('A-A', 0.288),('B-C', 0.266),('C-E', 0.788),('C-E', 0.251),('D-D', 0.977),('A-D', 0.034),('A-E', 0.653),('A-D', 0.541),('A-C', 0.797),('C-C', 0.696),('C-C', 0.323),('A-C', 0.053),('D-D', 0.884),('C-C', 0.195),('A-B', 0.287),('C-D', 0.748),('A-D', 0.656),('B-C', 0.041),('A-B', 0.286)]
-
     self.test_sw_patterns_5  = [('A-B', 0.32),('A-A', 0.114),('A-A', 0.577),('C-E', 0.397),('A-E', 0.196),('B-B', 0.72),('A-C', 0.061),('D-D', 0.028),('D-E', 0.935),('C-E', 0.126),('A-D', 0.369),('C-E', 0.398),('E-E', 0.516),('A-C', 0.701),('E-E', 0.99),('D-D', 0.702),('B-B', 0.012)]
 
 
+    self.test_sw_patterns_6  = [('E-E', 0.139),('B-D', 0.977),('B-B', 0.974),('A-D', 0.474),('A-A', 0.822),('A-E', 0.15),('C-E', 0.584),('B-C', 0.113),('A-D', 0.986),('C-E', 0.806),('D-E', 0.531),('A-D', 0.972),('A-D', 0.62),('B-D', 0.068),('C-C', 0.152),('C-E', 0.579),('D-E', 0.763),('D-E', 0.418),('A-D', 0.473),('B-B', 0.748),('B-D', 0.109),('E-E', 0.078),('A-D', 0.337),('B-D', 0.24),('B-E', 0.713),('A-E', 0.012),('A-B', 0.655),('A-D', 0.031),('B-C', 0.801),('A-B', 0.367),('B-D', 0.645),('B-D', 0.243),('A-C', 0.204),('C-E', 0.234),('A-C', 0.627),('A-C', 0.57),('B-D', 0.172),('A-C', 0.838)]
+
+    self.test_sw_patterns_7  = [('A-E', 0.022),('B-B', 0.691),('A-B', 0.998),('B-D', 0.452)]
+
     #self.test_sw_patterns = [self.test_sw_patterns_1, self.test_sw_patterns_2, self.test_sw_patterns_3]
-    self.test_sw_patterns = [self.test_sw_patterns_5]
+    self.test_sw_patterns = [self.test_sw_patterns_7]
 
     #self.best_sw_patterns_awgn8 = [('C-C', 0.144),('C-C', 0.429),('A-D', 0.493),('A-D', 0.562),('A-D', 0.768), ('A-D', 0.312), ('A-D', 0.417)]
     #self.best_sw_patterns_awgn6 = [('A-D', 0.417), ('C-C', 0.429), ('A-D', 0.822), ('B-C', 0.338), ('A-D', 0.312)]
@@ -1564,6 +1636,8 @@ class osModem(object):
                                     'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
                                     'I3_pulse_shape_index' : 0,
                                     'pulse_start_sigma'    : 7,
+                                    'pulse_train_sigma'    : 5.0,
+                                    'pulse_start_envelope_sigma'    : 7,
                                     'doppler_pulse_interpolation'    : 'Chebyshev',
                                     'doppler_adjust'           : ocn.DOPPLER_ADJUST_NONE,
                                     'extrapolate'          : 'no',
@@ -1587,10 +1661,41 @@ class osModem(object):
                                     'resample_params_48k'  : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
                                     'dcs_type'             : ocn.DCS_GENERAL,
                                     'dcs_by_frequency'     : {},
+                                    'pattern_by_msglen'    : {},
 
 
                                    }
 
+
+  def getTxMessageLength(self, message_text):
+    rotation_sequence_length = 8
+    return len(message_text) + rotation_sequence_length
+
+
+  def setSliderAwgn(self, new_value):
+    self.slider_awgn = new_value
+
+  def getSliderAwgn(self):
+    return self.slider_awgn
+
+  def setSliderAmplitude(self, new_value):
+    self.slider_amplitude = new_value
+
+  def getSliderAmplitude(self):
+    return self.slider_amplitude
+
+  def setSliderCarrierSeparation(self, new_value):
+    self.slider_carrier_separation = new_value
+
+  def getSliderCarrierSeparation(self):
+    return self.slider_carrier_separation
+
+
+  def getTestModeEnabled(self):
+    return self.test_mode_enabled
+
+  def setTestModeEnabled(self, enabled):
+    self.test_mode_enabled = enabled
 
 
   def setAperture(self, aperture):
@@ -1784,12 +1889,18 @@ class osModem(object):
 
 
   def setInitializationBlockSR(self, mode, sample_rate, symbol_block_size):
-    self.debug.info_message("setInitializationBlock")
-    self.setInitializationBlockCommon(mode, sample_rate, symbol_block_size, True)
+    try:
+      self.debug.info_message("setInitializationBlock")
+      self.setInitializationBlockCommon(mode, sample_rate, symbol_block_size, True)
+    except:
+      self.debug.error_message("Exception in setInitializationBlockSR: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
   def setInitializationBlock(self, mode):
-    self.debug.info_message("setInitializationBlock")
-    self.setInitializationBlockCommon(mode, 0, 0, False)
+    try:
+      self.debug.info_message("setInitializationBlock")
+      self.setInitializationBlockCommon(mode, 0, 0, False)
+    except:
+      self.debug.error_message("Exception in setInitializationBlock: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
   def setInitializationBlockCommon(self, mode, sample_rate, symbol_block_size, override_sr_and_sbs):
     self.debug.info_message("setInitializationBlock")
@@ -1848,6 +1959,8 @@ class osModem(object):
       self.I3_pulse_shape_type  = self.getParam(mode, 'I3_pulse_shape_type')
       self.I3_pulse_shape_index = self.getParam(mode, 'I3_pulse_shape_index')
       self.pulse_start_sigma    = self.getParam(mode, 'pulse_start_sigma')
+      self.pulse_start_envelope_sigma    = self.getParam(mode, 'pulse_start_envelope_sigma')
+      self.pulse_train_sigma    = self.getParam(mode, 'pulse_train_sigma')
       self.doppler_pulse_interpolation    = self.getParam(mode, 'doppler_pulse_interpolation')
       self.doppler_adjust       = self.getParam(mode, 'doppler_adjust')
       self.extrapolate          = self.getParam(mode, 'extrapolate')
@@ -1871,6 +1984,8 @@ class osModem(object):
       self.resample_params_48k = self.getParam(mode, 'resample_params_48k')
       self.dcs_type            = self.getParam(mode, 'dcs_type')
       self.dcs_by_frequency    = self.getParam(mode, 'dcs_by_frequency')
+      self.pattern_by_msglen   = self.getParam(mode, 'pattern_by_msglen')
+
 
 
       # these used for hi-hi settings
@@ -2117,6 +2232,27 @@ class osModem(object):
           self.filtRRC_twohundredfiftysixth_wave[i] = np.append(np.zeros(int((self.symbol_block_size*i)/divisor)), self.filtRRC_coef_main)
           self.filtRRC_twohundredfiftysixth_wave[i] = np.append(self.filtRRC_twohundredfiftysixth_wave[i], np.zeros(int((self.symbol_block_size*(divisor-i-1))/divisor)))
         self.filtRRC_twohundredfiftysixth_wave[divisor-1] = np.append(np.zeros(int((self.symbol_block_size*(divisor-1))/divisor)), self.filtRRC_coef_main)
+
+        self.debug.info_message("self.filtRRC_coef_pre: " + str(self.filtRRC_coef_pre))
+        self.debug.info_message("self.filtRRC_coef_main: " + str(self.filtRRC_coef_main))
+        self.debug.info_message("self.filtRRC_coef_post: " + str(self.filtRRC_coef_post))
+
+      elif self.pulses_per_block == 512:
+        """ calculate the RRC coefficients for 512ths carrier"""
+        divisor = 512
+        self.filtRRC_coef_pre, self.filtRRC_coef_main, self.filtRRC_coef_post = self.demod_2fsk8psk.filterSpanRRC( int(self.symbol_block_size/divisor), rrc_alpha, rrc_T, self.sample_rate)
+
+        self.filtRRC_fivehundredtwelfth_wave = [0] * divisor
+        self.filtRRC_fivehundredtwelfth_wave[0] = np.append(self.filtRRC_coef_main, np.zeros(int((self.symbol_block_size*(divisor-1))/divisor)) )
+        for i in range(1,divisor-1):
+          self.filtRRC_fivehundredtwelfth_wave[i] = np.append(np.zeros(int((self.symbol_block_size*i)/divisor)), self.filtRRC_coef_main)
+          self.filtRRC_fivehundredtwelfth_wave[i] = np.append(self.filtRRC_fivehundredtwelfth_wave[i], np.zeros(int((self.symbol_block_size*(divisor-i-1))/divisor)))
+        self.filtRRC_fivehundredtwelfth_wave[divisor-1] = np.append(np.zeros(int((self.symbol_block_size*(divisor-1))/divisor)), self.filtRRC_coef_main)
+
+        self.debug.info_message("self.filtRRC_coef_pre: " + str(self.filtRRC_coef_pre))
+        self.debug.info_message("self.filtRRC_coef_main: " + str(self.filtRRC_coef_main))
+        self.debug.info_message("self.filtRRC_coef_post: " + str(self.filtRRC_coef_post))
+
       else:
         """ These modes are only available in C compiled code. Only need to create RRC shape."""
         divisor = int(self.pulses_per_block)
@@ -2554,11 +2690,35 @@ class osModem(object):
 
       else:
         if self.i3_offsets_type == ocn.OFFSETS_MANUAL:
+          self.debug.info_message("processing OFFSETS_MANUAL")
           standingwave_pattern  = self.i3_parameters[3]
           standingwave_location = float(self.i3_parameters[4])
+          self.debug.info_message("standingwave_pattern: " + str(standingwave_pattern))
+          self.debug.info_message("standingwave_pattern: " + str(standingwave_location))
           set_sw_values()
 
           #self.i3_offsets = [self.i3_parameters[3], self.i3_parameters[4], self.i3_parameters[5], self.i3_parameters[6] ]
+        elif self.i3_offsets_type == ocn.OFFSETS_MSGLEN_SPECIFIC:
+          self.debug.info_message("processing pattern as OFFSETS_MSGLEN_SPECIFIC")
+          max_message_length = int(self.form_gui.window['combo_max_message_length'].get())
+          key = str(max_message_length)
+          if key in self.pattern_by_msglen:
+            self.debug.info_message("located pattern for msglen")
+            standingwave_pattern  = self.pattern_by_msglen[key][0]
+            standingwave_location = float(self.pattern_by_msglen[key][1])
+            self.debug.info_message("standingwave_pattern: " + str(standingwave_pattern))
+            self.debug.info_message("standingwave_pattern: " + str(standingwave_location))
+            set_sw_values()
+          else:
+            #default back to manual setting
+            self.debug.info_message("unable to locate pattern for msglen. defaulting to OFFSETS_MANUAL")
+            standingwave_pattern  = self.i3_parameters[3]
+            standingwave_location = float(self.i3_parameters[4])
+            self.debug.info_message("standingwave_pattern: " + str(standingwave_pattern))
+            self.debug.info_message("standingwave_pattern: " + str(standingwave_location))
+            set_sw_values()
+
+
         else:
           pattern_override_checked = self.form_gui.window['cb_override_standingwavepattern'].get()
           if pattern_override_checked:
@@ -3233,237 +3393,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def isDataQueueEmpty(self):
     return self.dataQueue.empty()
 
-  def initInputStream(self, sample_rate, window, values):
-    self.debug.info_message("initInputStream" )
 
-    if  self.inStreamRunning == False:
-      self.set_sd_blocksize_rx()
-      self.set_symbol_blocksize_rx()
-      self.previous_mag = 0.0
-
-      center_frequency = values['slider_frequency']
-      separation_override = values['slider_carrier_separation']
-      self.watch_frequency = self.calcCarrierFrequencies(center_frequency, separation_override)[0]
-      self.debug.info_message("watch_frequency: " + str(self.watch_frequency) )
-
-      self.resetInputBuffer()
-
-      input_device = self.form_gui.window['combo_main_modem_input_device'].get()
-
-      #gc.disable()
-
-      self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
-                                     dtype=np.float32, callback = self.sd_instream_callback)
-
-      #self.inStream = sd.InputStream(device=input_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_rx(),
-      #                               latency='low', dtype=np.float32, callback = self.sd_instream_callback)
-
-      gc.disable()
-
-      self.inStream.start()
-      self.inStreamRunning = True
-    else:
-      #gc.disable()
-      self.resetInputBuffer()
-      gc.disable()
-
-    """ start the decoder thread """
-    if self.t1_decoder == None: 
-      self.exit_decoder_processing = False
-      self.t1_decoder = threading.Thread(target=self.decodeProcessing, args=(window, values, ))
-      self.t1_decoder.start()
-
-
-  def initOutputStream(self, values, sample_rate):
-    self.debug.info_message("initOutputStream" )
-
-    if  self.outStreamRunning == False:
-      self.set_sd_blocksize_tx()
-
-      output_device = self.form_gui.window['combo_main_modem_output_device'].get()
-
-      #gc.disable()
-
-      # blocksize = sample_rate for 1 second samples
-      self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
-                                     dtype=np.float32, callback = self.sd_callback)
-
-      #self.outStream = sd.OutputStream(device=output_device, samplerate=int(sample_rate), channels = 1, blocksize=self.get_sd_blocksize_tx(),
-      #                                 latency='low', dtype=np.float32, callback = self.sd_callback)
-
-      self.debug.info_message("tx audio sample_rate: " + str(sample_rate))
-      self.debug.info_message("tx audio blocksize: " + str(self.get_sd_blocksize_tx()))
-
-      gc.disable()
-      self.outStream.start()
-      self.outStreamRunning = True
-    else:
-      gc.disable()
-      self.outStream.start()
-
-
-  """ This method is the focal point of the detector. Looks for signals then starts putting blocks in the decoder queue"""
-  def sd_instream_callback(self, indata, frames, time, status):
-    try:
-
-      """ send data to demodulator """
-      if self.decoderRunning == True:
-        block = np.array(indata)
-        detected_signal = self.getInputGain() * block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
-        present_freq, present_mag, fft_output, data_len, fdd = self.modulation_object.getIsSignalPresent(detected_signal, self.watch_frequency + 0.5)
-
-        #self.form_gui.window['text_input_signal_magnitude_passband'].update(str(present_mag))
-        self.form_gui.window['text_input_signal_magnitude_passband'].update(f"{present_mag:.3f}")
-        #self.form_gui.window['text_input_signal_magnitude_passband_smoothed'].update(str(self.previous_mag))
-        #self.previous_mag = (present_mag/5) + (self.previous_mag * (4/5))
-
-        if present_mag > self.signal_squelch_value: # self.getSignalSquelch():
-          self.pushInputBuffer(np.array(indata))
-
-        self.form_gui.spectralDensityQueue.put(fdd)
-
-    except:
-      self.debug.error_message("Exception in sd_instream_callback: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
-    return None
-
-  def decodeProcessing(self, window, values):
-    #self.debug.info_message("decodeProcessing")
-
-    #max_blocks = int(58 * (self.symbol_block_size / self.get_sd_blocksize_rx()))
-    max_blocks = int(58 * (self.get_symbol_blocksize_rx() / self.get_sd_blocksize_rx()))
-
-    while self.exit_decoder_processing == False:
-      num_items = self.getInputBufferItemCount()
-      #self.debug.info_message("decodeProcessing num items: "+ str(num_items))
-      if  num_items >= max_blocks:
-        #self.debug.info_message("we have 30 items in queue...starting decode")
-        for i in range(0, max_blocks): 
-          block = self.popInputBuffer()
-          if i == 0:
-            #self.debug.info_message("i: " + str(i))
-            #self.debug.info_message("self.symbol_block_size: " + str(self.symbol_block_size))
-            multi_block = np.zeros((max_blocks * self.get_sd_blocksize_rx(),), dtype = np.float64)
-            multi_block[0:self.get_sd_blocksize_rx()] = block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
-          else:
-            #self.debug.info_message("i: " + str(i))
-            multi_block[i*self.get_sd_blocksize_rx():(i+1) * self.get_sd_blocksize_rx()] = block.reshape(self.get_sd_blocksize_rx(),).astype(np.float64)
-
-        """ downconvert sample from 48k to 8k """
-        #use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
-        #if use_hifi_rx:
-        #  multi_block = multi_block.astype(np.complex128)
-        #  multi_block = scipy_signal.resample(multi_block[0:int(len(multi_block)//6)*6], int(len(multi_block) // 6))
-        #  multi_block = multi_block.astype(np.float64)
-
-        """ stop the decoder """
-        if self.form_gui.window['cb_continuous_decode'].get() == False:
-          self.stopDecoder()
-          self.stopEncoder()
-          self.resetInputBuffer()
-          self.resetDataQueue()
-
-        gc.enable()
-        gc.collect()
-
-        multi_block = multi_block * 1
-        #self.modulation_object.writeFileWav2("TEST_AUDIO.wav", multi_block)
-        self.modulation_object.writeFileWavSR("sampled_audio.wav", multi_block, self.getRxSampleRate())
-
-        save_sampled_signal_checked = self.form_gui.window['cb_savesampledsignal'].get()
-        if save_sampled_signal_checked:
-          sampled_signal_name = self.form_gui.window['in_sampledsignalname'].get()
-          self.modulation_object.writeFileWavSR(sampled_signal_name, multi_block, self.getRxSampleRate())
-
-
-        # test increase amplitude...
-        #multi_block = 0.0001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
-
-        #input_signal_gain = values['slider_signal_ingain']
-        #multi_block = input_signal_gain * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
-        multi_block = self.getInputGain() * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
-
-        center_frequency = values['slider_frequency']
-        separation_override = values['slider_carrier_separation']
-
-
-        #frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
-        #frequency = self.calcCarrierFrequenciesFromFFT(fft_frequency, separation_override)
-
-        #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
-
-        #""" adjust for doppler shift """
-        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
-
-        """ DEBUG CODE """
-        #self.debug.info_message("FREQUENCY LO BEFORE RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1382.5, 5, 8, 0, 10, 1000)))
-        #self.debug.info_message("FREQUENCY HI BEFORE RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1417.5, 5, 8, 0, 10, 1000)))
-
-
-        """ adjust for doppler shift """
-        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(multi_block, values, center_frequency, self.getRxSampleRate())
-        multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(multi_block, values, center_frequency, self.getTxSampleRate())
-
-        # do the downconvert here
-        #use_hifi_tx = self.form_gui.window['cb_enable_hifi_output_sampling'].get()
-        #if use_hifi_tx == True and use_hifi_rx == False:
-        #  multi_block = scipy_signal.resample(multi_block, int(len(multi_block) * 1/6))
-
-
-        """ DEBUG CODE ONLY"""
-        #multi_block = self.modulation_object.alignTimePointT0(multi_block, self.getRxSampleRate(), self.getRxSymbolBlockSize())
-
-
-        mode = self.getRealMode(values, self.form_gui)
-        self.setInitializationBlock(mode)
-        frequency = self.calcCarrierFrequenciesSR(center_frequency, separation_override, self.getRxSampleRate())
-
-
-        """ TEST CODE ONLY debug code for FFT analysis"""
-        #self.detector.detectStandingWavePulseNew([multi_block, multi_block], frequency, 0, 0, ocn.FFT_ANALYSIS)
-
-
-        """ filter the input signal """
-        rx_filter_params = self.rx_filter
-        multi_block = self.modulation_object.apply_filterSR(multi_block, rx_filter_params, center_frequency, self.getRxSampleRate())
-
-        use_hifi_rx = self.form_gui.window['cb_enable_hifi_input_sampling'].get()
-        if use_hifi_rx == True:
-          multi_block = scipy_signal.resample(multi_block, int(len(multi_block) * 1/6))
-
-
-        """ reset the decoder """
-        """ reset the remainder"""
-        self.resetDecoder()
-
-        #self.osmod.demod_2fsk8psk.remainder = np.array([])
-        #self.demodulation_object.remainder = np.array([])
-        """ reset the remainder"""
-        #self.demod_2fsk8psk.remainder = np.array([])
-
-        """ DEBUG CODE """
-        #self.debug.info_message("FREQUENCY LO AFTER RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1382.5, 5, 8, 0, 10, 1000)))
-        #self.debug.info_message("FREQUENCY HI AFTER RXFILTER: " + str(self.modulation_object.resolveFrequencyToNDP(multi_block, 1, 1417.5, 5, 8, 0, 10, 1000)))
-
-
-        #""" adjust for doppler shift """
-        #multi_block = self.modulation_object.adjustFrequencyShiftAndDopplerShift(multi_block, values, center_frequency)
-
-        try:
-          self.decoder_callback(multi_block, frequency)
-        except:
-          self.debug.error_message("Exception in decodeProcessing: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
-      else:
-        time.sleep(1)
-        #self.debug.info_message("decodeProcessing sleep")
-
-
-  """ realtime conversion of pre-processed bitstream into wave audio. input data queued in FIFO buffer """
-  def sd_callback(self, outdata, frames, time, status):
-
-    return self.encoder_callback(outdata, frames, time, status)
-    
   def openConstellationPlot(self):    
 
     m = 16
@@ -3500,7 +3430,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
       """ convert text to bits"""
-      text_examples = [0] * 16
+      text_examples = [0] * 17
       text_examples[0]  = " cq wh6ggo "
       text_examples[1]  = " cqcqcqcqcqcq wh6ggo "
       text_examples[2]  = " cqcqcqcqcqcqcqcqcqcqcq wh6ggo "
@@ -3517,34 +3447,72 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       text_examples[13] = "twinkle twinkle little bat how i wonder what youre at up above the world you fly like a tea tray in the sky twinkle twinkle little bat how i wonder what youre at"
       text_examples[14] = "i can read on a boat i can read with a goat i can read on a train i can read in the rain i can read with a fox i can read in a box i can read with a mouse i can read in a house i can read here or there i can read anywhere"
       text_examples[15] = "the queen of hearts she made some tarts all on a summers day the knave of hearts he stole the tarts and took them clean away the king of hearts called for the tarts and beat the knave full sore the knave of hearts brought back the tarts and vowed hed steal no more"
+      text_examples[16] = "The Queen Of Hearts SHE MADE SOME TARTS all on a summer's day. The Knave Of Hearts HE STOLE THE TARTS and took them clean away. The King Of Hearts CALLED FOR THE TARTS and beat the knave full sore. The Knave Of Hearts BROUGTH BACK THE TARTS and vowed he'd steal no more."
 
       if use_preset:
         message_text = text_examples[int(text_num)]
       else:
-        custom_message = custom_message.lower()
-        message_text = "                                                e"
-        message_text = custom_message +  message_text[len(custom_message):]    #   [0:len(custom_message)] = custom_message
+        #custom_message = custom_message.lower()
+        #message_text = "                                                e"
+        #message_text = custom_message +  message_text[len(custom_message):]    #   [0:len(custom_message)] = custom_message
+        message_text = custom_message 
+
 
       self.debug.info_message("message_text: " + str(message_text))
 
 
+      max_message_length = int(self.form_gui.window['combo_max_message_length'].get())
+      truncate_to_max_msglength = self.form_gui.window['cb_truncate_to_max_msglength'].get()
+
+      """ add the callsign to the start of the message """
+      message_text = self.modulation_object.addCallsignSOM_WithColon(message_text)
+
+      """ translate ASCII to base 64 (excluding rotation sequence and padding character)"""
+      self.debug.info_message("translating text: " + str(message_text))
+      message_text = self.modulation_object.translateOutbound(message_text)
+
+      """ insert CRC codes to protect message fragments """
+      is_crc_enabled = self.form_gui.window['cb_enable_crc'].get()
+      if is_crc_enabled:
+        message_text = self.modulation_object.protectMessage(message_text, truncate_to_max_msglength, 8, max_message_length)
+
+
       """ add start sequence character and trailing space """
       if self.start_seq == '2_of_3':
-        text = 'aaa' + message_text + ' '
+        text = '   ' + message_text + ' '
       elif self.start_seq == '2_of_4' or self.start_seq == '3_of_4':
-        text = 'aaaa' + message_text + ' '
+        text = '    ' + message_text + ' '
       elif self.start_seq == '2_of_5' or self.start_seq == '3_of_5' or self.start_seq == '4_of_5':
-        text = 'aaaaa' + message_text + ' '
+        text = '     ' + message_text + ' '
       elif self.start_seq == '2_of_6':
-        text = 'aaaaaa' + message_text + ' '
+        text = '      ' + message_text + ' '
       elif self.start_seq == '2_of_7':
-        text = 'aaaaaaa' + message_text + ' '
+        text = '       ' + message_text + ' '
       elif self.start_seq == '2_of_8':
-        text = 'aaaaaaaa' + message_text + ' '
+        text = '        ' + message_text + ' '
       else:
-        text = 'aaa' + message_text + ' '
+        text = '   ' + message_text + ' '
+
+
+      #tx_message_length = len(text)
+      #self.form_gui.window['combo_max_message_length'].update(value = str(tx_message_length))
+
+
+      #max_message_length = int(self.form_gui.window['combo_max_message_length'].get())
+      #truncate_to_max_msglength = self.form_gui.window['cb_truncate_to_max_msglength'].get()
+      #if truncate_to_max_msglength:
+      #  text = text[:max_message_length]
+
+      if truncate_to_max_msglength:
+        text_len = len(text)
+        if text_len > max_message_length:
+          text = text[:max_message_length]
+        elif text_len <  max_message_length:
+          text = text + (' ' * (max_message_length - text_len))
 
       self.debug.info_message("encoding text: " + str(text))
+
+      #self.debug.info_message("encoding text: " + str(text))
 
       bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
       #data2 = self.modulation_object.modulate(frequency, bit_groups)
@@ -3604,3 +3572,760 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
 
 
+  def osmod_net_main(self):
+    net = None
+    debug = db.Debug(cn.DEBUG_INFO)
+
+    """
+    if (platform.system() == 'Windows'):
+      appdata_folder = os.getenv('LOCALAPPDATA') 
+      hrrm_appdata_folder = appdata_folder + '\HRRM'
+      if(not os.path.exists(hrrm_appdata_folder)):
+        os.chdir(appdata_folder)
+        os.mkdir('HRRM')
+        os.chdir(hrrm_appdata_folder)
+        os.mkdir('received_images')
+        os.mkdir('received_files')
+        os.mkdir('hrrm_files')
+      else:
+        os.chdir(hrrm_appdata_folder)
+    else:
+      appdata_folder = os.getenv('HOME') 
+      hrrm_appdata_folder = appdata_folder + '/.HRRM'
+      if(not os.path.exists(hrrm_appdata_folder)):
+        os.chdir(appdata_folder)
+        os.mkdir('.HRRM')
+        os.chdir(hrrm_appdata_folder)
+        os.mkdir('received_images')
+        os.mkdir('received_files')
+        os.mkdir('hrrm_files')
+      else:
+        os.chdir(hrrm_appdata_folder)
+    """
+
+    """
+    if nothing is specified for edition, profile string defaults to the day of the week in local time
+    edition=day_zulu      set the profile string to today based on zulu time
+    edition=time_of_day   set profile to morning, noon, afternoon, evening, nighttime
+    edition=time_of_day_zulu   set profile to morning, noon, afternoon, evening, nighttime  based on zulu time
+    interface = netcontrol
+    interface = participant
+    simulate
+    edit
+    combo_tks =
+    combo_aloha =
+    debug_level =
+    """
+
+    """ set the default values for command line parameters"""
+    operating_mode  = cn.NETCONTROL
+    #operating_mode  = cn.PARTICIPANT
+
+    #simulation_mode = False
+    simulation_mode = True
+    edit_mode       = False
+    combo_list_1    = 'Report,Good Report,Great Report,Signal Report,Great Question,Good Idea,Good Comment'.split(',')
+    combo_list_2    = 'Great Evening,Good Evening,Great Rest of the Day,Good morning'.split(',')
+    net_data_file   = "osmod_net_save_data.txt"
+
+
+    client_read_details = True
+    group = ""
+    frequency = ""
+    counter_value = 200
+    show_counter=True
+    delay_send = 25
+    freq_from_osmod=False
+    offsets_list = '1337,700,870,1140,1210,750,920,1190,1260,800,970,1240'
+    update_freq_on_qsy = False
+    from_plan = True
+    main_offset = 1000
+    visuals = 'background:LightGray,main:SeaGreen1,side:LightBlue1,flash1:red,flash2:blue'
+    visuals = 'background:gray,main:turquoise1,side:DarkOliveGreen1,flash1:red2,flash2:green1'
+    override_visuals = False
+    side_main_offset_boundary = 700
+    view = osmod_net_gui.MainNetWindow()
+    js=view.readDictFromFile(net_data_file)
+    self.osmod_net_view = view
+
+    (opts, args) = getopt.getopt(sys.argv[1:], "h:i:n:p:t:a:e:s:r:g:f:c:d:o:b:v:m:u",
+      ["help", "interface=", "net_file=", "profile=", "combo_tks=", "combo_aloha=", "edit", "simulate", "client_read_details", "group=", "frequency=", "counter=", "delay=", "offsets=", "boundary=", "visual=", "main_offset=", "update_freq_on_qsy"])
+    rosterFile, macroFile = None, None
+    for option, argval in opts:
+      if (option in ("-h", "--help")):
+        debug.info_message("main. usage")
+        usage()
+
+      elif (option in ("-i", "--interface")):
+        debug.info_message("interface = " + argval)
+        if(argval == "netcontrol"):
+          operating_mode = cn.NETCONTROL
+        else:  
+          operating_mode = cn.PARTICIPANT
+			
+      elif (option in ("-n", "--net_file")):
+        debug.info_message("net file = " + argval)
+        net_data_file = argval
+        
+      elif (option in ("-p", "--profile")):
+        debug.info_message("profile = " + argval)
+
+      elif (option in ("-t", "--combo_tks")):
+        debug.info_message("combo_tks = " + argval)
+        combo_list_1    = argval.split(',')
+        
+      elif (option in ("-a", "--combo_aloha")):
+        debug.info_message("combo_aloha = " + argval)
+        combo_list_2    = argval.split(',')
+        
+      elif (option in ("-e", "--edit")):
+        debug.info_message("edit mode")
+        edit_mode = True
+
+      elif (option in ("-s", "--simulate")):
+        debug.info_message("simulate mode")
+        simulation_mode = True
+
+      elif (option in ("-g", "--group")):
+        debug.info_message("group = " + argval)
+        group = argval
+
+      elif (option in ("-o", "--offsets")):
+        debug.info_message("offsets = " + argval)
+        offsets_list = argval
+
+      elif (option in ("-b", "--boundary")):
+        debug.info_message("boundary = " + argval)
+        side_main_offset_boundary = int(argval)
+
+      elif (option in ("-v", "--visual")):
+        override_visuals = True
+        debug.info_message("visual = " + argval)
+        visuals = argval
+
+      elif (option in ("-u", "--update_freq_on_qsy")):
+        debug.info_message("update frequency field on qsy ")
+        update_freq_on_qsy = True
+
+      elif (option in ("-f", "--frequency")):
+        debug.info_message("frequency = " + argval)
+        frequency = argval
+
+      elif (option in ("-r", "--client_read_details")):
+        debug.info_message("read client details from file")
+        client_read_details = True
+
+      elif (option in ("-d", "--delay")):
+        debug.info_message("set delay send")
+        delay_send = int(argval)
+
+      elif (option in ("-m", "--main_offset")):
+        debug.info_message("set main offset")
+        if(argval == "from_file"):
+          main_offset = js.get("params").get("MainOffset")
+          from_plan = False
+        elif(argval == "from_plan"):
+          from_plan = True
+        else:
+          main_offset = int(argval)
+          from_plan = False
+
+      elif (option in ("-c", "--counter")):
+        debug.info_message("set counter value: "+ argval)
+        if(argval == "off"):
+          show_counter=False
+        else:
+          counter_value = int(argval)
+
+
+    if(from_plan == True):
+      main_offset = int(offsets_list.split(",")[0])
+
+    if(override_visuals == False):
+      if(operating_mode == cn.NETCONTROL):
+        visuals = 'background:gray,main:turquoise1,side:DarkOliveGreen1,flash1:red2,flash2:green1'
+      elif(operating_mode == cn.PARTICIPANT):
+        visuals = 'background:indigo,main:SeaGreen1,side:LightBlue1,flash1:red,flash2:blue'
+ 
+    view.setDelayValue(delay_send)
+
+
+
+    self.osmod_net_layout = view.createClientWindow(js, operating_mode, simulation_mode, edit_mode, combo_list_1, combo_list_2, client_read_details, group, frequency, counter_value, show_counter, visuals, offsets_list, main_offset)
+    #window = view.createClientWindow(js, operating_mode, simulation_mode, edit_mode, combo_list_1, combo_list_2, client_read_details, group, frequency, counter_value, show_counter, visuals, offsets_list, main_offset)
+    window = None
+
+
+    net = OSMOD_Net(debug, view, window, self)
+    self.osmod_net = net
+    view.osmod_net = net
+
+    #view.window = window
+
+    net.setManualGroup(group)
+    net.setManualFrequency(frequency)
+    net.setFreqFromOSMOD(freq_from_osmod)
+    net.setSideMainOffsetBoundary(side_main_offset_boundary)
+    net.setOffsetsList(offsets_list)
+    net.setUpdateFreqOnQsy(update_freq_on_qsy)
+
+    net.timeout = counter_value
+    net.max_timeout = counter_value
+   
+    """ set the corresponding variables"""
+    flashstate = js.get("params").get("FlashBtn")
+    if(flashstate):
+      net.setFlashingState(True)
+
+    autocheckin = js.get("params").get("AutoCheckin")
+    if(autocheckin):
+      net.setAutoCheckin(True)
+
+    net.setOperatingMode(operating_mode)
+
+    """ only reload the roster data for net control view else create empty roster """	  
+    if(operating_mode == cn.NETCONTROL):
+      net.roster = js.get("roster")
+    elif(operating_mode == cn.PARTICIPANT):
+      net.roster = []
+
+    """ now add the call sign lookups data object  """
+    net.setKnownCalls(js.get("callsigns") )
+    net.setNcsData(js)
+
+    """ create the main gui controls event handler """
+    dispatcher = osmod_net_events.ControlsProc(view, net, window)
+    self.osmod_net_dispatcher = dispatcher
+
+    """ create a separate thread to handle incoming messages """
+
+    #osmod_client.connect(server)
+    #t1 = threading.Thread(target=osmod_client.run, args=())
+    #t1.start()
+    #osmod_client.setCallback(net.my_new_callback)
+
+    error_displayed = False
+
+    """
+    for x in range(10):
+      if(osmod_client.isConnected()==False ):
+        if(error_displayed == False):
+          error_displayed = True
+    if(osmod_client.isConnected()==True ):
+      net.getStationCall()
+      net.getDialAndOffset()
+      view.run(osmod_client, net, dispatcher)
+    else:
+      osmod_client.stopThreads()
+    """
+
+
+
+  #""" osmod net mthods..."""
+  #def sendMsg(self, *args, **kwargs):
+  #def sendMsg(self, msg_type, message):
+  #  self.debug.info_message("osmod_main::sendMsg")
+
+  def sendMsg(self, *args, **kwargs):
+    sys.stdout.write("osmod_main::sendMsg\n")
+    self.debug.info_message("args: " +str(args))
+    self.debug.info_message("kwargs: " +str(kwargs))
+
+    #station_callsign = self.osmod_net.getStationCallSign()
+    station_callsign = self.form_gui.window['input_ncs'].get()
+
+    if True: #self.connected:
+      params = kwargs.get('params', {})
+      if '_ID' not in params:
+        params['_ID'] = '{}'.format(int(time.time()*1000))
+        kwargs['params'] = params
+      message = self.to_message(*args, **kwargs)
+      try:
+        """ remember to send the newline at the end :) """
+        self.debug.info_message("sending message: " +str(message))
+        #self.sock.send((message + '\n').encode()) 
+
+        #kernel_action = ocn.KERNEL_TX_NOW
+        #self.sonic.pushKernelQueue(kernel_action)
+        #self.sonic.send(self.form_gui.window, None, self.form_gui)
+
+
+        dict_obj = json.loads(message)
+        self.debug.info_message("dict_obj: " +str(dict_obj))
+        if dict_obj['type'] == 'TX.SEND_MESSAGE':
+          self.debug.info_message("TX.SEND_MESSAGE: " +str(message))
+          #message_text = "        " + dict_obj['value']
+          #message_text = station_callsign +": " + dict_obj['value']
+          message_text = ": " + dict_obj['value']
+
+          self.form_gui.window['ml_txrx_sendtext'].update(message_text)
+          self.form_gui.window['cb_use_preset_message'].update(False)
+          tx_message_length = self.getTxMessageLength(message_text)
+
+          #self.form_gui.window['combo_max_message_length'].update(value = str(tx_message_length))
+          self.form_gui.window['cb_truncate_to_max_msglength'].update(False)
+
+          kernel_action = ocn.KERNEL_TXRX_NOW
+          self.sonic.pushKernelQueue(kernel_action)
+          self.sonic.send_threaded(self.form_gui.window, None, self.form_gui)
+        if dict_obj['type'] == 'TX.SET_TEXT':
+          self.debug.info_message("TX.SET_TEXT: " +str(message))
+
+      except:
+        sys.stdout.write("EXCEPT IN sendMsg\n")
+        #self.close()
+
+
+
+  def from_message(self, content):
+    try:
+      return json.loads(content)
+    except ValueError:
+      return {}
+
+  def to_message(self, typ, value='', params=None):
+    if params is None:
+      params = {}
+    return json.dumps({'type': typ, 'value': value, 'params': params})
+
+
+
+  def stripEndOfMessage(self, message):
+    sys.stdout.write("osmod_main::stripEndOfMessage\n")
+    self.debug.info_message("message: " +str(message))
+
+    retstring = ''
+    try:    
+      eom = u'♢'.encode('utf-8')
+      retstring = message.split(eom, 1)[0]
+    except:    
+      sys.stdout.write("EXCEPTION\n")
+
+    return retstring
+
+
+
+  """
+  get the contents of a named parameter from the return string
+  """
+  def getNetParam(self, dict_obj, paramname):
+    sys.stdout.write("osmod_main::getNetParam\n")
+    subdict  = dict_obj.get('params')
+    param_value = subdict.get(paramname)
+    return(str(param_value))
+
+
+
+  """
+  return the value of json string item
+  """
+  def getValue(self, dict_obj, objname):
+    sys.stdout.write("osmod_main::getValue\n")
+    value  = dict_obj.get(objname)
+    return (value.encode('utf-8'))
+
+  """
+  test if message contains missing frame unicode character(s)
+  """
+  def areFramesMissing(self, message):
+    sys.stdout.write("osmod_main::areFramesMissing\n")
+    
+    frame_missing = u'……'.encode('utf-8')
+
+    count = start = 0
+    flag = True
+    while flag:
+      a = message.find(frame_missing, start)
+      if a == -1:
+        flag = False
+      else:
+        count += 1
+        start = a+1
+    return (count)
+
+
+  """
+  test if message contains text
+  unicode encode necessary for correct functioning otherwise throws unicode exception
+  """
+  def isTextInMessage(self, text, message):
+    sys.stdout.write("osmod_main::isTextInMessage\n")
+    try:
+      newtext = text.encode('utf-8')
+      if newtext in message.encode('utf-8'):
+        return (1)
+      else:
+        return (0)
+    except:    
+      sys.stdout.write("EXCEPTION\n")
+
+
+
+  def osmodNetCallback(self, message):
+    sys.stdout.write("osmodNetCallback\n")
+    try:
+      formatted_nssage = '{"params":{"DIAL":7078000,"FREQ":7080341,"OFFSET":890,"SNR":-5,"SPEED":4,"TDRIFT":-0.5,"UTC":1654371086715,"_ID":-1},"type":"RX.DIRECTED","value":"' + message + '"}\n'
+
+      self.osmod_net.my_new_callback(formatted_nssage, cn.RCV, "NOT USED", "NOT USED")
+    except:
+      self.debug.error_message("Exception in osmodNetCallback: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def displayReceivedMessage(self, message, update, erase):
+    self.debug.info_message("displayReceivedMessage")
+    try:
+        """ erase existing display info """
+        if erase:
+          self.form_gui.window['ml_txrx_recvtext'].update('')
+
+        message_struct = self.processFragmentedMessage(message)
+        fragments = message_struct['fragments']
+        pass_fail = message_struct['pass_fail']
+
+        if len(fragments) > 1:
+          with_crc = True
+          if pass_fail[0] == 'p':
+            sender_callsign = fragments[0][4:].split(' ')[0].split(':')[0]
+            sender_callsign = sender_callsign.upper()
+            self.debug.info_message("sender_callsign: " + str(sender_callsign))
+          else:
+            sender_callsign = ''
+        else:
+          with_crc = False
+          sender_callsign = ''
+
+        reconstituted_message = message_struct['reconstituted_message']
+        original_message = self.modulation_object.translateInbound(reconstituted_message)
+        #original_message = reconstituted_message #self.modulation_object.translateInbound(message_struct['reconstituted_message'])
+
+        xref = self.createMessageXref(reconstituted_message)
+
+        last_position = 0
+        #for count in range(0, len(xref)):
+        for count in range(0, len(fragments)):
+          if with_crc:
+            part_message = original_message[last_position:xref[count]]
+          else:
+            part_message = original_message
+
+          if pass_fail[count] == 'p':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='green', background_color = 'white')
+          elif pass_fail[count] == 'f':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='red', background_color = 'white')
+          elif pass_fail[count] == 'u':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='purple', background_color = 'white')
+
+          #self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='orange', background_color = 'white')
+          last_position = xref[count]
+
+        self.form_gui.window['ml_txrx_recvtext'].print("\n\n", end="", text_color='orange', background_color = 'white')
+
+
+        #self.form_gui.window['ml_txrx_recvtext'].print(str(original_message) + "\n\n", end="", text_color='blue', background_color = 'white')
+
+
+
+        for frag_count in range(0, len(fragments)):
+          if with_crc:
+            temp_fragment = fragments[frag_count]
+            fragment = temp_fragment[2:len(temp_fragment)-2]
+          else:
+            fragment = fragments[frag_count]
+
+          if pass_fail[frag_count] == 'p':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='green', background_color = 'white')
+          elif pass_fail[frag_count] == 'f':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='red', background_color = 'white')
+          elif pass_fail[frag_count] == 'u':
+            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='purple', background_color = 'white')
+
+        self.form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='orange', background_color = 'white')
+
+        if update:
+          timestamp = self.modulation_object.appendTableRow(original_message, sender_callsign)
+
+          if self.form_gui.window['cb_use_prod_modes'].get() == True:
+            mode = self.form_gui.window['combo_main_modem_prod_modes'].get()
+          else:
+            mode = self.form_gui.window['combo_main_modem_modes'].get()
+          callsign = "FIXME_TEST"
+          #mode = "FIXME_MODE"
+
+
+          #self.storeMessageInMemory(self.getCenterFrequency(), mode, callsign, timestamp, original_message)
+          self.storeMessageInMemory(self.getCenterFrequency(), mode, sender_callsign, timestamp, message)
+
+
+          net_enabled = self.form_gui.window['cb_enable_osmod_net'].get()
+          #net_enabled = False:
+          if net_enabled:
+            self.osmodNetCallback(original_message)
+
+
+    except:
+      self.debug.error_message("Exception in displayReceivedMessage: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  """ cross reference to map crc verified sections of text to translated text """
+  def createMessageXref(self, untranslated_message):
+    self.debug.info_message("createMessageXref")
+    try:
+      xref = []
+
+      self.debug.info_message("untranslated_message: " + str(untranslated_message))
+
+      two_chars = ['==', '=a', '=b', '=c', '=d', '=f', '=g', '=p', '=q', '=r', '=s', '=t', '=u', '=v', '//']
+
+      crc_fragment_size = int(self.form_gui.window['in_crc_fragment_size'].get())
+
+      rolling_counter = 0
+      tranlated_msg_location = 0
+      untranlated_msg_location = 0
+      untranslated_msg_len = len(untranslated_message)
+      while untranlated_msg_location < untranslated_msg_len:
+        if untranslated_message[untranlated_msg_location] == '/':
+          if untranslated_message[untranlated_msg_location + 1].isdigit():
+            if untranslated_message[untranlated_msg_location + 2].isdigit():
+              if untranslated_message[untranlated_msg_location + 3].isdigit():
+                if untranslated_message[untranlated_msg_location + 4].isdigit():
+                  # best guess
+                  rle_length = int(untranslated_message[untranlated_msg_location + 1:untranlated_msg_location + 4 ])
+                  tranlated_msg_location = tranlated_msg_location + 5 + rle_length
+                  untranlated_msg_location = untranlated_msg_location + 5
+                else:
+                  rle_length = int(untranslated_message[untranlated_msg_location + 1:untranlated_msg_location + 4 ])
+                  tranlated_msg_location = tranlated_msg_location + 5 + rle_length
+                  untranlated_msg_location = untranlated_msg_location + 5
+              else:
+                rle_length = int(untranslated_message[untranlated_msg_location + 1:untranlated_msg_location + 3 ])
+                tranlated_msg_location = tranlated_msg_location + 4 + rle_length
+                untranlated_msg_location = untranlated_msg_location + 4
+            else:
+              rle_length = int(untranslated_message[untranlated_msg_location + 1])
+              tranlated_msg_location = tranlated_msg_location + 3 + rle_length
+              untranlated_msg_location = untranlated_msg_location + 3
+          else:
+            tranlated_msg_location = tranlated_msg_location + 1
+            untranlated_msg_location = untranlated_msg_location + 2
+        elif untranslated_message[untranlated_msg_location] == '=':
+          self.debug.info_message("located =")
+          self.debug.info_message("located: " + str(untranslated_message[untranlated_msg_location:untranlated_msg_location + 2]))
+          if untranslated_message[untranlated_msg_location:untranlated_msg_location + 2] in two_chars:
+            self.debug.info_message("located = two_chars")
+            tranlated_msg_location = tranlated_msg_location + 1
+            untranlated_msg_location = untranlated_msg_location + 2
+          else:
+            self.debug.info_message("located = no_chars")
+            tranlated_msg_location = tranlated_msg_location + 0
+            untranlated_msg_location = untranlated_msg_location + 2
+        else:
+          tranlated_msg_location = tranlated_msg_location + 1
+          untranlated_msg_location = untranlated_msg_location + 1
+
+        if untranlated_msg_location - rolling_counter >= crc_fragment_size:
+          xref.append(tranlated_msg_location)
+          rolling_counter = rolling_counter + crc_fragment_size
+
+      xref.append(tranlated_msg_location)
+
+      self.debug.info_message("xref: " + str(xref))
+
+      return xref
+
+    except:
+      self.debug.error_message("Exception in createMessageXref: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def processFragmentedMessage(self, message):
+    self.debug.info_message("processFragmentedMessage")
+    try:
+      num_rotation_chars = 8
+
+      crc_fragment_size = int(self.form_gui.window['in_crc_fragment_size'].get())
+      total_crc_fragment_size = crc_fragment_size + 4
+
+      if '|' not in message.rstrip('|'):
+        self.debug.info_message("no crc delimeter found in message")
+        return {"num_fragments": 1, "fragments": [message], "pass_fail": ['u'], "reconstituted_message": message}
+
+      sequence_identifier = "0123456789abcdefghijklmnopqrstuvwxyz"
+      align_counter = {}
+      delimiter_indexes = []
+
+      align_counter["max"] = 0
+      align_counter["max_index"] = 0
+      for index in range(0, len(message)):
+        if message[index] == '|':
+          delimiter_indexes.append(index)
+
+      for counter in range(0, len(delimiter_indexes)):
+        location = delimiter_indexes[counter] % total_crc_fragment_size
+        self.debug.info_message("location: " + str(location))
+        if location in align_counter:
+          align_counter[location] = align_counter[location] + 1
+        else:
+          align_counter[location] = 1
+
+        if align_counter[location] > int(align_counter["max"]):
+          align_counter["max"] = align_counter[location]
+          align_counter["max_index"] = location
+          self.debug.info_message("align_counter[max]: " + str(align_counter["max"]))
+          self.debug.info_message("align_counter[max_index]: " + str(align_counter["max_index"]))
+
+      offset = align_counter["max_index"]
+      num_fragments = (len(message) - num_rotation_chars) // total_crc_fragment_size
+
+      #remainder = (len(message) - num_rotation_chars) - (num_fragments * total_crc_fragment_size)
+      temp_strings = message[num_rotation_chars + 2 + (num_fragments * total_crc_fragment_size): ].split('|',1)
+      self.debug.info_message("temp_strings: " + str(temp_strings))
+      remainder = len(temp_strings[0]) 
+      self.debug.info_message("remainder: " + str(remainder))
+
+      fragments = []
+      pass_fail = []
+      for counter in range(0, num_fragments):
+        location = offset + (counter * total_crc_fragment_size)
+        fragment = '|' + sequence_identifier[counter] + message[location + 2:location + total_crc_fragment_size]
+        fragments.append(fragment)
+
+        checksum = self.modulation_object.calcFragmentCRC(fragment[0:total_crc_fragment_size - 2])
+        if checksum == fragment[total_crc_fragment_size - 2:total_crc_fragment_size]:
+          pass_fail.append('p')
+        else:
+          pass_fail.append('f')
+
+        self.debug.info_message("fragment: " + str(fragment))
+
+      self.debug.info_message("processing remainder...")
+
+      if remainder > 0:
+        location = offset + (num_fragments * total_crc_fragment_size)
+        #fragment = '|' + sequence_identifier[num_fragments] + message[location + 2:location + remainder]
+        remainder_location = num_rotation_chars + 2 + (num_fragments * total_crc_fragment_size)
+        fragment = '|' + sequence_identifier[num_fragments] + message[remainder_location:remainder_location + remainder]
+        fragments.append(fragment)
+
+        checksum = self.modulation_object.calcFragmentCRC(fragment[0:len(fragment) - 2])
+        if checksum == fragment[len(fragment) - 2:len(fragment)]:
+          pass_fail.append('p')
+        else:
+          pass_fail.append('f')
+
+        self.debug.info_message("fragment: " + str(fragment))
+
+      self.debug.info_message("align_counter: " + str(align_counter))
+      self.debug.info_message("fragments: " + str(fragments))
+      self.debug.info_message("pass_fail: " + str(pass_fail))
+
+      reconstituted_message = ''
+      for frag_count in range(0, len(fragments)):
+        fragment = fragments[frag_count]
+        reconstituted_message = reconstituted_message + fragment[2:len(fragment)-2]
+
+      self.debug.info_message("reconstituted_message: " + str(reconstituted_message))
+
+      return {"num_fragments": len(fragments), "fragments": fragments, "pass_fail": pass_fail, "raw_message": message, "reconstituted_message": reconstituted_message}
+
+    except:
+      self.debug.error_message("Exception in processFragmentedMessage: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def storeMessageInMemory(self, frequency, mode, callsign, timestamp, message):
+    sys.stdout.write("storeMessageInMemory\n")
+    
+    self.debug.info_message("frequency: " + str(frequency))
+    self.debug.info_message("callsign: " + str(callsign))
+
+    try:
+      msg_id = 1
+      if "message_counter" not in self.all_messages:
+        self.all_messages['message_counter'] = 1
+        msg_id = 1
+      else:
+        max_message_number = self.all_messages['message_counter']
+        self.all_messages['message_counter'] = max_message_number + 1
+        msg_id = max_message_number + 1
+ 
+      self.all_messages[str(msg_id)] = message
+      self.all_messages[str(msg_id) + "_Timestamp"] = timestamp
+
+      frequency_mode = str(frequency) + "_" + str(mode)
+      if frequency_mode in self.messages_by_frequency:
+        table_messages = self.messages_by_frequency[frequency_mode]
+        table_messages.append(msg_id)
+        self.messages_by_frequency[frequency_mode] = table_messages
+      else:
+        self.messages_by_frequency[frequency_mode] = [msg_id]
+
+      if callsign in self.messages_by_callsign:
+        table_messages = self.messages_by_callsign[callsign]
+        table_messages.append(msg_id)
+        #self.messages_by_callsign[str(callsign)] = self.messages_by_callsign[str(callsign)].append(str(msg_id))
+        self.messages_by_callsign[callsign] = table_messages
+      else:
+        self.messages_by_callsign[callsign] = [msg_id]
+
+      self.debug.info_message("all_messages: " + str(self.all_messages))
+      self.debug.info_message("messages_by_frequency: " + str(self.messages_by_frequency))
+      self.debug.info_message("messages_by_callsign: " + str(self.messages_by_callsign))
+
+    except:
+      self.debug.error_message("Exception in storeMessageInMemory: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def writeModemSettingsToFile(self, window, filename):
+    self.debug.info_message("writeModemSettingsToFile")
+
+    try:	  	  
+      """ individual fields first """	  
+      dict_data = { 'StationCallsign'    : window['in_station_callsign'].get().strip(),
+                    'MainGroup'          : window['in_group'].get().strip(),
+                    'LocatorGridSquare'  : window['in_locator_grid_square'].get().strip(),
+                    'InputDevice'        : window['combo_main_modem_input_device'].get(),
+                    'OutputDevice'       : window['combo_main_modem_output_device'].get() }
+
+
+      self.dict_data = dict_data
+
+      with open(filename, 'w') as convert_file:
+        convert_file.write(json.dumps(dict_data))
+
+    except:
+      self.debug.error_message("Exception in writeModemSettingsToFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return(dict_data)
+
+
+  def readModemSettingsFromFile(self, window, filename):
+    self.debug.info_message("readModemSettingsFromFile")
+    try:
+		  
+      with open(filename) as f:
+        data = f.read()
+  
+      """  
+      reconstructing the data as a dictionary
+      """
+      dict_data = json.loads(data)
+
+
+    except:
+      self.debug.info_message("creating settings data")
+
+      dict_data = {'StationCallsign'    : '<YOUR CALLSIGN HERE>',
+                   'MainGroup'          : '<GROUP NAME>',
+                   'LocatorGridSquare'  : '<GRID SQUARE>',
+                   'InputDevice'        : '',
+                   'OutputDevice'       : '' }
+
+    window['in_station_callsign'].update(dict_data['StationCallsign'])
+    window['in_group'].update(dict_data['MainGroup']),
+    window['in_locator_grid_square'].update(dict_data['LocatorGridSquare']),
+    if dict_data['InputDevice'] != '':
+      window['combo_main_modem_input_device'].update(dict_data['InputDevice']),
+    if dict_data['OutputDevice'] != '':
+      window['combo_main_modem_output_device'].update(dict_data['OutputDevice'])
+
+    self.dict_data = dict_data   
+    return(dict_data)

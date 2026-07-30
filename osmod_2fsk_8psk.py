@@ -925,6 +925,13 @@ class demod_2FSK8PSK(DemodulatorPSK):
       fft_filtered[0], masked_fft_lower  = self.bandpass_filter_fft(audio_array, frequency[0] + self.osmod.fft_interpolate[0], frequency[0] + self.osmod.fft_interpolate[1])
       fft_filtered[1], masked_fft_higher = self.bandpass_filter_fft(audio_array, frequency[1] + self.osmod.fft_interpolate[2], frequency[1] + self.osmod.fft_interpolate[3])
 
+
+
+      #TEST CODE
+      #self.osmod.modulation_object.alignTimePointT0(fft_filtered[0], self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+
+
+
       """ processing *after* fft """
       #if self.osmod.pulse_detection == ocn.PULSE_DETECTION_I3:
       persistent_lower, persistent_higher = self.osmod.interpolator.derivePersistentLists(pulse_start_index, fft_filtered, frequency)

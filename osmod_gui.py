@@ -19,6 +19,7 @@ import os
 import random
 import colorsys
 
+
 from socket import socket, AF_INET, SOCK_STREAM
 from app_pipes import AppPipes
 from osmod_main import osModem
@@ -28,7 +29,6 @@ from scipy import signal
 from scipy.signal import find_peaks
 from osmod_test import OsmodTest
 from datetime import datetime, timedelta
-
 """
 MIT License
 
@@ -59,23 +59,62 @@ class FormGui(object):
   plotQueue = Queue()
   drawitQueue = Queue()
   spectralDensityQueue = Queue()
-
   txwindowQueue = Queue()
-
   debug = db.Debug(ocn.DEBUG_OSMOD)
-
-  #waterfall_hue = 0.5
-  #waterfall_saturation = 0.5
-  #waterfall_scale = 6
-
+  net_enabled = False
+  net_callback_redirect = None
+  disable_timers = False
 
   """
   debug level 0=off, 1=info, 2=warning, 3=error
   """
   def __init__(self, group_arq, debug):  
     self.osmod = osModem(self)
-    #self.colors, self.num_colors = self.createColors()
+    self.net_callback_redirect = self.NetCallbackRedirectNull
     return
+
+  def NetCallbackRedirectNull(self, window, values):
+    #sys.stdout.write("NetCallbackRedirectNull\n")
+    return
+
+  def NetCallbackRedirectReal(self, window, values):
+    #sys.stdout.write("NetCallbackRedirectReal\n")
+    self.osmod.osmod_net_dispatcher.event_catchall(window, values)
+    return
+
+  def TxStatusActive(self):
+    sys.stdout.write("TxStatusActive\n")
+    self.window['text_transmit_status'].update(text_color="red")
+    self.disable_timers = True
+    self.window['text_utc_clock'].update("")
+    self.window['beacon_clock'].update("")
+
+
+
+  def TxStatusInactive(self):
+    sys.stdout.write("TxStatusInactive\n")
+    self.window['text_transmit_status'].update(text_color="light green")
+    self.disable_timers = False
+
+  def RxStatusActive(self):
+    sys.stdout.write("RxStatusActive\n")
+    self.window['text_receive_status'].update(text_color="red")
+    self.disable_timers = True
+    self.window['text_utc_clock'].update("")
+    self.window['beacon_clock'].update("")
+
+  def RxStatusInactive(self):
+    sys.stdout.write("RxStatusInactive\n")
+    self.window['text_receive_status'].update(text_color="light green")
+    self.disable_timers = False
+
+  def DecodeStatusActive(self):
+    sys.stdout.write("RxStatusActive\n")
+    self.window['text_decode_status'].update(text_color="red")
+
+  def DecodeStatusInactive(self):
+    sys.stdout.write("RxStatusInactive\n")
+    self.window['text_decode_status'].update(text_color="light green")
 
   def plotWaveCanvasPrepare(self, N, data, canvas):
     self.debug.info_message("plotWaveCanvas")
@@ -102,6 +141,17 @@ class FormGui(object):
 
 
   """
+  def createOsmodNetWindow(self):
+    self.layout_osmod_net = [
+                          [sg.Button('Repository', key='btn_mainarea_visitgithub')],
+                          [sg.MLine("OSMOD NET", size=(64, 20), font=("Courier New", 9),expand_x = True, expand_y=True, disabled = True)], 
+                        ] 
+    return self.layout_osmod_net
+  """
+
+
+
+  """
   create the main GUI window
   """
 
@@ -118,9 +168,20 @@ LB28-51200-512-2-15-I,LB28-512-2-15-I,LB28-512-2-10-I,LB28-51200-1024-2-15-I,LB2
 LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     self.combo_modem_modes = combo_modem_modes
 
-    combo_modem_prod_modes  = 'TEST,LB28-240-N,LB28-400-I3,LB28-800-I3,LB28-800-I3-HFM,LB28-800-I3-FEC,LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3E,LB28-25600-I3,LB28-25600-I3E,LB28-51200-I3'.split(',')
+    #combo_modem_prod_modes  = 'TEST,LB28-240-N,LB28-400-I3,LB28-800-I3,LB28-800-I3E,LB28-800-I3E-FEC,LB28-800-I3-HFM,LB28-800-I3-FEC,LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3E,LB28-25600-I3,LB28-25600-I3E,LB28-51200-I3'.split(',')
+    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-25600-I3'.split(',')
     self.combo_modem_prod_modes = combo_modem_prod_modes
 
+    self.combo_modem_prod_modes_15_seconds = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
+    self.combo_modem_prod_modes_30_seconds = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
+    self.combo_modem_prod_modes_1_minute   = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
+    self.combo_modem_prod_modes_2_minutes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
+    self.combo_modem_prod_modes_4_minutes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
+
+    self.combo_modem_prod_modes_beacon_30_minutes = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
+    self.combo_modem_prod_modes_beacon_1_hour     = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
+
+    combo_timing_choices = '15 Seconds,30 Seconds,1 Minute,2 Minutes,4 Minutes'.split(',')
 
     combo_analysis_chart_options = 'X:BER Y:Eb/N0,X:Eb/N0 Y:BER,X:CPS Y:Eb/No,X:ChunkSize Y:Eb/N0,X:CPS Y:BER,X:CPS Y:Eb/N0+ABS(Eb/N0)*BER,X:AWGN Y:BER,X:Rotation Y:Pulse Train Length,X:Rotation Lo Y:Rotation Hi,X:BER Y:Pulse Train Sigma,X:Pulse Train Sigma Y:Pulse Train Length,X:Eb / N0 (dB) Y:Pulse Train Sigma,X:Pulse Train Length Y:Disposition,X:BER Y:Disposition,X:DC Shift Y:BER'.split(',')
 
@@ -139,14 +200,14 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     self.combo_standingwave_patterns = combo_standingwave_patterns
 
-    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character'.split(',')
 
     combo_filter1_matchtypes = 'Mode Name ==,Pattern Type ==,Preset Pattern ==,AWGN ==,Pulse Shape ==,Pulse Train Length ==,Disposition =='.split(',')
 
     #combo_plotpulsetraintypes = 'Test,Smoothed Signal,Block Offsets,Block Offsets Half,Block Offsets Fourth,Block Offsets Fourth b,Interpolated Pulse Offsets,Dominant Series 1'.split(',')
     combo_plotpulsetraintypes = 'Refresh'.split(',')
 
-    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes'.split(',')
+    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes,Translate Outbound,Translate Inbound'.split(',')
 
     combo_analysis_compare_operator = '=,>,<'.split(',')
 
@@ -172,11 +233,18 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_separation_options  = '5,10,15,20,25,30,35,40,45,50,100'.split(',')
 
-    combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts'.split(',')
+    combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts,16:QUEEN OF HEARTS'.split(',')
 
-    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+
+    combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
 
     combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
+
+    combo_beacon_timer_interval  = '--Off--,1 Minute,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes,1 Hour,2 Hours'.split(',')
+    #combo_beacon_type = 'General Beacon,p2pip Node,p2pip Gateway,Message Store'.split(',')
+    combo_beacon_type = 'General Beacon'.split(',')
+    self.combo_beacon_timer_interval = combo_beacon_timer_interval
 
     #combo_modem_devices = 'tes1,tes2,tes3'.split(',')
 
@@ -252,7 +320,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.2.2 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -397,12 +465,12 @@ SOFTWARE.\n\
 
 
                           [sg.Frame('Filter 2', [
-                           [sg.CBox('', key='cb_analysis_filter2', default=False ),
-                           sg.Combo(combo_analysis_compareitem_options, key='combo_analysis_itemtocompare', default_value=combo_analysis_compareitem_options[0], enable_events=True),
-                           sg.Combo(combo_analysis_compare_operator, key='combo_analysis_campare_operator', default_value=combo_analysis_compare_operator[0], enable_events=True),
-                           sg.InputText('', key='in_analysis_comparewithvalue', size=(20, 1), enable_events=True)],
+                           [sg.CBox('', key='cb_analysis_filter2', default=True ),
+                           sg.Combo(combo_analysis_compareitem_options, key='combo_analysis_itemtocompare', default_value=combo_analysis_compareitem_options[1], enable_events=True),
+                           sg.Combo(combo_analysis_compare_operator, key='combo_analysis_campare_operator', default_value=combo_analysis_compare_operator[2], enable_events=True),
+                           sg.InputText('0.05', key='in_analysis_comparewithvalue', size=(20, 1), enable_events=True)],
                            ], size=(380, 50) ),
-                           sg.InputText('5', key='in_analysislegendoccurences', size=(10, 1), enable_events=True),
+                           sg.InputText('0', key='in_analysislegendoccurences', size=(10, 1), enable_events=True),
                            sg.Text('Filter 1 Values: ', key='text_analysisfilter1values')],
 
 
@@ -449,14 +517,12 @@ SOFTWARE.\n\
                         ] 
 
 
-    self.layout_test_main = [
-                          [sg.Button('test', key='btn_testmain')],
-                          [sg.MLine(about_text, size=(64, 20), font=("Courier New", 9),expand_x = True, expand_y=True, disabled = True)], 
-                        ] 
 
 
     self.layout_rxtx = [
 
+
+                        [ sg.Frame('Waterfall', [
 
                         #[  sg.Text('Indices Lower: -----', size=(170, 1), key='text_indices_lower')],
                         #[  sg.Text('Indices Higher: -----', size=(170, 1), key='text_indices_higher')],
@@ -474,12 +540,18 @@ SOFTWARE.\n\
 
                         sg.CBox('40Hz Increments', key='cb_frequency_slider_resolution', enable_events = True, default=True ),
 
-                        sg.Text('FFT Frequency:')  ,
-                        sg.Text('-----', key='text_info_fftfreq'),
-                        sg.Text('Low Frequency:')  ,
-                        sg.Text('-----', key='text_info_freq1'),
-                        sg.Text('High Frequency:')  ,
-                        sg.Text('-----', key='text_info_freq2'),
+                        sg.Text('TX', key='text_transmit_status', font=("Courier New", 11), text_color='light green', visible = True)  ,
+                        sg.Text('RX', key='text_receive_status', font=("Courier New", 11), text_color='light green', visible = True)  ,
+                        sg.Text('DEC', key='text_decode_status', font=("Courier New", 11), text_color='light green', visible = True)  ,
+
+
+                        sg.Text('FFT Frequency:', visible = False)  ,
+                        sg.Text('-----', key='text_info_fftfreq', visible = False),
+                        sg.Text('Low Frequency:', visible = False)  ,
+                        sg.Text('-----', key='text_info_freq1', visible = False),
+                        sg.Text('High Frequency:', visible = False)  ,
+                        sg.Text('-----', key='text_info_freq2', visible = False),
+
                         sg.Text('Mode Info:')  ,
                         sg.Text('-----', key='text_info_description')],
 
@@ -489,11 +561,14 @@ SOFTWARE.\n\
 
                         [ sg.Frame('Density plot', [
 
-                          [ sg.Text('0        100        200       300       400      500       600        700       800       900      1000      1100     1200     1300     1400     1500      1600     1700     1800      1900     2000     2100     2200     2300      2400     2500     2600     2700     2800     2900     3000' )] ,
+                          [ sg.Text('0           100          200          300          400          500          600           700          800          900        1000         1100        1200        1300        1400        1500        1600         1700       1800         1900        2000        2100         2200        2300         2400        2500        2600        2700        2800        2900     3000' )] ,
 
-                          [sg.Graph(key='graph_density', canvas_size = (1170, 250), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
+                          #[sg.Graph(key='graph_density', canvas_size = (1170, 250), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
+                          [sg.Graph(key='graph_density', canvas_size = (1430, 195), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
 
-                        ], size=(1200, 290))],
+                        ], size=(1500, 300))],
+
+                        ], size=(1500, 300) )],
 
 
                         ] 
@@ -536,7 +611,9 @@ SOFTWARE.\n\
                             sg.CBox('Override Spline Smoothing', key='cb_overridesplinesmoothing', default=False ),
                             sg.InputText('130', key='in_splinesmoothing', size=(10, 1), enable_events=True),
                             sg.CBox('Override Doppler Fourths Sigma', key='cb_overridedopplerfourthssigma', default=False ),
-                            sg.InputText('3.0', key='in_dopplerfourthssigma', size=(10, 1), enable_events=True)],
+                            sg.InputText('3.0', key='in_dopplerfourthssigma', size=(10, 1), enable_events=True),
+                            sg.CBox('Pulse Start Envelope Sigma', key='cb_overridepulsestartenvelopesigma', default=False ),
+                            sg.InputText('3.0', key='in_pulsestartenvelopesigma', size=(10, 1), enable_events=True)],
                            [sg.CBox('Override Doppler Curve Fit', key='cb_overridedopplercurvefit', default=False ),
                             sg.Combo(combo_dopplercurvefittypes, key='combo_dopplercurvefittype', default_value=combo_dopplercurvefittypes[0], enable_events=True),
                             sg.InputText('10', key='in_dopplersmoothing', size=(10, 1), enable_events=True),
@@ -552,6 +629,19 @@ SOFTWARE.\n\
                             sg.Combo(combo_fdmpairlevel_options, key='combo_fdmpairlevel', default_value=combo_fdmpairlevel_options[0], enable_events=True),
                             sg.InputText('92', key='in_fdmseparation', size=(10, 1), enable_events=True)],
 
+                        [sg.Frame('Amplitude', [
+
+                          [
+                           sg.Slider(range=(0.01,1), default_value = 0.7, orientation='h', resolution=0.01, expand_x = True, enable_events = True, key='slider_amplitude')],
+ 
+                        ], size=(1200, 60) )],
+
+                        [sg.Frame('Carrier Separation', [
+                          [
+                           sg.Slider(range=(1, 500), default_value = 15, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_carrier_separation')],
+                        ], size=(1200, 60) )],
+
+
                           ] 
 
 
@@ -559,7 +649,8 @@ SOFTWARE.\n\
 
                           [sg.Text('Eb/N0 (dB): -----', size=(30, 1), key='text_ebn0db_value' ) ,
                            sg.Text('BER: -----', size=(30, 1), key='text_ber_value')  ,
-                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value' )] ,
+                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value' ) ,
+                           sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value' )],
 
 
                         [   sg.Button('Run Test', size=(11, 1), key='btn_testit2'),
@@ -571,8 +662,9 @@ SOFTWARE.\n\
                             sg.Text('0', key='text_sequential_test_counter'),
                             sg.Button('Reset Test Counter', size=(11, 1), key='btn_resettestcounter'),
 
-                            sg.Text('', expand_x = True),
-                            sg.Button('Reset Mode', size=(8, 1), key='btn_reset')],
+                            #sg.Text('', expand_x = True),
+                            sg.Button('Reset Mode', size=(8, 1), key='btn_reset'),
+                            sg.Button('Save', size=(8, 1), key='btn_save')],
 
 
                        [
@@ -583,7 +675,12 @@ SOFTWARE.\n\
                            sg.Text('Chunk Size: ')  ,
                            sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True),
                            sg.CBox('Align 1st Carrier', key='cb_enable_align', default=True ),
-                           sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[10] )],
+                           sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[10] ),
+
+                           sg.CBox('Override Padding Character', key='cb_override_padding_character', default=False ),
+                           sg.InputText('a', key='in_padding_character', size=(5, 1), enable_events=True)],
+
+
                           [sg.CBox('Override Sample Rate', key='cb_enable_sample_rate_override', default=False),
                            sg.InputText('', key='in_sample_rate_override', size=(8, 1), enable_events=True),
                            sg.CBox('Override Block Size: ', key='cb_override_blocksize', default=False ),
@@ -591,7 +688,8 @@ SOFTWARE.\n\
                            sg.CBox('48kHz sampling', key='cb_override_standard48k', default=False, enable_events=True ),
                            sg.CBox('16kHz sampling', key='cb_override_sampling16k', default=False, enable_events=True ),
                            sg.CBox('RX Frequency Delta', key='cb_enable_rxfrequencydelta', default=False, enable_events=True ),
-                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(20, 1), enable_events=True)],
+                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(20, 1), enable_events=True),
+                           sg.CBox('Random Message', key='cb_override_random_message', default=False, enable_events=True )],
 
 
                           [
@@ -645,7 +743,9 @@ SOFTWARE.\n\
                            sg.Combo(combo_text_options, key='combo_text_options', default_value=combo_text_options[3], enable_events=True),
 
                            sg.Text('Code Options: ')  ,
-                           sg.Combo(combo_code_options, key='combo_code_options', default_value=combo_code_options[0], enable_events=True)],
+                           sg.Combo(combo_code_options, key='combo_code_options', default_value=combo_code_options[0], enable_events=True),
+                           sg.Text('CRC fragment size: ')  ,
+                           sg.InputText('16', key='in_crc_fragment_size', size=(8, 1), enable_events=True, disabled = True)],
 
 
                         [sg.Frame('Generate Test Data', [
@@ -662,11 +762,11 @@ SOFTWARE.\n\
                            sg.InputText('1000', key='in_random_increments', size=(8, 1), enable_events=True),
                            sg.Text('Num Cycles: '),
                            sg.InputText('100', key='in_random_numcycles', size=(8, 1), enable_events=True),
-                           sg.Button('Generate', size=(10, 1), key='btn_generate_test_data')],
-                          [sg.InputText('osmod_v0-1-0_results_data.csv', key='in_resultsdatafilename', size=(50, 1), enable_events=True),
+                           sg.Button('Generate', size=(8, 1), key='btn_generate_test_data'),
+                           sg.InputText('osmod_v0-1-0_results_data.csv', key='in_resultsdatafilename', size=(30, 1), enable_events=True),
                            sg.FileBrowse('Select File', file_types=(('CSV Files', '*.csv'), ('All Files', '*.*')))],
  
-                        ], size=(1200, 80) )],
+                        ], size=(1400, 50) )],
 
 
                         [sg.Frame('AWGN Factor', [
@@ -674,19 +774,9 @@ SOFTWARE.\n\
                           [
                            sg.Slider(range=(0,100), default_value = 8, orientation='h', resolution=0.01, expand_x = True, enable_events = True, key='btn_slider_awgn')],
  
-                        ], size=(1200, 60) )],
+                        ], size=(1400, 60) )],
 
-                        [sg.Frame('Amplitude', [
 
-                          [
-                           sg.Slider(range=(0.01,1), default_value = 0.7, orientation='h', resolution=0.01, expand_x = True, enable_events = True, key='slider_amplitude')],
- 
-                        ], size=(1200, 60) )],
-
-                        [sg.Frame('Carrier Separation', [
-                          [
-                           sg.Slider(range=(1, 500), default_value = 15, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_carrier_separation')],
-                        ], size=(1200, 60) )],
 
 
 
@@ -705,7 +795,15 @@ SOFTWARE.\n\
                         ] 
 
 
-    self.tabgrp = [
+
+    self.layout_test_main = [
+                          #[sg.Button('test', key='btn_testmain')],
+                          #[sg.MLine(about_text, size=(64, 20), font=("Courier New", 9),expand_x = True, expand_y=True, disabled = True)], 
+
+
+
+                       [sg.Frame('Main Window Frame', [
+
 
                        [
                         #sg.Button('Reset All Modes', size=(8, 1), key='btn_reset_all'),
@@ -735,7 +833,7 @@ SOFTWARE.\n\
 
                         sg.Frame('Auto Correct', [
                            [sg.CBox('LDS & FS', key='cb_enable_block_level_resample_auto_correct', default=False, enable_events=True, disabled=False )],
-                           [sg.CBox('FS Only', key='cb_enable_auto_correct_frequency_only', default=False, enable_events=True, disabled=False )],
+                           [sg.CBox('FS Only', key='cb_enable_auto_correct_frequency_only', default=True, enable_events=True, disabled=False )],
 
                         ], size=(100, 60)),
 
@@ -752,51 +850,44 @@ SOFTWARE.\n\
                         ], size=(110, 60)),
 
                         sg.Frame('Frequency Bias', [
-                           [sg.Slider(range=(0.5, 2), default_value = 1.10, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
+                           [sg.Slider(range=(0.5, 2), default_value = 1.14, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
 
-                        ], size=(140, 60)),
-
-
-                           sg.Frame('UTC', [
-                              [sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
-
-                           ], size=(110, 60)),
-
+                        ], size=(120, 60)),
 
 
                         sg.Text('', expand_x = True),
-                        sg.Button('Save', size=(8, 1), key='btn_save'),
                         sg.Button('Exit', size=(8, 1))],
 
-                       
 
 
-                          [
-
-                        #sg.Frame('SNR dB', [
-                        #[sg.Text('', expand_x = True)],
-                        #   [sg.Graph(key='snr_graph', canvas_size = (150, 30), graph_bottom_left=(0,0), graph_top_right = (10, 100), background_color='white', expand_x=False, expand_y=False)],
-                        #], size=(250, 70)),
 
 
-                           #sg.Slider(range=(1, 999), default_value = 40, orientation='v', resolution=1, expand_x = False, expand_y = True, enable_events = True, key='slider_gain'),
+                          [ sg.Frame('Beacon Timer', [
+                           [
+                            sg.CBox('Beacon', key='cb_enable_beacon_mode', font=("Helvetica", 12), default=False, enable_events=True ),
+                            sg.Combo(combo_beacon_timer_interval, key='combo_settings_beacon_timer_interval', default_value=combo_beacon_timer_interval[0], enable_events=True ),
+                            #sg.Text('Beacon Type:', size=(15, 1) ) ,
+                            sg.Combo(combo_beacon_type, default_value=combo_beacon_type[0], key='option_beacon_type', size=(17, 1))],
 
-                        #sg.Frame('Squelch', [
-                        #[sg.Text('', expand_x = True)],
+                            #sg.Button('Beacon', size=(5, 1), key='btn_send_beacon_message')],
+                           ], size=(300, 60) ),
 
-                        sg.Frame('Mode', [
-                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[10], enable_events=True)],
 
-                        ], size=(140, 60)),
-
-                            sg.Frame('Rx / Decode Timing', [
+                            sg.Frame('Time Sync Messages', [
                                [sg.CBox('Sync', key='cb_enable_sync_rx_processing_timing', font=("Helvetica", 12), default=False, enable_events=True ),
-                                sg.Slider(range=(-1, 1),size=(20, 25),  default_value = 0, orientation='h', resolution=0.1, expand_x = False, expand_y = False, enable_events = True, key='slider_listen_process_cycle')],
+                                sg.Slider(range=(-1, 1),size=(15, 25),  default_value = 0, orientation='h', resolution=0.1, expand_x = False, expand_y = False, enable_events = True, key='slider_listen_process_cycle')],
+                                #sg.Button('Send', size=(8, 1), key='btn_send_sync_message')],
 
-                           ], size=(160, 60)),
+                                #sg.Combo(combo_timing_choices, key='combo_select_timing_choice', size=(80, 1), font=("Helvetica", 12), default_value=combo_timing_choices[1], enable_events=True)],
+
+                           ], size=(180, 60)),
+
+                           sg.Frame('Net', [
+                           [sg.CBox('Enable', key='cb_enable_osmod_net', font=("Helvetica", 12), default=False, enable_events=True )],
+                           ], size=(80, 60)),
 
 
-                           sg.Frame('Squelch Trigger', [
+                           sg.Frame('Freestyle Messages', [
                                [sg.CBox('Squelch', key='cb_enable_squelch_rx_processing', font=("Helvetica", 12), default=True, enable_events=True ),
                                 sg.Slider(range=(0, 20),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
 
@@ -808,14 +899,112 @@ SOFTWARE.\n\
                            ], size=(140, 60)),
 
 
+
+
+                            sg.Frame('Detected Mode', [
+                            [sg.Text(' -----', size=(14, 1), font=("Helvetica", 12), key='text_input_detected_mode' )],
+                            [sg.Text(' -----', size=(14, 1), font=("Helvetica", 12), key='text_input_detected_block_start' )],
+
+                            ], size=(100, 60))],
+
+
+                           #sg.Text('Output Gain:', font=("Helvetica", 12), expand_x = False),
+                           #sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=True, enable_events=True ),
+                           #sg.Slider(range=(0, 1),size=(20, 25),  default_value = 1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
+                           #], size=(240, 60))],
+
+                           [sg.Table(values='', headings=['Frequency', 'Mode', 'Timestamp', 'Message'],
+                            max_col_width=150,
+                            col_widths=[7, 15, 10, 100],
+                            auto_size_columns=False,
+                            justification='left',
+                            enable_events=True,
+                            expand_x = True,
+                            expand_y = True,
+                            font=("Helvetica", 12),
+                            select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
+                            num_rows=6, key='tbl_frequency_mode_message')],
+
+                           #sg.MLine("some text goes in here", size=(150, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True), 
+                           #sg.MLine("some more text goes in here", size=(50, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True)], 
+
+
+
+
+
+
+
+                        [
+                            sg.MLine('', size=(120, 2), font=("Courier New Bold", 11), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_y=False, disabled = False), 
+                            #sg.InputText('', key='ml_txrx_sendtext', size=(150, 1), font=("Courier New", 9), text_color='black', background_color='white', enable_events=True),
+
+                            #sg.Button('Queue / Send', size=(11, 1), key='btn_another_button', visible=True)],
+                            sg.Button('Queue - Tx Send', size=(15, 1), key='btn_init_test', visible=True),
+                            sg.Button('Stop Tx', size=(8, 1), key='btn_stop_tx', visible=True)],
+
+                          [
+                           sg.Button('Rx - Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
+                           sg.CBox('Continuous', key='cb_continuous_decode', default=False , visible=True, enable_events = True),
+                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
+                           #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
+                           #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
+                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
+                           sg.Button('TxRx 1', size=(6, 1), key='btn_txrx_c_code', visible=False),
+
+                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
+
+                           sg.CBox('Truncate - pad', key='cb_truncate_to_max_msglength', default=True ),
+
+                           sg.Text('Message Length: ', size=(13, 1) ) ,
+                           sg.Combo(combo_modem_message_lengths, key='combo_max_message_length', size=(4, 1), font=("Helvetica", 10), default_value=combo_modem_message_lengths[2], enable_events=True),
+
+                           sg.CBox('Preset Message', key='cb_use_preset_message', default=True ),
+
+
+
+                           sg.CBox('Enable CRC', key='cb_enable_crc', default=True ),
+
+                           sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
+
+                           sg.CBox('Experimental Mode Detect', key='cb_enable_automatic_mode_detection', default=False ),
+
+                           #sg.Button('TEST', size=(5, 1), key='btn_testit'),
+                           sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
+                           #sg.InputText('sampled.wav', key='in_sampledsignalname', size=(15, 1)),
+                           #sg.Button('Load and Process', size=(15, 1), key='btn_loadandprocesssampledsignal')],
+
+
+                        [
+                            sg.MLine('', size=(64, 8), font=("Courier New Bold", 12), key='ml_txrx_recvtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = True)], 
+
+
+                        [sg.Frame('Modulation', [
+                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[4], enable_events=True)],
+
+                        ], size=(140, 60)),
+
+
+                         sg.Frame('Frequency', [
+                          [
+                           sg.Slider(range=(0,3050), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
+                           #sg.Slider(range=(0,3050), default_value = 1480, orientation='h', resolution=37, expand_x = True, enable_events = True, key='slider_frequency')],
+                        ], size=(450, 60) ),
+
+                       
+                          
+
+
                            #sg.Text('Squelch:', font=("Helvetica", 12), expand_x = False),
                            #sg.Slider(range=(0, 10),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch'),
 
-                           sg.Frame('Signal Magnitude', [
-                              [sg.Text('Current -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband' )],
+                           sg.Frame('Signal - Magnitude & SNR', [
+                              [sg.Text('Magnitude: -----', size=(15, 1), key='text_input_signal_magnitude_passband' )],
+
+                              [sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value_new' )],
+
                               #[sg.Text('Avg -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband_smoothed' )],
 
-                           ], size=(100, 60)),
+                           ], size=(140, 60)),
 
 
                            #sg.Text('Passband Magnitude: ', size=(16, 1), font=("Helvetica", 12) ) ,
@@ -837,19 +1026,91 @@ SOFTWARE.\n\
                               [sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=False, enable_events=True, visible=False ),
                                sg.Slider(range=(0, 1),size=(20, 25),  default_value = 0.1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
 
-                           ], size=(140, 60))],
+                           ], size=(140, 60)),
+
+                           sg.Frame('Mode Type', [
+                              [sg.CBox('FEC', key='cb_enable_decode as FEC', font=("Helvetica", 12), default=False, enable_events=True, visible=True ),
+                               sg.Button('Decode Again', size=(11, 1), key='btn_idecode_again_for_fec', visible=True)],
+
+                           ], size=(160, 60), visible=False)],
 
 
 
 
-                           #sg.Text('Output Gain:', font=("Helvetica", 12), expand_x = False),
-                           #sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=True, enable_events=True ),
-                           #sg.Slider(range=(0, 1),size=(20, 25),  default_value = 1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
-                        #], size=(240, 60))],
 
-                           [sg.Table(values='', headings=['Frequency', 'Mode', 'Timestamp', 'Message'],
+                        ], size=(1100, 580))],
+
+
+
+
+                        ] 
+
+    self.layout_test_main2 = [
+                          [sg.Button('Repository', key='btn_mainarea_visitgithub_123')],
+                          [sg.MLine(about_text, size=(64, 20), font=("Courier New", 9),expand_x = True, expand_y=True, disabled = True)], 
+                        ] 
+
+    self.layout_settings = [
+                           [sg.Frame('Callsign & Group', [
+                              [sg.Text('Callsign: ', size=(7, 1) ) ,
+                               sg.InputText('', key='in_station_callsign', size=(24, 1), enable_events=True)],
+                              [sg.Text('Group: ', size=(7, 1) ) ,
+                               sg.InputText('', key='in_group', size=(24, 1), enable_events=True)],
+                              [sg.Text('Locator: ', size=(7, 1) ) ,
+                               sg.InputText('', key='in_locator_grid_square', size=(24, 1), enable_events=True)],
+
+                              #[sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
+
+                           ], size=(350, 110))],
+
+                           [sg.Button('Save Modem Settings', size=(20, 1), key='btn_save_modem_settings')],
+
+
+                           [sg.Frame('IO Devices', [
+
+                          [sg.Text('Input: ', size=(7, 1) ) ,
+                           sg.Combo(combo_modem_devices, key='combo_main_modem_input_device', size=(30, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_input_device_index], enable_events=True)],
+                         [sg.Text('Output: ', size=(7, 1) ) ,
+                           sg.Combo(combo_modem_devices, key='combo_main_modem_output_device', size=(30, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_output_device_index], enable_events=True)],
+                           ], size=(350, 70))],
+
+
+                           [sg.Frame('Net Settings', [
+                              [sg.Text('Input: ', size=(5, 1) )] ,
+
+                              #[sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
+
+                           ], size=(100, 60))],
+
+
+                          #[sg.Button('Repository', key='btn_mainarea_visitgithub_123')],
+                          #[sg.MLine(about_text, size=(64, 20), font=("Courier New", 9),expand_x = True, expand_y=True, disabled = True)], 
+                        ] 
+
+
+    self.tabgrp = [
+
+                           [sg.Frame('Timerss', [
+
+
+                           [sg.Frame('UTC', [
+                              [sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
+
+                           ], size=(100, 60)),
+
+                           sg.Frame('Countdown Timer', [
+                            [sg.Text('----', size=(9, 1), font=("Helvetica", 18), key='beacon_clock', justification = 'center')],
+                           ], size=(100, 60)),
+
+                            sg.Frame('Net Live', [
+                            [sg.Text('', size=(9, 1), font=("Helvetica", 18), key='text_net_on_air', justification = 'center')],
+
+                           ], size=(100, 60))],
+
+
+                            [sg.Table(values='', headings=['Callsign', 'Locator', 'Timestamp'],
                             max_col_width=150,
-                            col_widths=[7, 15, 10, 100],
+                            col_widths=[12, 12, 14],
                             auto_size_columns=False,
                             justification='left',
                             enable_events=True,
@@ -857,68 +1118,30 @@ SOFTWARE.\n\
                             expand_y = True,
                             font=("Helvetica", 12),
                             select_mode=sg.TABLE_SELECT_MODE_EXTENDED,
-                            num_rows=6, key='tbl_tmplt_templates')],
+                            num_rows=6, key='tbl_callsign_locator', size=(400,500))],
 
-                           #sg.MLine("some text goes in here", size=(150, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True), 
-                           #sg.MLine("some more text goes in here", size=(50, 5), font=("Courier New", 9),expand_x = False, expand_y=True, disabled = True)], 
-
+                           ], size=(340, 580)),
 
 
-                        [sg.Frame('Frequency', [
-
-                          [
-                           sg.Slider(range=(0,3050), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
-                           #sg.Slider(range=(0,3050), default_value = 1480, orientation='h', resolution=37, expand_x = True, enable_events = True, key='slider_frequency')],
- 
-                        ], size=(1200, 60) )],
-
+                            sg.TabGroup([[
+                            sg.Tab('OSMOD HF Messenger', self.layout_test_main, title_color='Blue', key='tab_main_phase_charts'),
+                            sg.Tab('OSMOD HF Net', self.osmod.osmod_net_layout, title_color='Blue', key='tab_main_phase_charts2', disabled=True),
+                            sg.Tab('Settings', self.layout_settings, title_color='Blue', key='tab_main_settings')]],
+                            tab_location='centertop',
+                            selected_title_color='Black', expand_x = True, expand_y = True, selected_background_color='White', key='tabgrp_livemodem_tabs' )],
 
 
-
-                        [
-                            sg.MLine('', size=(64, 2), font=("Courier New", 9), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
-
-                          [
-                           sg.Button('Rx / Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
-                           sg.CBox('Continuous', key='cb_continuous_decode', default=False , visible=False),
-                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=False),
-                           #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
-                           #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
-                           sg.Button('Tx / Send', size=(11, 1), key='btn_init_test', visible=True),
-                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
-                           sg.Button('Stop Tx', size=(11, 1), key='btn_stop_tx', visible=False),
-                           sg.Button('TxRx 1', size=(6, 1), key='btn_txrx_c_code', visible=False),
-
-                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
-
-                           sg.CBox('Preset Message', key='cb_use_preset_message', default=True ),
-
-                           sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value' ) ,
-
-                           sg.Text('Input: ', size=(5, 1) ) ,
-                           sg.Combo(combo_modem_devices, key='combo_main_modem_input_device', size=(20, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_input_device_index], enable_events=True),
-                           sg.Text('Output: ', size=(5, 1) ) ,
-                           sg.Combo(combo_modem_devices, key='combo_main_modem_output_device', size=(20, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_output_device_index], enable_events=True),
-
-
-                           #sg.Button('TEST', size=(5, 1), key='btn_testit'),
-                           sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
-                           #sg.InputText('sampled.wav', key='in_sampledsignalname', size=(15, 1)),
-                           #sg.Button('Load and Process', size=(15, 1), key='btn_loadandprocesssampledsignal')],
-
-
-                        [
-                            sg.MLine('', size=(64, 6), font=("Courier New", 9), key='ml_txrx_recvtext', text_color='black', background_color='white', expand_x = True, expand_y=False, disabled = False)], 
-
-
-
-                       [sg.TabGroup([[
-                             sg.Tab('Tx Rx', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' ),
-                             sg.Tab('General Test Options', self.layout_test, title_color='Blue',border_width =10, background_color='Gray' ),
-                             sg.Tab('I3 Test Options', self.layout_I3_test, title_color='Blue',border_width =10, background_color='Gray' )]],
+                            [sg.TabGroup([[
+                             sg.Tab('T\nX\nR\nX', self.layout_rxtx, title_color='Blue', font=("Courier New", 9), border_width =10 ),
+                             sg.Tab('T\nS\nT\n1', self.layout_test, title_color='Blue', font=("Courier New", 9), border_width =10, visible = self.osmod.getTestModeEnabled() ),
+                             sg.Tab('T\nS\nT\n2', self.layout_I3_test, title_color='Blue', font=("Courier New", 9), border_width =10, visible = self.osmod.getTestModeEnabled() )]],
                              #sg.Tab('Audio TxRx', self.layout_rxtx, title_color='Blue',border_width =10, background_color='Gray' )]],
-                       tab_location='centertop',
-                       title_color='Blue', tab_background_color='Dark Gray', background_color='Dark Gray', size=(1200, 500), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
+                       #tab_location='centertop',
+                       tab_location='right',
+                       size=(1500, 330), selected_title_color='Black', selected_background_color='White', key='tabgrp_main' )]]  
+
+
+
 
 
 
@@ -930,8 +1153,8 @@ SOFTWARE.\n\
                                sg.Tab('Wave Charts', self.layout_wave_charts, title_color='Blue',border_width =10, background_color='Gray' ),
                                sg.Tab('Pulse Train Charts', self.layout_pulsetrain_charts, title_color='Blue',border_width =10, background_color='Gray' ),
                                sg.Tab('Analysis Charts', self.layout_analysis_charts, title_color='Blue',border_width =10, background_color='Gray' ),
-                               sg.Tab('Simulations', self.layout_simulator_charts, title_color='Blue',border_width =10, background_color='Gray' ),
-                               sg.Tab('testing', self.layout_test_main, title_color='Blue', key='tab_main_phase_charts')]],
+                               sg.Tab('Simulations', self.layout_simulator_charts, title_color='Blue',border_width =10, background_color='Gray' )]],
+                               #sg.Tab('testing', self.layout_test_main, title_color='Blue', key='tab_main_phase_charts')]],
 
                                tab_location='centertop',
                                selected_title_color='Black', selected_background_color='White', key='tabgrp_main_tabs_charts' )],
@@ -941,18 +1164,25 @@ SOFTWARE.\n\
     self.layout_main_tabs = [
 
                               [sg.TabGroup([[
-                               sg.Tab('Main', self.tabgrp, title_color='Blue',border_width =10, key='tab_main' ),
-                               sg.Tab('Graphs and Analytics', self.layout_main_charts_tab, title_color='Blue', key='tab_graphsandanalytics'),
-                               sg.Tab('About', self.layout_about, title_color='Blue',border_width =10, background_color='Gray' )]],
+                               sg.Tab('M\nO\nD\nE\nM', self.tabgrp, title_color='Blue', font=("Courier New", 9), border_width =10, key='tab_main' ),
+                               #sg.Tab('OSMOD HF Net', self.createOsmodNetWindow(), title_color='Blue',border_width =10, key='tab_osmod_net' ),
+                               #sg.Tab('OSMOD HF Net', self.osmod.osmod_net_layout, title_color='Blue',border_width =10, key='tab_osmod_net' ),
 
-                               tab_location='centertop',
+                               sg.Tab('A\nN\nA\nL\nY\nT\nI\nC\nS', self.layout_main_charts_tab, title_color='Blue', font=("Courier New", 9), key='tab_graphsandanalytics', visible = self.osmod.getTestModeEnabled()),
+                               sg.Tab('A\nB\nO\nU\nT', self.layout_about, title_color='Blue', font=("Courier New", 9), border_width =10, background_color='Gray' )]],
+
+                               #tab_location='centertop',
+                               tab_location='right',
                                selected_title_color='Black', selected_background_color='White', key='tabgrp_main_tabs' )],
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.2.2 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.0 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
-
+    self.osmod.osmod_net.window = self.window
+    self.osmod.osmod_net_view.window = self.window
+    self.osmod.osmod_net_dispatcher.window = self.window
+    self.osmod.osmod_net.parser.window = self.window
     #self.window = sg.Window("OSMOD de WH6GGO v0.0.6 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
     return (self.window)
@@ -966,7 +1196,13 @@ SOFTWARE.\n\
         try:
           dispatcher.dispatch[event](self.form_events, window, values, self)
         except:
-          dispatcher.event_catchall(window, values, self)
+          try: 
+            self.osmod.osmod_net_dispatcher.dispatch[event](self.osmod.osmod_net_dispatcher, values)
+            sys.stdout.write("Sent event to OSMOD Net\n")
+          except:
+            #sys.stdout.write("Exception in runReceive: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+            dispatcher.event_catchall(window, values, self)
+            #self.osmod.osmod_net_dispatcher.event_catchall(values)
 
         if event in ('Exit', None):
           break
@@ -986,7 +1222,9 @@ class ReceiveControlsProc(object):
   waterfall_hue = 0.5
   waterfall_saturation = 0.5
   waterfall_scale = 2
-
+  beacon_trigger_time = None
+  sync_trigger_time = None
+  net_start_time = None
 
   def __init__(self):  
     self.debug = db.Debug(cn.DEBUG_INFO)
@@ -997,41 +1235,6 @@ class ReceiveControlsProc(object):
 
   def event_catchall(self, window, values, form_gui):
 
-    def calcSNR(fdd):
-      #sys.stdout.write("calcSNR\n")
-
-      #fft_output = np.fft.fft(signal)
-      #frequencies = np.fft.fftfreq(len(fft_output), 1/form_gui.osmod.sample_rate)
-
-      fft_output  = fdd["output"]
-      frequencies = fdd["frequency"]
-      #signal_psd  = fdd("magnitude")
-
-      signal_width = form_gui.osmod.rx_filter[2]
-      center_frequency = form_gui.osmod.getCenterFrequency()
-      freq_low_signal  = center_frequency - (signal_width / 2) # 1462
-      freq_high_signal = center_frequency + (signal_width / 2) #1499
-      freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
-      signal_psd = np.abs(fft_output[freq_indices])**2
-      signal_energy = np.sum(signal_psd)
-
-      freq_low_noise = 250
-      freq_high_noise = 2750
-      freq_indices = np.where((frequencies >= freq_low_noise) & (frequencies <= freq_high_noise))
-      noise_psd = np.abs(fft_output[freq_indices])**2
-      noise_energy = np.sum(noise_psd) - signal_energy
-      #SNR_equiv_db = noise_energy
-      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
-
-      #SNR_equiv_db = noise_energy
-      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(SNR_equiv_db))
-      snr = 10 * np.log10( signal_energy / noise_energy)
-      #form_gui.window['text_snr_value'].update("SNR Equiv. : " + str(snr))
-      form_gui.window['text_snr_value'].update("SNR dB: "f"{snr:.3f}")
-
-
-      #self.debug.info_message("SNR: " + "{:.2f}".format(snr) + "dB")
-
     def drawBackground():
       low_signal_color = self.colors[0] # 'blue'
       if (self.chart_timer) == 0:
@@ -1041,30 +1244,95 @@ class ReceiveControlsProc(object):
         window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=4, color=low_signal_color)
 
 
+    def updateClock(nowTimeUtc):
+      mytime = nowTimeUtc.strftime("%H:%M:%S")
+      form_gui.window['text_utc_clock'].update(mytime)
+
+    def updateCountdownTimer(nowTimeUtc):
+      if self.beacon_trigger_time != None:
+        delta = self.beacon_trigger_time - nowTimeUtc
+        triggered, hours = displayDeltaTime(delta)
+        if triggered:
+          self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+          try:
+            kernel_action = ocn.KERNEL_TX_BEACON_GENERAL
+            form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+            form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+          except:
+            sys.stdout.write("Exception in updateCountdownTimer: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+      elif self.sync_trigger_time != None:
+        delta = self.sync_trigger_time - nowTimeUtc
+        triggered, hours = displayDeltaTime(delta)
+        if triggered:
+          self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+
+      elif self.net_start_time != None:
+        delta = self.net_start_time - nowTimeUtc
+        triggered, hours = displayDeltaTime(delta)
+        if triggered or hours == 23:
+          form_gui.window['text_net_on_air'].update("ON AIR", text_color='red')
+          form_gui.osmod.osmod_net.net_started = True
+
+      else:
+        form_gui.window['beacon_clock'].update("")
+
+    def displayDeltaTime(delta):
+        tdSeconds = delta.seconds
+        tdMinutes, tdSeconds = divmod(abs(tdSeconds), 60)
+        tdHours, tdMinutes   = divmod(tdMinutes, 60)
+
+        displayString = "{hours:02d}:{minutes:02d}:{seconds:02d}".format(
+                          hours=tdHours,
+                          minutes=tdMinutes,
+                          seconds=tdSeconds)
+        form_gui.window['beacon_clock'].update(displayString)
+
+        if tdHours == 0 and tdMinutes == 0 and tdSeconds == 0:
+          sys.stdout.write("beacon trigger time\n")
+          return True, tdHours
+        elif tdHours == 23 and tdMinutes == 59 and tdSeconds > 55:
+          sys.stdout.write("beacon trigger time\n")
+          return True, tdHours
+        else:
+          sys.stdout.write("displayString: " + str(displayString) + "\n")
+          return False, tdHours
+
     def drawLines():
-      low_signal_color = self.colors[0] # 'blue'
+      low_signal_color = self.colors[0]
       #lines_color = self.colors[0] # 'gray' #'black'
       lines_color = 'gray' #'black'
       if (self.chart_timer) == 0:
-        #for y in range(0,101):
-        #  window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=4, color=low_signal_color)
-        for x in range(0,3100, 100):
-          window['graph_density'].draw_line(point_from=(x,0), point_to=(x,100), width=2, color=lines_color)
-        for y in range(0,100, 20):
-          window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=2, color=lines_color)
+        #for x in range(0,3100, 100):
+        #  #window['graph_density'].draw_line(point_from=(x,0), point_to=(x,100), width=2, color=lines_color)
+        #  for y_point in range(4, 100, 4):
+        #    window['graph_density'].draw_point((x, y_point), size=8, color=lines_color)
+
+        for y in range(4, 104, 20):
+          #window['graph_density'].draw_line(point_from=(0,y), point_to=(3000,y), width=3, color=lines_color)
+          for x_point in range(0,3000, 25):
+            window['graph_density'].draw_point((x_point, y), size=6, color=lines_color)
+
       elif (self.chart_timer % 200) == 0:
-        window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=2, color=lines_color)
-      else:
-        #window['graph_density'].draw_line(point_from=(0,0), point_to=(3000,0), width=4, color=low_signal_color)
-        for x in range(0,3100, 100):
-          window['graph_density'].draw_line(point_from=(x,0), point_to=(x,1), width=2, color=lines_color)
+        #window['graph_density'].draw_line(point_from=(0,4), point_to=(3000,4), width=3, color=lines_color)
+        for x_point in range(0,3000, 25):
+          window['graph_density'].draw_point((x_point, 4), size=6, color=lines_color)
+
+      #else:
+      #  #for x in range(0,3100, 100):
+      #  #  window['graph_density'].draw_line(point_from=(x,0), point_to=(x,1), width=2, color=lines_color)
+      #  if (self.chart_timer % 40) == 0:
+      #    for x_point in range(0,3100, 100):
+      #      window['graph_density'].draw_point((x_point, 4), size=8, color=lines_color)
 
 
     if(self.window_initialized == False and form_gui.window != None):
       self.window_initialized = True		
+
+      form_gui.osmod.readModemSettingsFromFile(window, "OSMOD_Settings.txt")
+
       """ set some default values..."""
-      #form_gui.window['combo_main_modem_modes'].update('LB28-4-2-40-N')
-      #form_gui.osmod.setInitializationBlock('LB28-4-2-40-N')
       form_gui.window['cb_use_prod_modes'].update(True)
       form_gui.osmod.useProdMode()
       form_gui.osmod.setInitializationBlock('LB28-3200-I3')
@@ -1077,84 +1345,62 @@ class ReceiveControlsProc(object):
       #if False:
       if True:
         if (self.chart_timer % 10) == 0:
-          #window['snr_graph'].draw_line(point_from=(5,0), point_to=(5,80), width=30, color='green')
-
           window['graph_density'].Move(0,1)
 
           drawBackground()
 
           while form_gui.txwindowQueue.empty() == False:
-          #if self.osmod.process_debug == True and self.osmod.form_gui.window['cb_use_preset_message'].get() == True:
-            #if window['cb_use_preset_message'].get() == True:
             txdata = form_gui.txwindowQueue.get_nowait()
             if window['cb_use_preset_message'].get() == True:
               window['ml_txrx_sendtext'].print(str(txdata), end="", text_color='black', background_color = 'white')
 
           if form_gui.spectralDensityQueue.empty() == False:
             while form_gui.spectralDensityQueue.empty() == False:
-              #data = form_gui.spectralDensityQueue.get_nowait()
               fdd = form_gui.spectralDensityQueue.get_nowait()
-              #data = fdd["output"]
-              #data_len = fdd["data_len"]
-            #strong_freqs = form_gui.osmod.mod_psk.getStrongestFrequency(data)
-            #strong_freqs = form_gui.osmod.modulation_object.getStrongestFrequency(data)
 
-
-
-            #strong_freqs = form_gui.osmod.modulation_object.getStrongestFrequency(data, 500, 2500)
-
-            #strongest_frequencies, strongest_magnitudes = form_gui.osmod.modulation_object.getStrongestFrequencies(data, num_points, 250, 2750)
-            #fdd = form_gui.osmod.modulation_object.processFddLoHi(data, 250, 2750)
-            #self.debug.info_message("spectralDensityQueue strongest frequencies: " + str(strong_freqs))
 
             scale = self.waterfall_scale
             num_points = 40
 
             for plotset in range(250, 2750, 100): 
-              #fdd = form_gui.osmod.modulation_object.processFddLoHi(fdd, 250, 2750)
               fdd = form_gui.osmod.modulation_object.processFddLoHi(fdd, plotset, plotset+100)
               fdd_strongest = form_gui.osmod.modulation_object.getStrongestNFromFdd(fdd, num_points)
               strongest_frequencies = fdd_strongest["frequency"]
               strongest_magnitudes  = fdd_strongest["magnitude"]
 
               for point_count in range(0,num_points):
-                if strongest_magnitudes[point_count] > scale:
-                  #window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='red')
-                  window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='blue')
-                else:
-                  #plot_color_index = (strongest_magnitudes[point_count] / scale) * self.num_colors
-                  plot_color_index = min((strongest_magnitudes[point_count] / scale) * self.num_colors, self.num_colors-1)
-                  plot_color = self.colors[int(plot_color_index)]
-                  window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color=plot_color)
+                #if strongest_magnitudes[point_count] > scale:
+                #  window['graph_density'].draw_point((int(strongest_frequencies[point_count]), 4), size=4, color='blue')
+                #else:
+                plot_color_index = min((strongest_magnitudes[point_count] / scale) * self.num_colors, self.num_colors-1)
+                plot_color = self.colors[int(plot_color_index)]
+                window['graph_density'].draw_point((int(strongest_frequencies[point_count]), 4), size=4, color=plot_color)
 
-              """
-              if strongest_magnitudes[point_count] > 4:
-                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='yellow')
-              elif strongest_magnitudes[point_count] > 2:
-                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='red')
-              elif strongest_magnitudes[point_count] > 1.5:
-                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='green')
-              elif strongest_magnitudes[point_count] > 1:
-                window['graph_density'].draw_line(point_from=(int(strongest_frequencies[point_count]),0), point_to=(int(strongest_frequencies[point_count]),1), width=3, color='lightgray')
-              """
-            calcSNR(fdd)
-
-          mytime = datetime.utcnow().strftime("%H:%M:%S")
-          form_gui.window['text_utc_clock'].update(mytime)
+          if form_gui.disable_timers == False:
+            nowTime = datetime.utcnow()
+            nowTime = nowTime.replace(microsecond = 0)
+            updateClock(nowTime)
+            updateCountdownTimer(nowTime)
 
           drawLines()
 
-            #strong_freqs = form_gui.osmod.detector.getStrongestFrequencyOverRange(data)
-            #window['graph_density'].draw_line(point_from=(int(strong_freqs),0), point_to=(int(strong_freqs),1), width=5, color='blue')
-
         self.chart_timer = self.chart_timer + 1
 
+      #if form_gui.drawitQueue.empty() == False:
+      #  tuple_data = form_gui.drawitQueue.get_nowait()
+      #  fig = tuple_data[0]
+      #  canvas_name = tuple_data[1]
+      #  form_gui.plotWaveCanvasDraw(fig, window[canvas_name].tk_canvas)
 
-      if form_gui.drawitQueue.empty() == False:
-        tuple_data = form_gui.drawitQueue.get_nowait()
-        fig = tuple_data[0]
-        canvas_name = tuple_data[1]
-        form_gui.plotWaveCanvasDraw(fig, window[canvas_name].tk_canvas)
+      """ send on to osmod net """
+      try:
+        form_gui.net_callback_redirect(window, values)
+        #a = 1
+        #if form_gui.net_enabled:
+        #  form_gui.osmod.osmod_net_dispatcher.event_catchall(window, values)
+
+      except:
+        sys.stdout.write("Exception in osmod_net catchall: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
     return()
 
@@ -1221,28 +1467,6 @@ class ReceiveControlsProc(object):
       t1.start()
 
 
-
-  def event_8pskdecoder(self, window, values, form_gui):
-    sys.stdout.write("event_8pskdecoder\n")
-    #form_gui.window['cb_use_prod_modes'].update(True)
-    #form_gui.osmod.startTimer('init')
-    #mode = values['combo_main_modem_modes']
-    #form_gui.osmod.startDecoder(mode, window, values)
-    kernel_action = ocn.KERNEL_RX_SQUELCH
-    form_gui.osmod.sonic.pushKernelQueue(kernel_action)
-    form_gui.osmod.sonic.send(window, values, form_gui)
-
-
-  def event_inittest(self, window, values, form_gui):
-    #sys.stdout.write("event_inittest\n")
-    #form_gui.window['cb_use_prod_modes'].update(True)    
-    """ start encoder / modulator """
-    #form_gui.osmod.startEncoder(values, "HELLO!", "8psk", False, None)
-    kernel_action = ocn.KERNEL_TX_NOW
-    form_gui.osmod.sonic.pushKernelQueue(kernel_action)
-    form_gui.osmod.sonic.send(window, values, form_gui)
-
-
   def event_txrx_c_code(self, window, values, form_gui):
     sys.stdout.write("event_txrx_c_code\n")
     kernel_action = ocn.KERNEL_TXRX_NOW
@@ -1250,6 +1474,30 @@ class ReceiveControlsProc(object):
     form_gui.osmod.sonic.send(window, values, form_gui)
 
 
+
+
+  """ RX Decode """
+  def event_8pskdecoder(self, window, values, form_gui):
+    sys.stdout.write("event_8pskdecoder\n")
+    try:
+      kernel_action = ocn.KERNEL_RX_SQUELCH
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+    except:
+      sys.stdout.write("Exception in event_8pskdecoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+  """ TX Send """
+  def event_inittest(self, window, values, form_gui):
+    sys.stdout.write("event_inittest\n")
+    """ start encoder / modulator """
+    try:
+      kernel_action = ocn.KERNEL_TX_NOW
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+    except:
+      sys.stdout.write("Exception in event_inittest: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+  """ TXRX """
   def event_txrx_c_code_2(self, window, values, form_gui):
     sys.stdout.write("event_txrx_c_code_2\n")
     try:
@@ -1259,21 +1507,35 @@ class ReceiveControlsProc(object):
     except:
       sys.stdout.write("Exception in event_txrx_c_code_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-
+  """ Stop Tx """
   def event_stoptx(self, window, values, form_gui):
     sys.stdout.write("event_stoptx\n")
-    form_gui.osmod.stopEncoder()
-    while form_gui.osmod.isDataQueueEmpty() == False:
-      form_gui.osmod.popDataQueue()
+    try:
+      kernel_action = ocn.KERNEL_TX_STOP
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
 
-    #form_gui.osmod.stopDecoder()
+      #form_gui.osmod.stopEncoder()
+      #while form_gui.osmod.isDataQueueEmpty() == False:
+      #  form_gui.osmod.popDataQueue()
+    except:
+      sys.stdout.write("Exception in event_stoptx: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-
+  """ Stop Decoder """
   def event_stop8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_stop8pskdecoder\n")
-    form_gui.osmod.stopEncoder()
-    form_gui.osmod.stopDecoder()
-    form_gui.osmod.resetAll()
+    try:
+      kernel_action = ocn.KERNEL_RX_STOP
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+      #form_gui.osmod.stopEncoder()
+      #form_gui.osmod.stopDecoder()
+      #form_gui.osmod.resetAll()
+    except:
+      sys.stdout.write("Exception in event_stop8pskdecoder: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
 
 
   def event_sliderfftaperture(self, window, values, form_gui):
@@ -1357,6 +1619,24 @@ class ReceiveControlsProc(object):
 
     form_gui.osmod.test_counter = 0
     form_gui.window['text_sequential_test_counter'].update(str(form_gui.osmod.test_counter))
+
+
+
+
+  def event_btn_slider_awgn(self, window, values, form_gui):
+    sys.stdout.write("event_btn_slider_awgn\n")
+    awgn = values['btn_slider_awgn']
+    form_gui.osmod.setSliderAwgn(awgn)
+
+  def event_slider_amplitude(self, window, values, form_gui):
+    sys.stdout.write("event_slider_amplitude\n")
+    amplitude = values['slider_amplitude']
+    form_gui.osmod.setSliderAmplitude(amplitude)
+
+  def event_slider_carrier_separation(self, window, values, form_gui):
+    sys.stdout.write("event_slider_carrier_separation\n")
+    carrier_separation = values['slider_carrier_separation']
+    form_gui.osmod.setSliderCarrierSeparation(carrier_separation)
 
 
   def event_testit2(self, window, values, form_gui):
@@ -1457,27 +1737,133 @@ class ReceiveControlsProc(object):
       sys.stdout.write("Exception in event_overridestandard48k: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
+  def event_btn_save_modem_settings(self, window, values, form_gui):
+    sys.stdout.write("event_btn_save_modem_settings\n")
+
+    try:
+      form_gui.osmod.writeModemSettingsToFile(window, "OSMOD_Settings.txt")
+    except:
+      sys.stdout.write("Exception in event_btn_save_modem_settings: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
   def event_save(self, window, values, form_gui):
     sys.stdout.write("event_save\n")
     form_gui.osmod.opd.writeMainDictionaryToFile("osmod_main_settings.txt", values)
 
     form_gui.osmod.updateCachedSettings(values, form_gui)
 
+  """
+  def event_combo_select_timing_choice(self, window, values, form_gui):
+    sys.stdout.write("event_combo_select_timing_choice\n")
+    try:
+      mode = values['combo_main_modem_prod_modes']
+      self.update_max_chars(window, values, form_gui, mode)
+
+      window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_15_seconds)
+
+    except:
+      sys.stdout.write("Exception in event_combo_select_timing_choice: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+  """
+
+  def update_max_chars(self, window, values, form_gui, mode):
+    sys.stdout.write("update_max_chars\n")
+
+    try:
+      #timing = values['combo_select_timing_choice']
+
+      beacon_mode_checked = form_gui.window['cb_enable_beacon_mode'].get()
+      sync_mode_checked = form_gui.window['cb_enable_sync_rx_processing_timing'].get()
+      if beacon_mode_checked:
+
+        if mode == "LB28-1600-I3-FEC":
+          max_chars = 30
+        elif mode == "LB28-1600-I3":
+          max_chars = 68
+        elif mode == "LB28-3200-I3-FEC":
+          max_chars = 62
+        elif mode == "LB28-3200-I3":
+          max_chars = 58
+        elif mode == "LB28-6400-I3-FEC":
+          max_chars = 52
+        elif mode == "LB28-6400-I3":
+          max_chars = 48
+        elif mode == "LB28-12800-I3-FEC":
+          max_chars = 42
+        elif mode == "LB28-12800-I3":
+          max_chars = 38
+        elif mode == "LB28-25600-I3":
+          max_chars = 28
+      elif sync_mode_checked:
+        if mode == "LB28-1600-I3-FEC":
+          max_chars = 60
+        elif mode == "LB28-1600-I3":
+          max_chars = 136
+        elif mode == "LB28-3200-I3-FEC":
+          max_chars = 124
+        elif mode == "LB28-3200-I3":
+          max_chars = 116
+        elif mode == "LB28-6400-I3-FEC":
+          max_chars = 104
+        elif mode == "LB28-6400-I3":
+          max_chars = 96
+        elif mode == "LB28-12800-I3-FEC":
+          max_chars = 84
+        elif mode == "LB28-12800-I3":
+          max_chars = 76
+        elif mode == "LB28-25600-I3":
+          max_chars = 56
+      else:
+        max_chars = 64
+
+      sys.stdout.write("mode: " + str(mode) + "\n")
+      sys.stdout.write("max_chars: " + str(max_chars) + "\n")
+      form_gui.window['combo_max_message_length'].update(value = str(max_chars))
+    except:
+      sys.stdout.write("Exception in event_combomainmodemprodmodes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def updateBeaconOptions(self, window, values, form_gui, mode):
+    sys.stdout.write("updateBeaconOptions\n")
+
+    try:
+      #mode = values['combo_main_modem_prod_modes']
+      use_shortened_beacon_modes_list = False
+      if mode == "LB28-12800-I3":
+        use_shortened_beacon_modes_list = True
+      if mode == "LB28-25600-I3":
+        use_shortened_beacon_modes_list = True
+      if mode == "LB28-25600-I3E":
+        use_shortened_beacon_modes_list = True
+
+
+      if use_shortened_beacon_modes_list == True:
+        combo_beacon_timer_interval  = '--Off--,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes,1 Hour,2 Hours'.split(',')
+        window['combo_settings_beacon_timer_interval'].update(values=combo_beacon_timer_interval)
+      else:
+        window['combo_settings_beacon_timer_interval'].update(values=form_gui.combo_beacon_timer_interval)
+
+
+    except:
+      sys.stdout.write("Exception in updateBeaconOptions: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
 
   def event_combomainmodemprodmodes(self, window, values, form_gui):
     sys.stdout.write("event_combomainmodemprodmodes\n")
 
-    form_gui.osmod.useProdMode()
+    try:
+      form_gui.osmod.useProdMode()
+      form_gui.window['cb_use_prod_modes'].update(True)
+      mode = values['combo_main_modem_prod_modes']
 
-    form_gui.window['cb_use_prod_modes'].update(True)
+      self.update_max_chars(window, values, form_gui, mode)
+      self.updateBeaconOptions(window, values, form_gui, mode)
 
-    mode = values['combo_main_modem_prod_modes']
+      form_gui.osmod.setInitializationBlock(mode)
+      form_gui.window['text_info_description'].update(str(form_gui.osmod.getInitBlockParam(mode, 'info')))
+    except:
+      sys.stdout.write("Exception in event_combomainmodemprodmodes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-    form_gui.osmod.setInitializationBlock(mode)
-
-    #form_gui.osmod.setScreenOptions(mode, form_gui, form_gui.osmod.opd.main_settings)
-
-    form_gui.window['text_info_description'].update(str(form_gui.osmod.getInitBlockParam(mode, 'info')))
 
 
   def event_mainmodemmodes(self, window, values, form_gui):
@@ -1571,13 +1957,187 @@ class ReceiveControlsProc(object):
     form_gui.window['cb_enable_block_level_resample_auto_correct'].update(False)
 
 
+
+  def event_cb_continuous_decode(self, window, values, form_gui):
+    sys.stdout.write("event_cb_continuous_decode\n")
+    continuous = form_gui.window['cb_continuous_decode'].get()
+    if continuous:
+      form_gui.osmod.sonic.continuous = True
+    else:
+      form_gui.osmod.sonic.continuous = False
+
+
+  def event_combo_settings_beacon_timer_interval(self, window, values, form_gui):
+    sys.stdout.write("event_combo_settings_beacon_timer_interval\n")
+    try:
+      timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+      if timer_interval == "30 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_30_minutes)
+      elif timer_interval == "1 Hour":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_hour)
+
+      self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+
+    except:
+      sys.stdout.write("Exception in event_combo_settings_beacon_timer_interval: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+
+  def getNextTimeIncrementBeacon(self, window, values, form_gui):
+    sys.stdout.write("getNextTimeIncrementBeacon\n")
+    try:
+      timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+      if timer_interval == "1 Minute":
+        increment_type = "Minutes"
+        inc_amount = 1
+      elif timer_interval == "5 Minutes":
+        increment_type = "Minutes"
+        inc_amount = 5
+      elif timer_interval == "10 Minutes":
+        increment_type = "Minutes"
+        inc_amount = 10
+      elif timer_interval == "15 Minutes":
+        increment_type = "Minutes"
+        inc_amount = 15
+      elif timer_interval == "30 Minutes":
+        increment_type = "Minutes"
+        inc_amount = 30
+      elif timer_interval == "45 Minutes":
+        increment_type = "Minutes"
+        inc_amount = 45
+      elif timer_interval == "1 Hour":
+        increment_type = "Hours"
+        inc_amount = 1
+      elif timer_interval == "2 Hours":
+        increment_type = "Hours"
+        inc_amount = 2
+      elif timer_interval == "--Off--":
+        return None
+
+      now = datetime.utcnow()
+      if increment_type == "Minutes":
+        minutes = (now.minute // inc_amount + 1) * inc_amount
+        if minutes >= 60:
+          #next_interval = now.replace(minute=0, hour=now.hour + 1)
+          next_interval = now.replace(second = 0, minute = minutes -60, hour = now.hour + 1)
+        else:
+          next_interval = now.replace(second = 0, minute = minutes)
+        
+        sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M") + "\n")
+      elif increment_type == "Hours":
+        #else:
+        hours = (now.hour // inc_amount + 1) * inc_amount
+        if hours >= 24:
+          next_interval = now.replace(second = 0, minute = 0, hour = hours - 24, day = now.day + 1)
+        else:
+          next_interval = now.replace(second = 0, minute = 0, hour = hours)
+        sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M") + "\n")
+
+      return next_interval
+    except:
+      sys.stdout.write("Exception in getNextTimeIncrementBeacon: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def getNextTimeIncrementSync(self, window, values, form_gui):
+    sys.stdout.write("getNextTimeIncrementSync\n")
+    try:
+      inc_amount = 20
+      now = datetime.utcnow()
+      if True:
+        sys.stdout.write("seconds 1: " + str(now.second) + "\n")
+
+        #seconds = ((now.second // inc_amount + 1) * inc_amount) - 10
+        seconds = (((now.second + 10) // inc_amount) * inc_amount) + 10
+        if ((seconds + 10 )% 20) < 1:
+          seconds = (((now.second + 10) // inc_amount) * inc_amount) + 30
+        #  seconds = ((now.second // inc_amount + 2) * inc_amount) - 10
+
+        sys.stdout.write("seconds: " + str(seconds) + "\n")
+
+        if seconds >= 60:
+          if now.minute == 59:
+            next_interval = now.replace(second=seconds - 60, minute=now.minute , hour=now.hour+1)
+          else:
+            next_interval = now.replace(second=seconds - 60, minute=now.minute + 1, hour=now.hour)
+        else:
+          next_interval = now.replace(second=seconds, minute = now.minute)
+        
+        sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M:%S") + "\n")
+
+      return next_interval
+    except:
+      sys.stdout.write("Exception in getNextTimeIncrementSync: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+  def event_cb_enable_osmod_net(self, window, values, form_gui):
+    sys.stdout.write("event_cb_enable_osmod_net\n")
+    try:
+      if values['cb_enable_osmod_net'] == True:
+        form_gui.net_callback_redirect = form_gui.NetCallbackRedirectReal
+
+        form_gui.net_enabled = True
+        form_gui.window['tab_main_phase_charts2'].update(disabled=False)
+        form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+        form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
+        form_gui.window['cb_enable_beacon_mode'].update(False)
+        self.beacon_trigger_time = None
+        self.sync_trigger_time = None
+        form_gui.window['beacon_clock'].update("--:--:--")
+
+        start_time = form_gui.window['input_starttime'].get().strip()
+        sys.stdout.write("start_time: " + start_time + "\n")
+        if start_time != '':
+          time_now = datetime.utcnow()
+          starthour = int(start_time.split(':')[0])
+          startmin  = int(start_time.split(':')[1])
+          self.net_start_time = datetime(time_now.year, time_now.month, time_now.day, starthour, startmin, 0, 0)
+
+      else:
+        form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+
+        form_gui.net_enabled = False
+        form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+        form_gui.window['text_net_on_air'].update("")
+        self.net_start_time = None
+    except:
+      sys.stdout.write("Exception in getNextTimeIncrementSync: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def event_cb_enable_beacon_mode(self, window, values, form_gui):
+    sys.stdout.write("event_cb_enable_beacon_mode\n")
+    form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+    form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
+    form_gui.window['cb_enable_osmod_net'].update(False)
+    form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+    form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+    window['combo_max_message_length'].update(disabled = True)
+    self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+
+
   def event_enable_sync_rx_processing_timing(self, window, values, form_gui):
     sys.stdout.write("event_enable_sync_rx_processing_timing\n")
     form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+    form_gui.window['cb_enable_beacon_mode'].update(False)
+    form_gui.window['cb_enable_osmod_net'].update(False)
+    form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+    form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+    window['combo_max_message_length'].update(disabled = True)
+    self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+
 
   def event_enable_squelch_rx_processing(self, window, values, form_gui):
     sys.stdout.write("event_enable_squelch_rx_processing\n")
     form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
+    form_gui.window['cb_enable_beacon_mode'].update(False)
+    form_gui.window['cb_enable_osmod_net'].update(False)
+    form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+    form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+    window['combo_max_message_length'].update(disabled = False)
+    self.beacon_trigger_time = None
+    self.sync_trigger_time = None
+    form_gui.window['beacon_clock'].update("--:--:--")
 
 
 
@@ -1688,6 +2248,73 @@ class ReceiveControlsProc(object):
     sys.stdout.write("event_erasechart\n")
     graph = window['graph_pulsetraindata1']
     graph.erase()
+
+
+
+  def event_tbl_callsign_locator(self, window, values, form_gui):
+    sys.stdout.write("event_tbl_callsign_locator\n")
+    try:    
+      row = form_gui.window['tbl_callsign_locator'].get()[0]
+
+      sys.stdout.write("selected row: " + str(row) + "\n")
+
+      if form_gui.osmod.received_data_table_callsign != None:
+        data = form_gui.osmod.received_data_table_callsign[row]
+        sys.stdout.write("selected row: " + str(data) + "\n")
+
+        sender_callsign = data[0]
+        msg_ids = form_gui.osmod.messages_by_callsign[sender_callsign]
+        sys.stdout.write("msg_ids: " + str(msg_ids) + "\n")
+        form_gui.window['ml_txrx_recvtext'].update('')
+        form_gui.window['ml_txrx_recvtext'].print("        callsign: " + str(data[0]), end="", text_color='black', background_color = 'white')
+        form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='black', background_color = 'white')
+
+        for count in range(0, len(msg_ids)):
+          msg_id = msg_ids[count]
+          timestamp = form_gui.osmod.all_messages[str(msg_id) + "_Timestamp"]
+          form_gui.window['ml_txrx_recvtext'].print("+++++++++++++++++ ", end="", text_color='black', background_color = 'white')
+          form_gui.window['ml_txrx_recvtext'].print(str(timestamp), end="", text_color='black', background_color = 'white')
+          form_gui.window['ml_txrx_recvtext'].print(" +++++++++++++++++\n", end="", text_color='black', background_color = 'white')
+          form_gui.osmod.displayReceivedMessage(form_gui.osmod.all_messages[str(msg_id)], False, False)
+
+    except:
+      sys.stdout.write("Exception in event_tbl_callsign_locator: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+  def event_tbl_frequency_mode_message(self, window, values, form_gui):
+    sys.stdout.write("event_tbl_frequency_mode_message\n")
+    try:    
+      row = form_gui.window['tbl_frequency_mode_message'].get()[0]
+
+      sys.stdout.write("selected row: " + str(row) + "\n")
+
+      if form_gui.osmod.received_data_table != None:
+        data = form_gui.osmod.received_data_table[row]
+        sys.stdout.write("selected row: " + str(data) + "\n")
+        frequency_mode = data[0] + "_" + data[1]
+
+        msg_ids = form_gui.osmod.messages_by_frequency[frequency_mode]
+
+        sys.stdout.write("msg_ids: " + str(msg_ids) + "\n")
+
+        form_gui.window['ml_txrx_recvtext'].update('')
+
+        #form_gui.window['ml_txrx_recvtext'].print("+++++++++++++++++ ", end="", text_color='black', background_color = 'white')
+        form_gui.window['ml_txrx_recvtext'].print(".       frequency: " + str(data[0]) + "  Mode: " + str(data[1]), end="", text_color='black', background_color = 'white')
+        form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='black', background_color = 'white')
+
+        for count in range(0, len(msg_ids)):
+          msg_id = msg_ids[count]
+          timestamp = form_gui.osmod.all_messages[str(msg_id) + "_Timestamp"]
+          form_gui.window['ml_txrx_recvtext'].print("+++++++++++++++++ ", end="", text_color='black', background_color = 'white')
+          form_gui.window['ml_txrx_recvtext'].print(str(timestamp), end="", text_color='black', background_color = 'white')
+          form_gui.window['ml_txrx_recvtext'].print(" +++++++++++++++++\n", end="", text_color='black', background_color = 'white')
+          form_gui.osmod.displayReceivedMessage(form_gui.osmod.all_messages[str(msg_id)], False, False)
+
+
+    except:
+      sys.stdout.write("Exception in event_plotpulsetrainchart: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
   def event_sliderfrequency(self, window, values, form_gui):
@@ -2006,6 +2633,19 @@ class ReceiveControlsProc(object):
       'cb_enable_squelch_rx_processing'       : event_enable_squelch_rx_processing,
       'btn_txrx_c_code'                       : event_txrx_c_code,
       'btn_txrx_c_code_2'                       : event_txrx_c_code_2,
+      #'combo_select_timing_choice'            : event_combo_select_timing_choice,
+      'cb_enable_beacon_mode'                 : event_cb_enable_beacon_mode,
+      'combo_settings_beacon_timer_interval'  : event_combo_settings_beacon_timer_interval, 
+      'btn_slider_awgn'                       : event_btn_slider_awgn,
+      'slider_amplitude'                      : event_slider_amplitude,
+      'slider_carrier_separation'             : event_slider_carrier_separation,
+      'cb_enable_osmod_net'                   : event_cb_enable_osmod_net,
+      'btn_save_modem_settings'               : event_btn_save_modem_settings,
+      'tbl_frequency_mode_message'            : event_tbl_frequency_mode_message,
+      'tbl_callsign_locator'                  : event_tbl_callsign_locator,
+      'cb_continuous_decode'                  : event_cb_continuous_decode,
+      #'add_stn'          : self.osmod.osmod_net_dispatcher.event_addstn, 
+
 
   }
   

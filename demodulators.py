@@ -1039,24 +1039,38 @@ class DemodulatorPSK(ModemCoreUtils):
         self.debug.info_message("post_binary_string : " + str(post_binary_string) )
 
         self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
+        message_text = ""
         for six_bits_index in range(0, len(post_binary_string), 6):
           index = int(post_binary_string[six_bits_index:six_bits_index+6], 2)
           #int_low = int(post_binary_string[0:3])
           #int_high = int(post_binary_string[3:6])
           char = self.b64_charfromindex_list[index]
-          self.debug.info_message("found char: " + str(char))
-          self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='black', background_color = 'white')
+          #self.debug.info_message("found char: " + str(char))
+          #self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='black', background_color = 'white')
+          message_text = message_text + str(char)
+
+        #self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(message_text), end="", text_color='black', background_color = 'white')
+        #self.osmod.processFragmentedMessage(message_text)
+        #original_message = self.osmod.modulation_object.translateInbound(message_text)
+        #self.osmod.modulation_object.appendTableRow(original_message)
+
+        self.osmod.displayReceivedMessage(message_text, True, True)
 
       else:
         self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded: ", end="", text_color='black', background_color = 'white')
         message_text = ""
         for int_low, int_high in zip(decoded_intlist_1, decoded_intlist_2):
           char = self.b64_charfromindex_list[(int_low*8) + (int_high)]
-          self.debug.info_message("found char: " + str(char))
-          self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='black', background_color = 'white')
+          #self.debug.info_message("found char: " + str(char))
+          #self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='black', background_color = 'white')
           message_text = message_text + str(char)
-        self.osmod.modulation_object.appendTableRow(message_text)
 
+        #self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(message_text), end="", text_color='black', background_color = 'white')
+        #self.osmod.processFragmentedMessage(message_text)
+        #original_message = self.osmod.modulation_object.translateInbound(message_text)
+        #self.osmod.modulation_object.appendTableRow(original_message)
+
+        self.osmod.displayReceivedMessage(message_text, True, True)
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlist: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")

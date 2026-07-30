@@ -13,6 +13,7 @@ import gc
 import FreeSimpleGUI as sg
 import random
 import ctypes
+import platform
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, sosfiltfilt, hilbert
@@ -31,6 +32,8 @@ from osmod_c_interface import ptoc_float_array, ptoc_double_array, ptoc_float, c
 
 from scipy import signal as scipy_signal
 from datetime import datetime, timedelta
+
+from crc import Calculator, Configuration
 
 """
 MIT License
@@ -64,8 +67,15 @@ class ModemCoreUtils(object):
   dict_binpair_to_quad = {'00':0, '01':1, '10':2, '11':3}
   """ optimized for 64 bit encodings """
 
+  """ character p 010,000 is best padding character"""
+
   """ temporary base 64 char format """
-  encoding_b64    = 'abcdefghijklmnopqrstuvwxyz 0123456789~!@#$%^&*()_+`-={}|[]\\:\";\'<'
+  #encoding_b64    = 'abcdefghijklmnopqrstuvwxyz 0123456789~!@#$%^&*()_+`-={}|[]\\:\";\'<'
+  #encoding_b64    = ' abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}|[]\\:\";\'<'
+  #encoding_b64    = ' abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}.[]\\:\";\'<'
+  encoding_b64     = ' abcdefghijklmno|pqrstuvwxyz0123456789[](){}+-:;=?@^,\'./~_%!#$&*'
+
+
   """ optimized for regular character set """
   encoding_normal  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}|[]\\:\";\'<>?,./\n '
 
@@ -1201,6 +1211,70 @@ class ModemCoreUtils(object):
 
 
   def calculateSNR(self, signal, signal_frequency):
+    self.debug.info_message("calculateSNR")
+
+    try:
+      fft_signal = np.fft.fft(signal)
+      frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
+
+      """ use best method to determine signal width"""
+      if self.osmod.tx_filter[2] > 0:
+        freq_low_signal  = self.osmod.center_frequency - (self.osmod.tx_filter[2]/2)    
+        freq_high_signal = self.osmod.center_frequency + (self.osmod.tx_filter[2]/2)    
+      else:
+        freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
+        freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+
+      freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
+      signal_psd = np.abs(fft_signal[freq_indices])**2
+      self.debug.info_message("signal_psd: " + str(signal_psd) )
+
+      freq_low_noise = 250
+      freq_high_noise = 2750
+      freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies < freq_low_signal)) | ((frequencies > freq_high_signal) & (frequencies < freq_high_noise) ))
+      #freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies < freq_high_noise) ))
+      noise_psd = np.abs(fft_signal[freq_indices])**2
+      self.debug.info_message("noise_psd: " + str(noise_psd) )
+
+      signal_width = freq_high_signal - freq_low_signal
+      noise_width  = 2500 - signal_width
+      #bandwidth_factor = 10 * np.log10(noise_width / signal_width) 
+      bandwidth_factor = (noise_width / signal_width) 
+
+
+      """ noise in (2500 - signal width) in Hz"""
+      noise_power  = np.sum(noise_psd)
+
+      """ SNR over 50 Hz """
+      SNR_50 = 10 * np.log10((np.sum(signal_psd) - (noise_power / bandwidth_factor)) / (noise_power / bandwidth_factor))
+
+      """ signal power with noise subtracted out...approximation"""
+      signal_power = np.sum(signal_psd) -  (noise_power / bandwidth_factor)
+
+      """ noise power over full 2500 Hz """
+      noise_power  = noise_power + (noise_power / bandwidth_factor)
+
+      """ SNR over 2500 Hz """
+      SNR_2500 = 10 * np.log10(signal_power / noise_power)
+
+
+
+      """
+      signal_power_db = 10 * np.log10(signal_power)
+      noise_power_db  = 10 * np.log10(noise_power)
+      SNR = signal_power_db - (noise_power_db - bandwidth_factor)
+      self.debug.info_message("SNR: " + str(SNR))
+      """
+
+      return SNR_2500
+      #return SNR_50
+
+    except:
+      self.debug.error_message("Exception in calculateSNR: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  """
+  def calculateSNR(self, signal, signal_frequency):
     t = np.arange(0, 1, 1/self.osmod.sample_rate)
     fft_output = np.fft.fft(signal)
     psd = np.abs(fft_output)**2
@@ -1218,7 +1292,7 @@ class ModemCoreUtils(object):
     self.debug.info_message("SNR: " + "{:.2f}".format(snr) + "dB")
 
     return snr
-
+  """
 
   def calculate_EbN0(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
     self.debug.info_message("calculateSNR_EbN0")
@@ -1954,6 +2028,9 @@ class ModemCoreUtils(object):
         new_signal = self.osmod.modulation_object.shiftAllFrequenciesExp(new_signal, calculated_frequency_shift_value, sample_rate)
       elif fs_ony_auto_correct:
         #new_signal = self.osmod.modulation_object.shiftAllFrequenciesExp(signal, fs_only, sample_rate)
+        #signal_padded = np.append(signal, np.zeros((len(signal) * 2.0,), dtype = signal.dtype)).copy()
+        #new_signal = self.osmod.modulation_object.shiftAllFrequencies(signal_padded, fs_only, sample_rate)
+
         new_signal = self.osmod.modulation_object.shiftAllFrequencies(signal, fs_only, sample_rate)
 
 
@@ -1981,7 +2058,9 @@ class ModemCoreUtils(object):
       max_resolution = False
       #max_resolution = True
 
-      accuracy_jump = 0.001
+      #accuracy_jump = 0.001
+      accuracy_jump = 0.01
+      #accuracy_jump = 0.1
 
       self.debug.info_message("guess: " + str(guess))
       self.debug.info_message("iter_count: " + str(iter_count))
@@ -2288,7 +2367,7 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in linearDopplerShiftAutoCorrect: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  def appendTableRow(self, message):
+  def appendTableRow(self, message, sender_callsign):
     self.debug.info_message("appendTableRow")
     try:
       center_frequency = self.osmod.getCenterFrequency()
@@ -2300,8 +2379,6 @@ class ModemCoreUtils(object):
         mode = self.osmod.form_gui.window['combo_main_modem_modes'].get()
 
       data_key = str(center_frequency) + "_" + str(mode)
-      #if data_key in self.osmod.dict_rcvd:
-      #else:
       self.osmod.dict_rcvd[data_key] = [timestamp, message]
       self.debug.info_message("self.osmod.dict_rcvd: " + str(self.osmod.dict_rcvd))
 
@@ -2313,12 +2390,32 @@ class ModemCoreUtils(object):
 
       self.debug.info_message("data_table: " + str(data_table))
 
-      self.osmod.form_gui.window['tbl_tmplt_templates'].update(data_table)
+      self.osmod.form_gui.window['tbl_frequency_mode_message'].update(data_table)
+      self.osmod.received_data_table = data_table
 
-      #self.osmod.form_gui.window['tbl_tmplt_templates'].update([[center_frequency,mode,timestamp,message]])
+
+      """ create callsign / location table """
+      if sender_callsign != '':
+        locator = ''
+        data_key = sender_callsign
+        self.osmod.dict_rcvd_callsign[data_key] = [locator, timestamp]
+        self.debug.info_message("self.osmod.dict_rcvd_callsign: " + str(self.osmod.dict_rcvd_callsign))
+
+        data_table = []
+        for key, value in self.osmod.dict_rcvd_callsign.items():
+          data_row = [str(key)] + value
+          self.debug.info_message("data_row: " + str(data_row))
+          data_table.append(data_row)
+        self.debug.info_message("data_table: " + str(data_table))
+
+        self.osmod.form_gui.window['tbl_callsign_locator'].update(data_table)
+        self.osmod.received_data_table_callsign = data_table
+
+
+      #self.osmod.form_gui.window['tbl_frequency_mode_message'].update([[center_frequency,mode,timestamp,message]])
       self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
 
-
+      return timestamp
     except:
       self.debug.error_message("Exception in appendTableRow: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
@@ -2341,10 +2438,11 @@ class ModemCoreUtils(object):
       #pulse_train_sigma = 20.39 
       #pulse_train_sigma = 11.49
       pulse_train_sigma = 23.7
+      pulse_length      = int(symbol_block_size / self.osmod.pulses_per_block)
 
-      override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
-      if override_pulse_train_sigma:
-        pulse_train_sigma = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
+      #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
+      #if override_pulse_train_sigma:
+      #  pulse_train_sigma = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
       
 
       def getStats(test_signal, local_pulse_length, exact):
@@ -2414,7 +2512,116 @@ class ModemCoreUtils(object):
         return averages_array[max_range_index]
         #return averages_array
 
-      pulse_length    = int(symbol_block_size / self.osmod.pulses_per_block)
+      def identifyModeFromSignal(test_signal, peak_location):
+        self.debug.info_message("identifyModeFromSignal()")
+
+        #pulse_start_index = peak_location - 50
+
+        #sigma_template = 4
+        #test_signal = gaussian_filter(np.abs(audio_array[pulse_start_index:]), sigma=sigma_template)
+        #location_points = self.findPeaksOverSample(3)
+
+        dict_modes = {}
+
+
+        #length = int(((len(test_signal)/4) // 128) * 128)
+        #segment_length = 128 * pulse_length * 4
+        #test_signal = test_signal[0:segment_length] + test_signal[segment_length:segment_length*2] + test_signal[segment_length*2:segment_length*3]
+
+        #"""
+        self.debug.info_message("segmenting signal")
+        segment_length = 128 * pulse_length * 2
+        for loop_count in range(0,8):
+          if loop_count == 0:
+            new_signal = test_signal[0:segment_length]
+          else:
+            if segment_length * (loop_count+1) < len(test_signal):
+              new_signal = new_signal + test_signal[segment_length * loop_count:segment_length * (loop_count+1)]
+        test_signal = new_signal
+        #"""
+
+        #test_signal = test_signal[0:int(len(test_signal)/4)]
+
+
+        #test_signal = test_signal[0:length]
+        #test_signal = test_signal[0:int(len(test_signal)/8)]
+        #test_signal = test_signal[0:int(len(test_signal)/2)]
+
+        self.debug.info_message("low pass filter")
+
+        test_signal = self.filter_sharp_cutoff_low_pass(test_signal, self.osmod.center_frequency, 50, self.osmod.getRxSampleRate())
+        #test_signal = self.filter_sharp_cutoff_low_pass(test_signal, self.osmod.center_frequency - 25, 50, self.osmod.getRxSampleRate())
+        #test_signal = self.filter_sharp_cutoff_high_pass(test_signal, self.osmod.center_frequency, 50, self.osmod.getRxSampleRate())
+
+        points_per_unit = 4
+        #points_per_unit = 3
+
+        for j in range(2, 8):
+          ppb = 2 ** j
+          half_ppb = int(ppb / 2)
+          self.debug.info_message("ppb: " + str(ppb))
+
+          #modulo_amount = half_ppb * pulse_length
+          modulo_amount = ppb * pulse_length
+
+          # test for 8 pulses per block...
+          for i in range(0, pulse_length * ppb, pulse_length): 
+            location = peak_location + i
+
+            total = 0
+
+            for k in range(0, half_ppb):
+            #for k in range(0, ppb):
+              #max_sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % (modulo_amount) == location + (k * pulse_length)])
+              max_sum_at_location = np.sum(test_signal[(np.arange(len(test_signal)) % (modulo_amount)) // points_per_unit == (location + (k * pulse_length)) // points_per_unit  ])
+              #max_sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % (modulo_amount) == (location + (k * pulse_length)) % modulo_amount ] )
+              #min_sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % (modulo_amount) == (location + ((k + half_ppb) * pulse_length)) % modulo_amount ])
+              #min_sum_at_location = np.sum(test_signal[np.arange(len(test_signal)) % (modulo_amount) == (location + ((k + half_ppb) * pulse_length))])
+              #min_sum_at_location = np.sum(test_signal[(np.arange(len(test_signal)) % (modulo_amount)) // 4 == (location + ((k + half_ppb) * pulse_length)) // 4 ])
+              #self.debug.info_message("sum_at_location: " + str(sum_at_location))
+              total = total + max_sum_at_location
+              #total = total + (max_sum_at_location - min_sum_at_location)
+
+            #dict_modes[str(ppb) + ":" + str(i)] = total / half_ppb
+            dict_modes[str(ppb) + ":" + str(i)] = total
+            self.debug.info_message("total: " + str(total))
+
+        #self.debug.info_message("dict_modes: " + str(dict_modes))
+
+        best_match_max = 0.0
+        best_key = ""
+        for key, value in dict_modes.items():
+          if float(value) > best_match_max:
+            best_match_max = float(value)
+            best_key = key
+
+        self.debug.info_message("best_key: " + str(best_key))
+
+        mode_name = best_key.split(':')[0]
+        best_ppb = int(mode_name)
+        block_start_location = int(best_key.split(':')[1])
+        self.osmod.form_gui.window['text_input_detected_mode'].update("LB28-" + str(mode_name) + "00-I3")
+        self.osmod.form_gui.window['text_input_detected_block_start'].update(str(block_start_location))
+
+
+        """ locate the first block """        
+        # iterate first 20 characters of message
+        magnitudes = []
+        modulo_amount = best_ppb * pulse_length
+        for j in range(0, 16):
+          location = peak_location + block_start_location + (j * (pulse_length * best_ppb))
+          total = 0
+
+          for k in range(0, int(best_ppb/2)):
+            #sum_at_location = np.sum(test_signal[np.arange(len(test_signal))  == location + (k * pulse_length)])
+            max_magnitude_at_location = abs(test_signal[location + (k * pulse_length)])
+            #min_magnitude_at_location = abs(test_signal[location + ((k + half_ppb) * pulse_length)] )
+            total = total + max_magnitude_at_location
+            #total = total + max_magnitude_at_location - min_magnitude_at_location
+          magnitudes.append(total)
+
+        self.debug.info_message("magnitudes: " + str(magnitudes))
+
 
       """ locate the amplified phase wave..."""
       #self.debug.info_message("PHASE WAVE GAUSSIAN... ")
@@ -2435,7 +2642,13 @@ class ModemCoreUtils(object):
       
       """ process gaussian """
       self.debug.info_message("GAUSSIAN 7... ")
-      index_min = getStats(gaussian_filter(np.abs(signal), sigma=pulse_train_sigma), pulse_length, exact_type)
+      gaussian_signal = gaussian_filter(np.abs(signal), sigma=pulse_train_sigma)
+      index_min = getStats(gaussian_signal, pulse_length, exact_type)
+      #index_min = getStats(np.abs(signal), pulse_length, exact_type)
+
+
+
+
       #index_min = getStats(gaussian_filter(np.abs(signal), sigma=7.2), pulse_length, exact_type)
 
       #""" process gaussian """
@@ -2458,12 +2671,16 @@ class ModemCoreUtils(object):
       #instantaneous_amplitude = np.abs(analytic_signal)
       #getStats(instantaneous_amplitude, pulse_length * 3)
 
-      if sample_rate == 8000:
-        difference = int((index_min - 26 + pulse_length) % pulse_length)
-        return signal[difference::]
-      elif  sample_rate == 48000:
-        difference = int((index_min - 90 + pulse_length) % pulse_length)
-        return signal[difference::]
+      identifyModeFromSignal(gaussian_signal, index_min)
+
+
+
+      #if sample_rate == 8000:
+      #  difference = int((index_min - 26 + pulse_length) % pulse_length)
+      #  return signal[difference::]
+      #elif  sample_rate == 48000:
+      #  difference = int((index_min - 90 + pulse_length) % pulse_length)
+      #  return signal[difference::]
 
 
 
@@ -2501,3 +2718,652 @@ class ModemCoreUtils(object):
 
     except:
       self.debug.error_message("Exception in alignTimePointT0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def decodeSignalTypes(self, signal):
+    self.debug.info_message("decodeSignalTypes")
+
+    try:
+      self.identifyModeFromSignal(signal)
+
+
+      def findPeaksOverSample(granularity):
+        self.debug.info_message("findPeaksOverSample()")
+        #nonlocal offset
+        #nonlocal index
+
+        self.debug.info_message("granularity: " + str(granularity))
+
+        start = (start_pulse * pulse_length) + (start_block * self.osmod.pulses_per_block * pulse_length)
+        num_full_blocks = int((len(audio_array) - start ) // self.osmod.symbol_block_size)
+        #self.pulse_train_alignment_struct = {'location_points': [], 'blocks': [], 'current_point_index':0, 'locus': 0, 'diff': 0, 'pulses': [] }
+
+        self.debug.info_message("start: " + str(start))
+
+        """ identify peaks over full signal sample """
+        num_pulses = 0
+        for block_count in range(0, num_full_blocks): 
+          offset = ((block_count * self.osmod.pulses_per_block) * pulse_length) + (start_pulse * pulse_length)
+
+          self.pulse_train_alignment_struct['blocks'].append([])
+          self.pulse_train_offsets = []
+          self.pulse_train_offsets_mid = []
+          productCount = 0
+          for index in range(0,self.osmod.pulses_per_block): 
+            is_non_pulse = acquire_pulse_train_offsets(index, offset, 0, granularity)
+            if is_non_pulse:
+              self.non_pulse.append(index)
+            else:
+              num_pulses = num_pulses + 1
+
+          #if aligh_type == ocn.ALIGN_RETAIN_LOCATION:
+          #  self.pulse_train_alignment_struct['blocks'][block_count] = self.pulse_train_offsets
+          #elif aligh_type == ocn.ALIGN_MOVE_TO_MID:
+          #  self.pulse_train_alignment_struct['blocks'][block_count] = self.pulse_train_offsets_mid
+
+        self.debug.info_message("pulse_train_alignment_struct: " + str(self.pulse_train_alignment_struct))
+
+        median_index = self.osmod.demodulation_object.getMode(self.pulse_train_alignment_struct['pulses'])
+        self.debug.info_message("median_index: " + str(median_index))
+
+        #return self.pulse_train_alignment_struct['location_points']
+
+    except:
+      self.debug.error_message("Exception in decodeSignalTypes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+  def findDecodeCandidates(self, data):
+    self.debug.info_message("findDecodeCandidates")
+
+    try:
+      N = 1 # find top 5 in each segment
+      all_magnitudes = []
+
+      carrier_transitions = []
+      dict_last_frequency = {}
+      dict_carrier_transitions = {}
+
+      for center_frequency in range(240, 2960, 40):
+        dict_last_frequency[center_frequency] = 0
+        dict_carrier_transitions[center_frequency] = []
+
+      for signal_scan in range(0, len(data), 100): # analyze first 5 seconds of data only. use increments of 10 pulses (100 samples each)
+        sub_signal = data[signal_scan:signal_scan + 1000]
+
+        fft_output = np.fft.fft(sub_signal)
+        frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
+
+        for center_frequency in range(240, 2960, 40):
+          lo = center_frequency - 18.5
+          high = center_frequency + 18.5
+          positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+          fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+          frequencies_2 = frequencies[positive_frequency_indices]
+
+          top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+          strongest_frequencies = frequencies_2[top_n_indices]
+          strongest_magnitudes  = fft_magnitudes[top_n_indices]
+          sum_magnitude = np.sum(strongest_magnitudes)
+          #if len(strongest_frequencies) != 0 and sum_magnitude > 0.01:
+          if len(strongest_frequencies) != 0 and sum_magnitude > 0.005:
+            current_frequency = strongest_frequencies[0]
+
+            if current_frequency != dict_last_frequency[center_frequency]:
+              dict_last_frequency[center_frequency] = current_frequency
+              dict_carrier_transitions[center_frequency].append(signal_scan)
+         
+      min_block_start_location = 100000000
+      for center_frequency in range(240, 2960, 40):
+        if len(dict_carrier_transitions[center_frequency]) > 4:
+          #self.debug.info_message("center_frequency: " + str(center_frequency))
+          #self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
+
+          new_array = np.array(dict_carrier_transitions[center_frequency])
+          for test in range(7, 2, -1):
+            test_len = 2 ** test
+            #self.debug.info_message("test_len: " + str(test_len))
+
+            new_array_2 = new_array % (test_len * 100)
+            #self.debug.info_message("new_array_2: " + str(new_array_2))
+
+            """ rebase """
+            unique_items, counts = np.unique(new_array_2, return_counts = True)
+            #self.debug.info_message("A unique_items: " + str(unique_items))
+            #self.debug.info_message("A counts: " + str(counts))
+            min_count = 100000000
+            for rebase_count in range(0, len(counts)):
+              if counts[rebase_count] > len(new_array_2) * 0.3 and unique_items[rebase_count] < min_count:
+                min_count = unique_items[rebase_count]
+            if min_count != 100000000:
+              new_array_2 = new_array_2 - min_count
+
+            #self.debug.info_message("rebased new_array_2: " + str(new_array_2))
+
+
+            new_array_3 = new_array_2 // 400
+            #self.debug.info_message("new_array_3: " + str(new_array_3))
+
+            unique_items, counts = np.unique(new_array_3, return_counts = True)
+
+            #self.debug.info_message("B unique_items: " + str(unique_items))
+            #self.debug.info_message("B counts: " + str(counts))
+
+            if np.max(counts) > len(new_array_3) * 0.8:
+              self.debug.info_message("center_frequency: " + str(center_frequency))
+              self.debug.info_message("MATCH. length is: " + str(test_len * 200))
+              self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
+              block_start_location = np.min(dict_carrier_transitions[center_frequency])
+              if block_start_location < min_block_start_location:
+                min_block_start_location = block_start_location
+              mode_name = str(test_len * 200)
+              self.osmod.form_gui.window['text_input_detected_mode'].update("LB28-" + str(mode_name) + "-I3")
+              self.osmod.form_gui.window['text_input_detected_block_start'].update(str(block_start_location))
+
+              break
+
+
+      if min_block_start_location != 100000000:
+        return data[min_block_start_location:]
+      else:
+        return data
+
+      #new_array_2 = new_array % 1600
+      #new_array_2 = new_array % 3200
+      #  strongest_index = np.argmax(fft_magnitudes)
+      #  top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      #  strongest_frequencies = frequencies[top_n_indices]
+      #  strongest_magnitudes  = fft_magnitudes[top_n_indices]
+
+
+    except:
+      self.debug.error_message("Exception in findDecodeCandidates: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  def translateOutbound(self, message):
+    self.debug.info_message("translateOutbound")
+    try:
+      #encoding_b64    = ' abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}.[]\\:\";\'<'
+
+      return self.getEncodeEscapes(message)
+
+    except:
+      self.debug.error_message("Exception in translateOutbound: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return "12345"
+
+  def translateInbound(self, message):
+    self.debug.info_message("translateInbound")
+    try:
+      #encoding_b64    = ' abcdefghijklmnopqrstuvwxyz0123456789~!@#$%^&*()_+`-={}.[]\\:\";\'<'
+
+      return self.getDecodeEscapes(message)
+
+    except:
+      self.debug.error_message("Exception in translateInbound: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def getEncodeEscapes(self, message):
+    self.debug.info_message("getEncodeEscapes")
+
+    try:
+      first_seq_1 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      dict_second_seq_1 = {'=':'==', '[':'=a', ']':'=b', '{':'=c', '}':'=d', '~':'=f', '|':'=g', '>':'=p', '?':'=q', '<':'=r', '"':'=s', '\\':'=t', '^':'=u', '`':'=v'}
+      translated = ''
+
+      self.debug.info_message("message: " + str(message))
+
+      """ replace / with // """ 
+      message = message.replace('/','//')
+      modified_message = message
+      previous_char = message[0]
+      ignore = False
+      for index in range(1, len(message)):
+        if message[index] == previous_char and not previous_char.isdigit() :
+          if ignore == False and previous_char != '/':
+            modified_message = self.getRunLengthEncode(modified_message, previous_char)
+            ignore = True
+        else:
+          ignore = False
+        previous_char = message[index]
+
+      message = modified_message
+
+      #message = modified_message.replace('=','==')
+      if (platform.system() == 'Windows'):
+        message = message.replace('\r\n','=n')
+        message = message.replace('\r','=n')
+        message = message.replace('\n','=n')
+      else:
+        message = message.replace('\r','=n')
+        message = message.replace('\n','=n')
+
+      caps_lock = False
+      for index in range(0, len(message)):
+        current_char = message[index]
+        if current_char in first_seq_1:
+          if  caps_lock == True:
+            translated = translated + current_char.lower()
+          elif index + 1 < len(message) and message[index + 1] in first_seq_1:
+            translated = translated + "=i" + current_char.lower() # 2 CAPS in a row so CAPS LOCK ON
+            caps_lock = True
+          else:
+            translated = translated + "/" + current_char.lower()
+        elif current_char in dict_second_seq_1:
+          translated = translated + dict_second_seq_1[current_char]
+        else:
+          if current_char.isalpha() and caps_lock == True:
+            caps_lock = False
+            translated = translated + "=m" + current_char # revert to normal mode
+          else:
+            translated = translated + current_char
+
+      self.debug.info_message("translated: " + str(translated))
+
+      """ /E control character for end of message """
+      """ /F used ~ character """
+
+
+    except:
+      self.debug.error_message("Exception in getEncodeEscapes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return translated
+
+
+
+  def getDecodeEscapes(self, message):
+    self.debug.info_message("getDecodeEscapes")
+
+    try:
+      first_seq = 'abcdefghijklmnopqrstuvwxyz'
+      dict_seq = {'==':'=', '=a':'[', '=b':']', '=c':'{', '=d':'}', '=f':'~', '=g':'|', '=p':'>', '=q':'?', '=r':'<', '=s':'"', '=t':'\\', '=u':'^', '=v':'`'}
+      dict_seq_2 = {'=i':'U', '=m':'L'}
+
+      string_out = ''
+      char_count = 0
+      message_len = len(message)
+      while char_count < message_len:
+        if(char_count+1 < message_len):
+          if(message[char_count] == '/'):
+            """ test to see if this is an escape sequence"""
+            if message[char_count+1] in first_seq:
+              string_out = string_out + message[char_count+1].upper()
+              char_count = char_count + 2
+            elif message[char_count+1] == '/':
+              string_out = string_out + '//'
+              char_count = char_count + 2
+            else:
+              string_out = string_out + message[char_count]
+              char_count = char_count + 1
+          else:
+            string_out = string_out + message[char_count]
+            char_count = char_count + 1
+        else:
+          string_out = string_out + message[char_count]
+          char_count = char_count + 1
+
+      self.debug.info_message("getDecodeEscapes 1 : " + str(string_out))
+
+
+      caps_lock = False
+      message = string_out
+      string_out = ''
+      char_count = 0
+      message_len = len(message)
+      while char_count < message_len:
+        if(char_count+1 < message_len):
+          if(message[char_count] == '='):
+            """ test to see if this is an escape sequence"""
+            if message[char_count] + message[char_count+1] in dict_seq:
+              string_out = string_out + dict_seq[message[char_count] + message[char_count+1]]
+              char_count = char_count + 2
+            elif message[char_count] + message[char_count+1] in dict_seq_2:
+              if dict_seq_2[message[char_count] + message[char_count+1]] == 'U':
+                caps_lock = True
+              elif dict_seq_2[message[char_count] + message[char_count+1]] == 'L':
+                caps_lock = False
+              #string_out = string_out + dict_seq[message[char_count] + message[char_count+1]]
+              char_count = char_count + 2
+            elif(message[char_count+1] == 'n'):
+              if (platform.system() == 'Windows'):
+                string_out = string_out + '\r\n'
+              else:
+                string_out = string_out + '\n'
+              char_count = char_count + 2
+            else:
+              string_out = string_out + message[char_count]
+              char_count = char_count + 1
+          else:
+            if message[char_count] != '|':
+              if message[char_count].isalpha():
+                if caps_lock == True:
+                  string_out = string_out + message[char_count].upper()
+                else:
+                  string_out = string_out + message[char_count]
+              else:
+                string_out = string_out + message[char_count]
+
+              #string_out = string_out + message[char_count]
+            char_count = char_count + 1
+        else:
+          if message[char_count] != '|':
+            if message[char_count].isalpha():
+              if caps_lock == True:
+                string_out = string_out + message[char_count].upper()
+              else:
+                string_out = string_out + message[char_count]
+            else:
+              string_out = string_out + message[char_count]
+
+            #string_out = string_out + message[char_count]
+          char_count = char_count + 1
+
+      self.debug.info_message("getDecodeEscapes 2 : " + str(string_out))
+
+      modified_message = self.getRunLengthDecode(string_out)
+      message = modified_message.replace('//', '/')
+
+      return message
+
+    except:
+      self.debug.error_message("Exception in getDecodeEscapes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def getRunLengthEncode(self, message, delimeter_char):
+    self.debug.info_message("getRunLengthEncode")
+
+    complete_outer = False
+
+    find_it = delimeter_char + delimeter_char
+
+    while(complete_outer == False):
+      inner_count = 2
+      complete_inner = False
+      while(complete_inner == False):
+        if( find_it in message):
+          message = message.replace(find_it, cn.ESCAPE_CHAR + str(inner_count) + delimeter_char,1 )
+          find_it = cn.ESCAPE_CHAR + str(inner_count) + delimeter_char + delimeter_char
+          inner_count = inner_count + 1
+          #self.debug.info_message("getRunLengthEncode message: " + str(message))
+        else:
+          complete_inner = True
+
+      find_it = delimeter_char + delimeter_char
+      if( find_it not in message):
+        complete_outer = True
+
+    """ replace the 2 character ones with the original as it is shorter."""
+    message = message.replace(cn.ESCAPE_CHAR + '2' + delimeter_char, delimeter_char + delimeter_char)
+
+    return message
+
+
+  def getRunLengthDecode(self, message):
+    self.debug.info_message("getRunLengthDecode")
+
+    try:
+      char_count = 0
+      string_out = ''
+      message_len = len(message)
+      while char_count < message_len:
+        if(char_count+1 < message_len):
+          if(message[char_count] == '/'):
+            """ test to see if this is an escape sequence"""
+            if '/' + message[char_count+1] != '//':
+              """ make sure this is an RLE escape sequence """
+              if(message[char_count+1].isdigit()):
+                delimeter_char = message[char_count+2]
+                if(message[char_count+2].isdigit()):
+                  delimeter_char = message[char_count+3]
+                  if(message[char_count+3].isdigit()):
+                    delimeter_char = message[char_count+4]
+                    """ four digit RLE codes and up not supported"""
+                    if(message[char_count+4].isdigit()):
+                      self.debug.info_message("do nothing")
+                      string_out = string_out + message[char_count]
+                      char_count = char_count + 1
+                    elif(message[char_count+4] == delimeter_char):
+                      """ process triple digit RLE code"""
+                      string_out = string_out + (delimeter_char * ((int(message[char_count+1])*100) + (int(message[char_count+2])*10)+ (int(message[char_count+3]))) )
+                      char_count = char_count + 5
+                    else:
+                      string_out = string_out + message[char_count]
+                      char_count = char_count + 1
+                  elif(message[char_count+3] == delimeter_char):
+                    """ process double digit RLE code"""
+                    string_out = string_out + (delimeter_char * ((int(message[char_count+1])*10) + (int(message[char_count+2]))) )
+                    char_count = char_count + 4
+                  else:
+                    string_out = string_out + message[char_count]
+                    char_count = char_count + 1
+                elif(message[char_count+2] == delimeter_char):
+                  """ process single digit RLE code"""
+                  string_out = string_out + (delimeter_char * int(message[char_count+1]) )
+                  char_count = char_count + 3
+                else:
+                  string_out = string_out + message[char_count]
+                  char_count = char_count + 1
+              else:
+                string_out = string_out + message[char_count]
+                char_count = char_count + 1
+            else:
+              string_out = string_out + message[char_count]
+              char_count = char_count + 1
+          else:
+            string_out = string_out + message[char_count]
+            char_count = char_count + 1
+        else:
+          string_out = string_out + message[char_count]
+          char_count = char_count + 1
+
+      message = string_out
+      self.debug.info_message("completed getRunLengthDecode. unescaped message: " + str(message) )
+
+      return message
+
+    except:
+      self.debug.error_message("Exception in getRunLengthDecode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+
+
+  def protectMessage(self, message_text, truncate_to_max_msglength, num_rotation_chars, max_message_length):
+    self.debug.info_message("protectMessage")
+    try:
+      sequence_identifier = "0123456789abcdefghijklmnopqrstuvwxyz"
+      protected_string = ''
+
+      crc_fragment_size = int(self.osmod.form_gui.window['in_crc_fragment_size'].get())
+
+      addCallsignEOM = self.osmod.form_gui.window['cb_enable_eom_callsign'].get()
+      #addCallsignEOM = True
+      callsign = self.getTranslatedCallsign()
+      callsign_len = len(callsign)
+
+      if truncate_to_max_msglength:
+        if addCallsignEOM:
+          num_fragments = (max_message_length - num_rotation_chars) // (crc_fragment_size + 4)
+          remainder = (max_message_length - ((num_fragments * (crc_fragment_size + 4)) + num_rotation_chars)) - 4 - 3
+          remainder = max(remainder, 0)
+          additional_chars = (num_fragments * 4) + num_rotation_chars + callsign_len
+          if remainder > 0:
+            additional_chars = additional_chars + 4
+          message_text = message_text[0: max_message_length - additional_chars - 3] + callsign
+          self.debug.info_message("addCallsignEOM: ")
+          self.debug.info_message("message_text: " + str(message_text))
+
+        else:
+          num_fragments = (max_message_length - num_rotation_chars) // (crc_fragment_size + 4)
+          remainder = (max_message_length - ((num_fragments * (crc_fragment_size + 4)) + num_rotation_chars)) - 4 - 3
+          remainder = max(remainder, 0)
+      else:
+        num_fragments = len(message_text) // crc_fragment_size
+        remainder = len(message_text) - (num_fragments * crc_fragment_size)
+      self.debug.info_message("remainder: " + str(remainder))
+
+      for frag_count in range(0, num_fragments):
+        frag_string = '|' + sequence_identifier[frag_count] + message_text[frag_count * crc_fragment_size:(frag_count+1) * crc_fragment_size]
+        checksum = self.calcFragmentCRC(frag_string)
+        protected_string = protected_string + frag_string + checksum
+        self.debug.info_message("frag_string: " + str(frag_string))
+
+      self.debug.info_message("processing remainder...")
+
+      if remainder > 0:
+        remainder_location = num_fragments * crc_fragment_size
+        frag_string = '|' + sequence_identifier[num_fragments] + message_text[remainder_location:remainder_location + remainder]
+        checksum = self.calcFragmentCRC(frag_string)
+        protected_string = protected_string + frag_string + checksum + '|||'
+        self.debug.info_message("frag_string: " + str(frag_string))
+
+      self.debug.info_message("protected_string: " + str(protected_string))
+
+    except:
+      self.debug.error_message("Exception in protectMessage: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return protected_string
+
+  """
+  Attribution - CRC Polynomials - Philip Koopman - Carnegie Mellon University
+
+  The general purpose polynomials used are derived from the Best CRC Polynomials document by Philip Koopman, Carnegie Mellon University -
+
+  https://users.ece.cmu.edu/~koopman/crc/ 
+
+  published under Creative Commons License: https://creativecommons.org/licenses/by/4.0/
+  """
+
+  def getChecksum(self, mystr):
+    return self.calcFragmentCRC(mystr)
+
+
+  """
+  to avoid unnecessary complexity, assume a worst case 8 bit character size for CRC calculations
+  """
+  def calcFragmentCRC(self, string):
+    if(len(string)<=60):
+      return self.calcTwoDigitCRCShort(string)
+    elif(len(string)<=120):
+      return self.calcTwoDigitCRCLong(string)
+    else:
+      return self.calcThreeDigitCRC(string)
+
+
+  """
+  CRC calculation uses 5 bit nibbles in base 32 so two digits is 10 bits
+  This is used for the short fragments 10 thru 60 characters
+  0x247 polynomial protects up to 501 bit data word (62 x 8 bit characters) length at HD=4
+  """
+  def calcTwoDigitCRCShort(self, string):
+    return self.calcCRC(10, 0x247, string)
+
+  """
+  CRC calculation uses 5 bit nibbles in base 32 so two digits is 10 bits
+  This is used for the longer fragments 70 thru 120 characters
+  0x327 polynomial protects up to 1013 bit data word (126 x 8 bit characters) length at HD=3
+  """
+  def calcTwoDigitCRCLong(self, string):
+    return self.calcCRC(10, 0x327, string)
+
+  """
+  CRC calculation uses 5 bit nibbles in base 32 so three digits is 15 bits
+  0x4306 polynomial protects up to 16368 bit data word (2046 x 8 bit characters) length at HD=4
+  this is used for longer fragments and end of message checksum for messages <= 2046 characters
+  """
+  def calcThreeDigitCRC(self, string):
+    return self.calcCRC(15, 0x4306, string)
+
+
+
+  """ always use a 20 bit / 4 digit CRC for end of message checksum"""
+  def calcEOMCRC(self, string):
+    return self.calcFourDigitCRC(string)
+
+  #base32_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUV"
+  base32_chars = "0123456789abcdefghijklmnopqrstuv"
+
+  """
+  CRC calculation uses 5 bit nibbles in base 32 so four digits is 20 bits
+  0xc1acf polynomial protects up to 524267 bit data word (65533 x 8 bit characters) length at HD=4
+  this is used for end of message checksum for messages > 2046 characters
+  """
+  def calcFourDigitCRC(self, string):
+    return self.calcCRC(20, 0xc1acf, string)
+
+  def calcCRC(self, width, poly, string):
+
+    self.debug.info_message('calcCRC')
+
+    data = bytes(string,"ascii")
+
+    init_value=0x00
+    final_xor_value=0x00
+    reverse_input=False
+    reverse_output=False
+
+    configuration = Configuration(width, poly, init_value, final_xor_value, reverse_input, reverse_output)
+
+    use_table = True
+    crc_calculator = Calculator(configuration, use_table)
+
+    checksum = crc_calculator.checksum(data)
+    self.debug.info_message(str(checksum))
+
+    if(width == 10):
+      high, low = checksum >> 5, checksum & 0x1F
+      self.debug.info_message('10 bit checksum: ' + str(self.base32_chars[high] + self.base32_chars[low]))
+      return self.base32_chars[high] + self.base32_chars[low]
+    elif(width == 15):
+      high, mid, low = checksum >> 10, (checksum >> 5) & 0x1F, checksum & 0x1F
+      self.debug.info_message('15 bit checksum: ' + str(self.base32_chars[high] + self.base32_chars[mid] + self.base32_chars[low]))
+      return self.base32_chars[high] + self.base32_chars[mid] + self.base32_chars[low]
+    elif(width == 20):
+      high, mid_high, mid_low, low = checksum >> 15, (checksum >> 10) & 0x1F, (checksum >> 5) & 0x1F, checksum & 0x1F
+      self.debug.info_message('20 bit checksum: ' + str(self.base32_chars[high] + self.base32_chars[mid_high] + self.base32_chars[mid_low] + self.base32_chars[low]))
+      return self.base32_chars[high] + self.base32_chars[mid_high] + self.base32_chars[mid_low] + self.base32_chars[low]
+
+    return ''
+
+
+
+
+
+
+
+  """ add the callsign at the start of the message"""
+  def addCallsignSOM(self, message):
+    self.debug.info_message("addCallsignSOM")
+    try:
+
+      callsign = self.osmod.form_gui.window['in_station_callsign'].get()
+      #group = self.osmod.form_gui.window['in_group'].get()
+
+      return callsign.upper() + ' ' + message
+
+    except:
+      self.debug.error_message("Exception in addCallsignSOM: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+  """ add the callsign at the start of the message"""
+  def addCallsignSOM_WithColon(self, message):
+    self.debug.info_message("addCallsignSOM")
+    try:
+
+      callsign = self.osmod.form_gui.window['in_station_callsign'].get()
+      #group = self.osmod.form_gui.window['in_group'].get()
+
+      return callsign.upper() + ': ' + message
+
+    except:
+      self.debug.error_message("Exception in addCallsignSOM: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+  def getTranslatedCallsign(self):
+    self.debug.info_message("getTranslatedCallsign")
+    try:
+      callsign = self.osmod.form_gui.window['in_station_callsign'].get()
+
+      return ' =i' + callsign.lower()
+
+    except:
+      self.debug.error_message("Exception in getTranslatedCallsign: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+

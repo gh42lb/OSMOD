@@ -105,14 +105,16 @@ class OsmodInterpolator(object):
               if item not in interpolated_lower:
                 self.debug.info_message("interpolateListsAdjacent. Adding at 1")
                 interpolated_lower.append(item)
-                interpolated_higher.remove(item)
+                if item in interpolated_higher:
+                  interpolated_higher.remove(item)
           if len(interpolated_higher) < half:
             for i in range(interpolated_higher[-1], interpolated_higher[-1] - int(self.osmod.pulses_per_block/2), -1):
               item = (i + self.osmod.pulses_per_block) % self.osmod.pulses_per_block
               if item not in interpolated_higher:
                 self.debug.info_message("interpolateListsAdjacent. Adding at 2")
                 interpolated_higher.append(item)
-                interpolated_lower.remove(item)
+                if item in interpolated_lower:
+                  interpolated_lower.remove(item)
 
         elif interpolated_lower[-1] + 1 == interpolated_higher[0]:
           if len(interpolated_higher) < half:
@@ -121,14 +123,16 @@ class OsmodInterpolator(object):
               if item not in interpolated_higher:
                 self.debug.info_message("interpolateListsAdjacent. Adding at 3")
                 interpolated_higher.append(item)
-                interpolated_lower.remove(item)
+                if item in interpolated_lower:
+                  interpolated_lower.remove(item)
           if len(interpolated_lower) < half:
             for i in range(interpolated_lower[-1], interpolated_lower[-1] - int(self.osmod.pulses_per_block/2), -1):
               item = (i + self.osmod.pulses_per_block) % self.osmod.pulses_per_block
               if item not in interpolated_lower:
                 self.debug.info_message("interpolateListsAdjacent. Adding at 4")
                 interpolated_lower.append(item)
-                interpolated_higher.remove(item)
+                if item in interpolated_higher:
+                  interpolated_higher.remove(item)
 
 
       def interpolateSort():
@@ -140,8 +144,10 @@ class OsmodInterpolator(object):
       def interpolateContiguous():
         nonlocal interpolated_lower
         nonlocal interpolated_higher
-        interpolated_lower  = self.interpolate_contiguous_items(pulse_train[0])
-        interpolated_higher = self.interpolate_contiguous_items(pulse_train[1])
+        #interpolated_lower  = self.interpolate_contiguous_items(pulse_train[0])
+        #interpolated_higher = self.interpolate_contiguous_items(pulse_train[1])
+        interpolated_lower  = self.interpolate_contiguous_items(interpolated_lower)
+        interpolated_higher = self.interpolate_contiguous_items(interpolated_higher)
 
       def removeDuplicatesInBothLists():
         nonlocal pulse_train
@@ -275,6 +281,9 @@ class OsmodInterpolator(object):
       self.debug.info_message("pulse_train[0]: " + str(pulse_train[0]))
       self.debug.info_message("pulse_train[1]: " + str(pulse_train[1]))
 
+
+      interpolated_lower  = pulse_train[0]
+      interpolated_higher = pulse_train[1]
       interpolateContiguous()
       self.debug.info_message("interpolateContiguous")
       self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
@@ -298,6 +307,17 @@ class OsmodInterpolator(object):
       self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
       self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
 
+
+
+
+      interpolateContiguous()
+      self.debug.info_message("interpolateContiguous")
+      self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
+      self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
+
+
+
+
       interpolateSort()
       self.debug.info_message("interpolateSort")
       self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
@@ -307,6 +327,13 @@ class OsmodInterpolator(object):
       self.debug.info_message("interpolateListsAdjacent")
       self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
       self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
+
+
+      interpolateCorrespondingListItems()
+      self.debug.info_message("interpolateCorrespondingListItems")
+      self.debug.info_message("interpolated_lower: "  + str(interpolated_lower))
+      self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
+
 
       interpolateSort()
       self.debug.info_message("interpolateSort")
@@ -334,6 +361,7 @@ class OsmodInterpolator(object):
   def derivePersistentLists(self, pulse_start_index, fft_filtered, frequency):
     self.debug.info_message("derivePersistentLists")
     try:
+      half = int(self.osmod.pulses_per_block/2)
       max_metric = 0
       best_list_factor = 0
       # 0.936 is best or 0.93
@@ -341,6 +369,9 @@ class OsmodInterpolator(object):
 
       #for list_factor in np.arange(0.936,0.92,-0.004):
       #for list_factor in np.arange(0.89,0.5,-0.1):
+      #fft_filtered_modified = [2]
+      #fft_filtered_modified[0] = (fft_filtered[0][0:int(len(fft_filtered[0] / 2))]).copy()
+      #fft_filtered_modified[1] = (fft_filtered[1][0:int(len(fft_filtered[1] / 2))]).copy()
 
       for list_factor in np.arange(self.osmod.persistent_search[0], self.osmod.persistent_search[1], self.osmod.persistent_search[2]):
         self.debug.info_message("list_factor: " + str(list_factor))
@@ -353,18 +384,44 @@ class OsmodInterpolator(object):
         ret_values = self.osmod.detector.detectStandingWavePulseNew(fft_filtered, frequency, pulse_start_index, 1, ocn.LOCATE_PULSE_TRAIN)
         persistent_higher = ret_values[1]
 
+        modified_lower  = persistent_lower.copy()
+        modified_higher = persistent_higher.copy()
+
+        #self.debug.info_message("persistent_lower a: " + str(persistent_lower))
+        #self.debug.info_message("persistent_higher a: " + str(persistent_higher))
+
         in_both_lists = []
         for i in persistent_lower:
           if i in persistent_higher and i not in in_both_lists:
             in_both_lists.append(i)
+            modified_lower.remove(i)
+            modified_higher.remove(i)
         for i in persistent_higher:
           if i in persistent_lower and i not in in_both_lists:
             in_both_lists.append(i)
+            if i in modified_lower:
+              modified_lower.remove(i)
+            if i in modified_higher:
+              modified_higher.remove(i)
         self.debug.info_message("in_both_lists: " + str(in_both_lists))
 
         metric_lower = (len(persistent_lower) - len(in_both_lists))
         metric_upper = (len(persistent_higher) - len(in_both_lists))
         metric = metric_lower + metric_upper
+
+        self.debug.info_message("persistent_lower: " + str(persistent_lower))
+        self.debug.info_message("persistent_higher: " + str(persistent_higher))
+        self.debug.info_message("metric_lower: " + str(metric_lower))
+        self.debug.info_message("metric_upper: " + str(metric_upper))
+
+        # if only one item in each list, better if they are in dissimilar position in adjacent lists so more can be interpolated
+        if len(modified_lower) == 1 and len(modified_higher) == 1:
+          #if abs(modified_lower[0] - modified_higher[0]) - half != 0:
+          diff = abs(abs(modified_lower[0] - modified_higher[0]) - half)
+          if diff == 1: # ideal to interpolate entire list set
+            metric = metric + 1 #half
+          elif diff > 1:
+            metric = metric + 0.5
 
         if self.osmod.persistent_search[3] == "no":
           if metric_lower >= 5 and metric_upper >= 5:
@@ -373,10 +430,13 @@ class OsmodInterpolator(object):
           if metric > max_metric:
             best_list_factor = list_factor
             max_metric = metric
+        self.debug.info_message("metric: " + str(metric))
+        self.debug.info_message("++++++++++++++++++")
 
 
       if self.osmod.persistent_search[3] == "yes":
         self.debug.info_message("best_list_factor: " + str(best_list_factor))
+        self.debug.info_message("max_metric: " + str(max_metric))
         self.test_list_factor = best_list_factor
         ret_values = self.osmod.detector.detectStandingWavePulseNew(fft_filtered, frequency, pulse_start_index, 0, ocn.LOCATE_PULSE_TRAIN)
         persistent_lower  = ret_values[1]
@@ -517,6 +577,12 @@ class OsmodInterpolator(object):
       self.debug.info_message("limit_value: " + str(limit_value))
       saved_list_items = list_items
       have_suspect_items = True
+
+      list_items_length = len(list_items)
+      self.debug.info_message("list_items_length: " + str(list_items_length))
+      if list_items_length == 0:
+        return []
+
       while have_suspect_items:
         have_suspect_items = False
         median_input_list = int(np.median(np.array(list_items)))

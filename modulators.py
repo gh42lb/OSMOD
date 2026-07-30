@@ -165,6 +165,16 @@ class ModulatorPSK(ModemCoreUtils):
 
     return new_symbol_wave / 256
 
+  def fivehundredtwelfths_symbol_wave_function(self, symbol_wave):
+    try:
+      new_symbol_wave = np.zeros_like(symbol_wave[0])
+      for pulse_count in range(0, 512):
+        new_symbol_wave = new_symbol_wave + (symbol_wave[int(pulse_count // 256)] * self.osmod.filtRRC_fivehundredtwelfth_wave[pulse_count])
+
+    except:
+      self.debug.error_message("Exception in fivehundredtwelfths_symbol_wave_function: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return new_symbol_wave / 512
 
 
   def modulate_2fsk_npsk_optimized(self, frequency, bit_sequence, n_bits, n_sections, sample_rate, symbol_block_size):

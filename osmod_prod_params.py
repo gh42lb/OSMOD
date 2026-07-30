@@ -96,6 +96,7 @@ class OsmodProdParams(object):
                     'info'                  : '0.15625 characters per second, 0.9375 baud (bits per second). -31.7dB SNR approx',
                     'symbol_block_size'     : 51200,
                     'pulses_per_block'      : 512,   #1024,
+                    'symbol_wave_function'  : self.osmod.mod_2fsk8psk.fivehundredtwelfths_symbol_wave_function,
                     #'fft_filter'            : (-0.5, 0.5, -0.5, 0.5),
                     #'fft_interpolate'       : (-1, 1, -1, 1),
                     #'fft_filter'            : (-1, 1, -1, 1),
@@ -105,7 +106,8 @@ class OsmodProdParams(object):
                     'fft_filter'            : (-0.8, 0.8, -0.8, 0.8),
                     'fft_interpolate'       : (-0.8, 0.8, -0.8, 0.8),
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'D-E', 0.013),
-                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'E-E', 0.267),
+                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'E-E', 0.267),
+                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-D', 0.619),
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-B', 0.34),
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'B-E', 0.567),
                     #'I3_combine'            : ocn.INTRA_COMBINE_TYPE3,
@@ -134,6 +136,10 @@ class OsmodProdParams(object):
                     'fft_interpolate'      : (-1.4, 1.4, -1.4, 1.4),
                     #'fft_filter'           : (-1.3, 1.3, -1.3, 1.3),
                     #'fft_interpolate'      : (-1.3, 1.3, -1.3, 1.3),
+
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.41),
+                    'parameters'            : (1500, 0.216, 0.925, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+
                     'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -18.125, 19.014, 0], # available, low freq, hi freq
 
         }, 
@@ -196,6 +202,20 @@ class OsmodProdParams(object):
                     'symbol_wave_function'  : self.osmod.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
                     'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.5, 18.556, 257.8458], # available, low freq relative center, hi freq relative center
 
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.312),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.372),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.544),
+
+                    #'downconvert_shift'    : 0.52,
+                    #'parameters'            : (1500, 0.567, 0.899, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'            : (1500, 0.716, 0.979, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+
+                    #'parameters'            : (1500, 0.046, 382, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'            : (1500, 0.941, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'            : (1500, 0.333, 0.52, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'parameters'            : (1500, 0.27, 1.0, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),   #3 of 3 almost perfect!!!
+
+
                     #'extrapolate'           : 'yes',
         }, 
 
@@ -247,6 +267,14 @@ class OsmodProdParams(object):
 
                     'downconvert_shift'     : 0.32,     # 1.1 of 3,  0.4 of 3,   0.5 of 3,  0.5 of 3
 
+                    #'parameters'            : (1500, 0.125, 1.0, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),  #2 of 3
+                    #'parameters'            : (1500, 0.223, 0.991, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),  #2.6 of 3
+                    #'parameters'            : (1500, 0.822, 0.997, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), #3 of 3 perfect!
+
+                    #'parameters'            : (1500, 0.284, 0.865, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),  #3 of 3 perfect!!!
+                    #'parameters'            : (1500, 0.077, 0.731, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'parameters'            : (1500, 0.512, 0.466, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+
                     #'downconvert_shift'     : 0.017,    #0.75 of 3.   0.5 of 3,    0.75 of 3,   0 of 3
                     #'downconvert_shift'     : 0.422,    #0.3 of 3, 0.5 of 3
 
@@ -270,7 +298,9 @@ class OsmodProdParams(object):
                     #'parameters'            : (1500, 0.545, 0.925, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),     #0 of 3
 
 
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.823),   # 0.2 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.823),   # 0.2 of 3
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.602),   # 0.2 of 3
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.748), 
 
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.033),   # 0.1
 
@@ -326,13 +356,23 @@ class OsmodProdParams(object):
                     'msg_type'             : ocn.MSGTYPE_FIXED_LENGTH,
                     #'I3_parameters'        : (0.99, 0.99, 2e-3, 'E-E', 0.232),
                     #'I3_parameters'        : (0.99, 0.99, 2e-3, 'D-D', 0.003),
-                    'I3_parameters'        : (0.99, 0.99, 2e-3, 'E-E', 0.115),
+
+                    #'I3_parameters'        : (0.99, 0.99, 2e-3, 'E-E', 0.115),
+                    #'downconvert_shift'    : 0.535,
+
+                    'pulse_train_sigma'     : 21.57,
+                    'pulse_start_sigma'     : 21.2,
+                    'pulse_start_envelope_sigma' : 16.48,
 
                     'extrapolate_seqlen'   : 8,
                     #'extrapolate'           : 'no',
-                    'downconvert_shift'    : 0.535,
+
                     #'parameters'           : (1500, 0.099, 0.152, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
-                    'parameters'           : (1500, 0.982, 0.168, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'           : (1500, 0.982, 0.168, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'           : (1500, 0.578, 0.933, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'           : (1500, 0.748, 0.831, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01), #best for 64 length message
+                    'parameters'           : (1500, 0.73, 0.606, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01), #best for 64 & 128 length message
+                    #'parameters'           : (1500, 0.423, 0.953, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01), #best for 128 length message
 
         }, 
 
@@ -353,11 +393,25 @@ class OsmodProdParams(object):
                     'fft_interpolate'       : (-3, 2, -2, 3),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.029),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.854),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.96),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.96),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.954),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.775),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.635),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.032),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.798),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.828),
+
+
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.969),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.914),
-                    'downconvert_shift'     : 0.945,
-                    'parameters'            : (1500, 0.734, 0.76, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'downconvert_shift'     : 0.945,
+                    #'downconvert_shift'     : 0.798,
+                    #'downconvert_shift'     : 0.687,
+                    'downconvert_shift'     : 0.164,
+                    #'downconvert_shift'     : 0.103,
+                    #'parameters'            : (1500, 0.734, 0.76, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'            : (1500, 0.255, 0.894, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'parameters'            : (1500, 0.141, 1.0, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
                     'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
                     'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -15, 14.224, 0], # available, low freq, hi freq
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 70, 5, 50),
@@ -369,8 +423,18 @@ class OsmodProdParams(object):
         }, 
 
 
+
+        'LB28-800-I3E-FEC' :{ 
+                    'inherit_from'          : 'LB28-800-I3-FEC',
+                    'info'                  : 'based on LB28-800-8-2-37-I3E8-FEC  10.0 characters per second, 60.0 baud (bits per second)',
+                    'extrapolate'           : 'yes',
+
+        }, 
+
+
         'LB28-800-I3-FEC' :{ 
                     'inherit_from'         : 'LB28-800-I3',
+                    'info'                  : 'based on LB28-800-8-2-37-I3E8-FEC  10.0 characters per second, 60.0 baud (bits per second)',
                     'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletFEC,
                     'FEC'                  : ocn.FEC_VITERBI,
                     'fec_params'           : (13 , 5890 , 6271, []),
@@ -400,7 +464,8 @@ class OsmodProdParams(object):
                     'inherit_from'         : 'LB28-800-I3',
                     'info'                  : 'Holographic Frequency Multiplexing  10.0 characters per second, 60.0 baud (bits per second) per hologram',
                     'FDM'                  : "yes",
-                    'downconvert_shift'    : 0.019,
+                    #'downconvert_shift'    : 0.019,
+                    'downconvert_shift'    : 0.158,
                     #'downconvert_shift'    : 0.04,
                     'FDM_parameters'       : [2, 95.768], #frequency division mutiplexing: multiplier, separation
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 200, 5, 50),
@@ -408,6 +473,18 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
                     'rx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
                     'I3_parameters'         : (0.99, 0.99, 2e-3, 'B-D', 0.178), 
+        }, 
+
+
+
+
+
+
+
+        'LB28-800-I3E' :{ 
+                    'info'                  : 'based on LB28-800-8-2-37-I3E8-FEC  10.0 characters per second, 60.0 baud (bits per second)',
+                    'inherit_from'          : 'LB28-800-I3',
+                    'extrapolate'           : 'yes',
         }, 
 
 
@@ -424,11 +501,28 @@ class OsmodProdParams(object):
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 80, 5, 50),
                     #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 80, 5, 50),
 
+                    #'pulse_train_sigma'    : 12.33,
+                    #'pulse_train_sigma'     : 13.36,
+                    'pulse_train_sigma'     : 11.09,
+                    #'pulse_start_sigma'     : 24.47,
+                    'pulse_start_sigma'     : 10.73,
+                    #'pulse_start_envelope_sigma' : 17.7,
+                    'pulse_start_envelope_sigma' : 5.99,
+
+                    #'downconvert_shift'    : 0.123,  #151
+                    #'downconvert_shift'    : 0.876,
+                    'downconvert_shift'    : 0.086,
+
+                    # TEST CODE ONLY
+                    #'I3_offsets_type'      : ocn.OFFSETS_MSGLEN_SPECIFIC,
+                    #'pattern_by_msglen'    : {'16':('A-E', 0.298), '32':('B-B', 0.461), '64':('B-B', 0.461), '128':('A-A', 0.153), '256':('B-B', 0.366), '512':('B-B', 0.461)},
+
                     'persistent_search'     : (1, 0.95, -0.002, "yes"), #hi range, lo range, inc, scan entire range
-                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-A', 0.003), 
-                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-C', 0.85), 
-                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'B-B', 0.461), 
-                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'D-D', 0.361), 
+                    #'persistent_search'     : (1, 0.90, -0.002, "yes"), #hi range, lo range, inc, scan entire range
+                    #'persistent_search'     : (1, 0.80, -0.002, "yes"), #hi range, lo range, inc, scan entire range
+
+                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-D', 0.548), 
+                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'C-E', 0.209), 
 
                     'parameters'            : (1500, 0.115, 0.028, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
 
@@ -446,20 +540,27 @@ class OsmodProdParams(object):
                     #'fft_filter'            : (-18, 18, -18, 18),
                     #'fft_filter'            : (-20, 20, -20, 20),
                     #'fft_filter'            : (-25, 25, -25, 25),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 75, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 75, 5, 50),
+
                     'persistent_search'     : (1, 0.95, -0.001, "yes"), #hi range, lo range, inc, scan entire range
                     #'persistent_search'     : (1, 0.93, -0.001, "yes"), #hi range, lo range, inc, scan entire range
                     'symbol_block_size'     : 400,
-                    'downconvert_shift'     : 0.514,
+                    #'downconvert_shift'     : 0.514,
+                    'downconvert_shift'     : 0.595,
                     #'I3_offsets_type'      : ocn.OFFSETS_MANUAL,
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-C', 0.701), 
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-D', 0.418), 
                     #'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-A', 0.008), 
-                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'C-C', 0.387), 
+                    #'I3_parameters'         : (0.99, 0.99, 2e-3, 'C-C', 0.387), 
+                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'E-E', 0.804), 
                     'extrapolate'           : 'no', #no rotation tables yet!!!
                     #'I3_pulse_shape_type'  : ocn.PULSE_SHAPE_MANUAL,
-                    'parameters'            : (1500, 0.661, 0.063, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    #'parameters'            : (1500, 0.661, 0.063, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'parameters'            : (1500, 0.481, 0.077, 10000, 4, 98, 0.7072, 0.1, 0.1414, 0.01),
                     #'I3_combine'           : ocn.INTRA_COMBINE_TYPE6,
 
         }, 

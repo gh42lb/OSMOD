@@ -1249,7 +1249,15 @@ class OsmodDetector(object):
         return persistent
 
 
-      sigma_template = 7
+      sigma_template = self.osmod.pulse_start_envelope_sigma  # 7  # 19
+      #sigma_template = 19
+
+      # for sigma envelope
+      override_pulse_start_envelope_sigma = self.osmod.form_gui.window['cb_overridepulsestartenvelopesigma'].get()
+      if override_pulse_start_envelope_sigma:
+        sigma_template = float(self.osmod.form_gui.window['in_pulsestartenvelopesigma'].get())
+
+
       #wave              = createWave()
       rrc_pulse         = createTemplate()
       template_wave     = rrc_pulse
@@ -1307,11 +1315,11 @@ class OsmodDetector(object):
         #template_envelope = gaussian_filter(rrc_pulse, sigma=sigma_template)
 
         #pulse_train_sigma_template = 1.6
-        pulse_train_sigma_template = 5.0
+        pulse_train_sigma_template = self.osmod.pulse_train_sigma  #5.0
 
-        #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
-        #if override_pulse_train_sigma:
-        #  pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
+        override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
+        if override_pulse_train_sigma:
+          pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
 
         test_signal = gaussian_filter(np.abs(audio_array[pulse_start_index:]), sigma=pulse_train_sigma_template)
 
@@ -1995,44 +2003,46 @@ class OsmodDetector(object):
         total_block_drift_higher[block_count] =  total_block_drift_higher[block_count] % (np.pi * 2)
         total_block_drift_higher2[block_count] = calibration_drift_per_pulse_higher[offset + int(len(interpolated_lower)/2)] % (np.pi * 2 * 8)
 
+        if pulse_train_length_triplet > 0:
+          if compressioncalc_override_checked:
+            if compressioncalc_absolute:
+              """ calculate compression / expansion """
+              phase_compression_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
+              phase_compression_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
+              #phase_compression_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / compressioncalc_factor)
+              #phase_compression_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / compressioncalc_factor)
 
-        if compressioncalc_override_checked:
-          if compressioncalc_absolute:
-            """ calculate compression / expansion """
-            phase_compression_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
-            phase_compression_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
-            #phase_compression_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / compressioncalc_factor)
-            #phase_compression_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / compressioncalc_factor)
+              """ calculate drift of mid point relative to first block """
+              absolute_adjust_lower[block_count]  = (block_end_residual_lower[block_count]  + block_start_residual_lower[block_count])  / 2
+              absolute_adjust_higher[block_count] = (block_end_residual_higher[block_count] + block_start_residual_higher[block_count]) / 2
+              diff_lower  = absolute_adjust_lower[block_count]  - absolute_adjust_lower[0]
+              diff_higher = absolute_adjust_higher[block_count] - absolute_adjust_higher[0]
 
-            """ calculate drift of mid point relative to first block """
-            absolute_adjust_lower[block_count]  = (block_end_residual_lower[block_count]  + block_start_residual_lower[block_count])  / 2
-            absolute_adjust_higher[block_count] = (block_end_residual_higher[block_count] + block_start_residual_higher[block_count]) / 2
-            diff_lower  = absolute_adjust_lower[block_count]  - absolute_adjust_lower[0]
-            diff_higher = absolute_adjust_higher[block_count] - absolute_adjust_higher[0]
-
-            """ add relative drift and compression """
-            #adjustment_phase_lower  = phase_compression_lower  + (diff_lower / compressioncalc_factor)
-            #adjustment_phase_higher = phase_compression_higher + (diff_higher / compressioncalc_factor)
-            adjustment_phase_lower  = phase_compression_lower  + (diff_lower / pulse_train_length_triplet)
-            adjustment_phase_higher = phase_compression_higher + (diff_higher / pulse_train_length_triplet)
+              """ add relative drift and compression """
+              #adjustment_phase_lower  = phase_compression_lower  + (diff_lower / compressioncalc_factor)
+              #adjustment_phase_higher = phase_compression_higher + (diff_higher / compressioncalc_factor)
+              adjustment_phase_lower  = phase_compression_lower  + (diff_lower / pulse_train_length_triplet)
+              adjustment_phase_higher = phase_compression_higher + (diff_higher / pulse_train_length_triplet)
+            else:
+              adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / compressioncalc_factor)
+              adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / compressioncalc_factor)
           else:
-            adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / compressioncalc_factor)
-            adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / compressioncalc_factor)
+          #if phase_adjust_type == ocn.PHASE_ADJUST_RELATIVE:
+            #YES!!!!THIS WORKS FOR CURVED DOPPLER SHIFT....aaibaaaiyyyy445yy41kkkkkkku     length 12
+            #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
+            #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
+
+            #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /2.75)
+            #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /2.75)
+            adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / 3.7)
+            adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / 3.7)
+
+          #elif phase_adjust_type == ocn.PHASE_ADJUST_ABSOLUTE:
+          #  adjustment_phase_lower  = block_start_residual_lower[block_count] + (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
+          #  adjustment_phase_higher = block_start_residual_higher[block_count] + (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
         else:
-        #if phase_adjust_type == ocn.PHASE_ADJUST_RELATIVE:
-          #YES!!!!THIS WORKS FOR CURVED DOPPLER SHIFT....aaibaaaiyyyy445yy41kkkkkkku     length 12
-          #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
-          #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
-
-          #adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /2.75)
-          #adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /2.75)
-          adjustment_phase_lower  = (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet / 3.7)
-          adjustment_phase_higher = (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet / 3.7)
-
-        #elif phase_adjust_type == ocn.PHASE_ADJUST_ABSOLUTE:
-        #  adjustment_phase_lower  = block_start_residual_lower[block_count] + (block_end_residual_lower[block_count]  - block_start_residual_lower[block_count])  / (pulse_train_length_triplet /3)
-        #  adjustment_phase_higher = block_start_residual_higher[block_count] + (block_end_residual_higher[block_count] - block_start_residual_higher[block_count]) / (pulse_train_length_triplet /3)
-
+          adjustment_phase_lower = 0.0
+          adjustment_phase_higher = 0.0
 
         self.debug.info_message("adjustment_phase_lower: " + str(adjustment_phase_lower))
         self.debug.info_message("adjustment_phase_higher: " + str(adjustment_phase_higher))

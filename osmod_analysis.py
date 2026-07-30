@@ -163,7 +163,8 @@ class OsmodAnalysis(object):
         elif test_type == 'I3 Standing Wave':
           form_gui.window['cb_override_standingwaveoffsets'].update(True)
           noise = values['btn_slider_awgn']
-          if count % 3 == 0:
+          #if count % 3 == 0:
+          if count % 5 == 0:
             rand_num = random.randint(0,1000)
             form_gui.window['in_standingwavelocation'].update(rand_num/1000)
 
@@ -227,6 +228,33 @@ class OsmodAnalysis(object):
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
 
+        elif test_type == 'Pulse Start Sigma':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_overridepulsestartsigma'].update(True)
+          if count % 3 == 0:
+            pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
+            form_gui.window['in_pulsestartsigma'].update(pulse_start_sigma)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+
+        elif test_type == 'Pulse Start Envelope Sigma':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_overridepulsestartenvelopesigma'].update(True)
+          if count % 3 == 0:
+            pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
+            form_gui.window['in_pulsestartenvelopesigma'].update(pulse_start_sigma)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+
+        elif test_type == 'Padding Character':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_override_padding_character'].update(True)
+          if count % 3 == 0:
+            padding_character_num = random.randint(0,len(self.osmod.modulation_object.encoding_b64)) 
+            form_gui.window['in_padding_character'].update(self.osmod.modulation_object.encoding_b64[padding_character_num])
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+
         #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
         ##if override_pulse_train_sigma:
         #  pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
@@ -249,8 +277,9 @@ class OsmodAnalysis(object):
         elif test_type == 'Downconvert Shift':
           form_gui.window['cb_overridedownconvertshift'].update(True)
           noise = values['btn_slider_awgn']
-          rand_num = random.randint(0,1000)
-          form_gui.window['in_downconvertshift'].update(rand_num/1000)
+          if count % 3 == 0:
+            rand_num = random.randint(0,1000)
+            form_gui.window['in_downconvertshift'].update(rand_num/1000)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
         elif test_type == 'Best Pulse Shapes':
@@ -704,6 +733,9 @@ DATA_CALC_2                = 23
           elif legend_type == 'Costas Damping & Loop BW' and str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'Padding Character' and str(data[point][ocn.DATA_PADDING_CHARACTER]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER])] = color_count
+            color_count = color_count + 1
           elif legend_type == 'Pulse Train Length' and data[point][ocn.DATA_PULSE_TRAIN_LENGTH] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]] = color_count
             color_count = color_count + 1
@@ -730,6 +762,12 @@ DATA_CALC_2                = 23
             color_count = color_count + 1
           elif legend_type == 'Pulse Train Sigma' and data[point][ocn.DATA_PULSE_TRAIN_SIGMA] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]] = color_count
+            color_count = color_count + 1
+          elif legend_type == 'Pulse Start Sigma' and data[point][ocn.DATA_PULSE_START_SIGMA] not in dict_preset_pattern:
+            dict_preset_pattern[data[point][ocn.DATA_PULSE_START_SIGMA]] = color_count
+            color_count = color_count + 1
+          elif legend_type == 'Pulse Start Envelope Sigma' and data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA] not in dict_preset_pattern:
+            dict_preset_pattern[data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA]] = color_count
             color_count = color_count + 1
           elif legend_type == 'Generator Polynomials' and str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])] = color_count
@@ -847,6 +885,12 @@ DATA_CALC_2                = 23
           elif legend_type == 'Pulse Train Sigma':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Pulse Start Sigma':
+            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_START_SIGMA]]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Pulse Start Envelope Sigma':
+            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA]]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'FDM Separator':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]]
             #occurrences[plot_color_index] = occurrences[plot_color_index] + 1
@@ -858,6 +902,9 @@ DATA_CALC_2                = 23
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Costas Damping & Loop BW':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_COSTAS_DAMPING]) + ' : ' + str(data[point][ocn.DATA_COSTAS_LOOP_BANDWIDTH])]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'Padding Character':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER]) ]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Pulse Train Length':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]]
@@ -918,12 +965,14 @@ DATA_CALC_2                = 23
           count = count + 1
       elif legend_type == 'SW Location':
         debug_string = '['
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_sw_location.items():
-          plot_color = colors[color_index]
-          graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
-          graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
-          debug_string = debug_string + ',(\'' + pattern_location_name.split(':')[0].strip() + '\',' + pattern_location_name.split(':')[1] + ')'
-          count = count + 1
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            debug_string = debug_string + ',(\'' + pattern_location_name.split(':')[0].strip() + '\',' + pattern_location_name.split(':')[1] + ')'
+            count = count + 1
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
       elif legend_type == 'Preset Pattern':
@@ -954,6 +1003,20 @@ DATA_CALC_2                = 23
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
             #debug_string = debug_string + ',(' + pattern_location_name + ')'
             count = count + 1
+      elif legend_type == 'Pulse Start Sigma':
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if True:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
+      elif legend_type == 'Pulse Start Envelope Sigma':
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if True:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
       elif legend_type == 'FDM Separator':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[color_index]
@@ -968,12 +1031,14 @@ DATA_CALC_2                = 23
           count = count + 1
       elif legend_type == 'RRC Alpha & T':
         debug_string = '['
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
-          plot_color = colors[color_index]
-          graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
-          graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
-          debug_string = debug_string + ',(' + pattern_location_name.split(':')[0] + ',' + pattern_location_name.split(':')[1] + ')'
-          count = count + 1
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            debug_string = debug_string + ',(' + pattern_location_name.split(':')[0] + ',' + pattern_location_name.split(':')[1] + ')'
+            count = count + 1
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
       elif legend_type == 'Costas K1 & K2':
@@ -988,6 +1053,13 @@ DATA_CALC_2                = 23
           graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
           graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
           count = count + 1
+      elif legend_type == 'Padding Character':
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if True: #occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
       elif legend_type == 'AWGN Range':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[count]

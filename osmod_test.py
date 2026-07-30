@@ -73,6 +73,50 @@ class OsmodTest(object):
       elif routine_type == 'Calculate Rotation Tables':
         self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
         #self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "partial")
+
+      elif routine_type == 'Translate Outbound':
+        test_message = "Hi there this is a test"
+        test_message = "Test Message / [inside square bracket] {inside squiggle bracket} \r\n"
+        test_message = "ABCDE/FGHIJKLM/{another test}FFFFDDDLLLLLLLLjjjjmnnnn"
+        ascii_charset_1 = ' !"#$%&\'()*+,-./1234567890:;<=>?'
+        ascii_charset_2 = '@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_'
+        ascii_charset_3 = '`abcdefghijklmnopqrstuvwxyz{|}~'
+        test_message = ascii_charset_1 + ascii_charset_2 + ascii_charset_3 + test_message
+
+        #test_message = '@ALLCALL QST QST THE  NET STARTS AT  ZULU ON 7.070 MHZ. PLS FEEL FREE TO JOIN US. PLS USE @HINET GRP'
+        #test_message = '7#.4:m*)fkw9zp{#cj=?5ap(hoy)=,zv&k=o0#k8i$=gxr*\'$z^y*2$nh#4m].sdacj.5gtnn{o=d3q on\'{$h_k_@!.* |81rj:pa&v58amrfk $lmn4t22?tw1u[6v'
+        #test_message = ' $lmn4t22?tw1u[6v'
+
+        test_message = 'Hi There I Am A Message in UPPERCASE AND lowercase'
+
+        translated_message = self.osmod.modulation_object.translateOutbound(test_message)
+        self.debug.info_message("translated_message: " + str(translated_message))
+
+        """
+        translated_message = self.osmod.modulation_object.translateOutbound(ascii_charset_1)
+        self.debug.info_message("translated_message: " + str(translated_message))
+
+        translated_message = self.osmod.modulation_object.translateOutbound(ascii_charset_2)
+        self.debug.info_message("translated_message: " + str(translated_message))
+
+        translated_message = self.osmod.modulation_object.translateOutbound(ascii_charset_3)
+        self.debug.info_message("translated_message: " + str(translated_message))
+        """
+
+        original_message = self.osmod.modulation_object.translateInbound(translated_message)
+        self.debug.info_message("original_message: " + str(original_message))
+
+        if original_message == test_message:
+          self.debug.info_message("SUCCESS! Strings Match!")
+        else:
+          self.debug.info_message("FAIL! Strings do not match!")
+
+
+      elif routine_type == 'Translate Inbound':
+        test_message = "Hi there this is a test"
+        translated_message = self.osmod.modulation_object.translateInbound(test_message)
+        self.debug.info_message("translated_message: " + str(translated_message))
+
       elif routine_type == 'Calculate Constellation Shift Tables':
         self.createConstellationShiftTables(values, mode, chunk_num, carrier_separation_override, amplitude)
         """constellation_shift_values = [0.023, 0.124, 0.246, 0.312, 0.627, 0.676, 0.732, 0.886, 1.586, 2.071, 3.19, 3.641, 3.652, 3.673, 3.71, 4.034, 4.11,
@@ -509,7 +553,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       frequency = self.osmod.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.osmod.getTxSampleRate())
 
       """ convert text to bits"""
-      text = 'aaaaaaaa' + " peter piper picked a peck of pickled peppercorn "
+      text = '        ' + " peter piper picked a peck of pickled peppercorn "
       bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
       #data2 = self.osmod.modulation_object.modulate(frequency, bit_groups)
       data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
@@ -710,7 +754,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.debug.info_message("carrier frequencies: " + str(frequency))
 
       """ convert text to bits"""
-      text_examples = [0] * 16
+      text_examples = [0] * 17
       text_examples[0]  = " cq wh6ggo "
       text_examples[1]  = " cqcqcqcqcqcq wh6ggo "
       text_examples[2]  = " cqcqcqcqcqcqcqcqcqcqcq wh6ggo "
@@ -727,22 +771,59 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       text_examples[13] = "twinkle twinkle little bat how i wonder what youre at up above the world you fly like a tea tray in the sky twinkle twinkle little bat how i wonder what youre at"
       text_examples[14] = "i can read on a boat i can read with a goat i can read on a train i can read in the rain i can read with a fox i can read in a box i can read with a mouse i can read in a house i can read here or there i can read anywhere"
       text_examples[15] = "the queen of hearts she made some tarts all on a summers day the knave of hearts he stole the tarts and took them clean away the king of hearts called for the tarts and beat the knave full sore the knave of hearts brought back the tarts and vowed hed steal no more"
+      text_examples[16] = "The Queen Of Hearts SHE MADE SOME TARTS all on a summer's day. The Knave Of Hearts HE STOLE THE TARTS and took them clean away. The King Of Hearts CALLED FOR THE TARTS and beat the knave full sore. The Knave Of Hearts BROUGTH BACK THE TARTS and vowed he'd steal no more."
+
+      #message_text = text_examples[int(text_num)] + ' '
+
+      use_preset_message = self.osmod.form_gui.window['cb_use_preset_message'].get()
+      if use_preset_message:
+        message_text = text_examples[int(text_num)] + ' '
+      else:
+        custom_message = self.osmod.form_gui.window['ml_txrx_sendtext'].get()
+        custom_message = custom_message.lower()
+        #message_text = "                                                e"
+        #message_text = custom_message +  message_text[len(custom_message):]    #   [0:len(custom_message)] = custom_message
+        message_text = custom_message
+
+
+      max_message_length = int(self.osmod.form_gui.window['combo_max_message_length'].get())
+      truncate_to_max_msglength = self.osmod.form_gui.window['cb_truncate_to_max_msglength'].get()
+
+      random_message_enabled = self.osmod.form_gui.window['cb_override_random_message'].get()
+      if random_message_enabled:
+        message_text = ''.join(random.choice(self.osmod.modulation_object.encoding_b64) for _ in range(max_message_length))
+
+
+      """ add the callsign to the start of the message """
+      message_text = self.osmod.modulation_object.addCallsignSOM_WithColon(message_text)
+
+      """ translate ASCII to base 64 (excluding rotation sequence and padding character)"""
+      self.debug.info_message("translating text: " + str(message_text))
+      message_text = self.osmod.modulation_object.translateOutbound(message_text)
+
+
+      """ insert CRC codes to protect message fragments """
+      is_crc_enabled = self.osmod.form_gui.window['cb_enable_crc'].get()
+      if is_crc_enabled:
+        message_text = self.osmod.modulation_object.protectMessage(message_text, truncate_to_max_msglength, 8, max_message_length)
+
 
       """ add start sequence character and trailing space """
       if self.osmod.start_seq == '2_of_3':
-        text = 'aaa' + text_examples[int(text_num)] + ' '
+        text = '   ' + message_text
       elif self.osmod.start_seq == '2_of_4' or self.osmod.start_seq == '3_of_4':
-        text = 'aaaa' + text_examples[int(text_num)] + ' '
+        text = '    ' + message_text
       elif self.osmod.start_seq == '2_of_5' or self.osmod.start_seq == '3_of_5' or self.osmod.start_seq == '4_of_5':
-        text = 'aaaaa' + text_examples[int(text_num)] + ' '
+        text = '     ' + message_text
       elif self.osmod.start_seq == '2_of_6':
-        text = 'aaaaaa' + text_examples[int(text_num)] + ' '
+        text = '      ' + message_text
       elif self.osmod.start_seq == '2_of_7':
-        text = 'aaaaaaa' + text_examples[int(text_num)] + ' '
+        text = '       ' + message_text
       elif self.osmod.start_seq == '2_of_8':
-        text = 'aaaaaaaa' + text_examples[int(text_num)] + ' '
+        #text = 'aaaaaaaa' + message_text
+        text = '        ' + message_text
       else:
-        text = 'aaa' + text_examples[int(text_num)] + ' '
+        text = '   ' + message_text
 
 
       #text = text_examples[int(text_num)] + ' '
@@ -760,6 +841,22 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #text = 'aaaaaaaaaaaabbbbbbbbbbbbcccccccccccc'
       #text = 'aaaaaaaaaayyyyyyyyyykkkkkkkk'
  
+      #max_message_length = 30
+
+      padding_character = '|' #' '
+      override_padding_character = self.osmod.form_gui.window['cb_override_padding_character'].get()
+      if override_padding_character:
+        padding_character = self.osmod.form_gui.window['in_padding_character'].get()
+
+
+      if truncate_to_max_msglength:
+        text_len = len(text)
+        if text_len > max_message_length:
+          text = text[:max_message_length]
+        elif text_len <  max_message_length:
+          #text = text + (' ' * (max_message_length - text_len))
+          text = text + (padding_character * (max_message_length - text_len))
+
       self.debug.info_message("encoding text: " + str(text))
 
       bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
@@ -887,6 +984,10 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1382.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
       #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1417.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
 
+
+      self.osmod.modulation_object.findDecodeCandidates(audio_array)
+
+
       """ END OF TEST CODE """
 
       """ add and correct for doppler shift """
@@ -898,6 +999,10 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       """ DEBUG CODE ONLY"""
       #audio_array = self.osmod.modulation_object.alignTimePointT0(audio_array, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+      #self.osmod.modulation_object.alignTimePointT0(audio_array, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+      automatic_mode_detection = self.osmod.form_gui.window['cb_enable_automatic_mode_detection'].get()
+      if automatic_mode_detection:
+        audio_array = self.osmod.modulation_object.findDecodeCandidates(audio_array)
 
       """ TEST CODE ONLY debug code for FFT analysis"""
       #self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.FFT_ANALYSIS)
@@ -1024,6 +1129,11 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       self.debug.info_message("complete")
 
+
+
+
+
+
       #self.debug.info_message("elapsed time: " + str(self.osmod.getDuration('test12_demod_timer')))
       self.debug.info_message("text len: " + str(len(text)))
 
@@ -1107,6 +1217,10 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #self.osmod.form_gui.window['text_snr_value'].update("SNR dB: " + str(SNR_equiv_db))
       self.osmod.form_gui.window['text_snr_value'].update("SNR dB: "f"{SNR_equiv_db:.3f}")
 
+      SNR_db = self.osmod.mod_2fsk8psk.calculateSNR(audio_array_with_unfiltered_noise, frequency)
+      self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB: "f"{SNR_db:.3f}")
+
+
       self.osmod.getSummary()
 
       if self.window['cb_enable_awgn'].get():
@@ -1175,6 +1289,17 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       if override_pulse_train_sigma:
         pulse_train_sigma = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
 
+      pulse_start_sigma = 5.0
+      override_pulse_start_sigma = self.osmod.form_gui.window['cb_overridepulsestartsigma'].get()
+      if override_pulse_start_sigma:
+        pulse_start_sigma = float(self.osmod.form_gui.window['in_pulsestartsigma'].get())
+
+      pulse_start_envelope_sigma = 7.0
+      override_pulse_start_envelope_sigma = self.osmod.form_gui.window['cb_overridepulsestartenvelopesigma'].get()
+      if override_pulse_start_envelope_sigma:
+        pulse_start_envelope_sigma = float(self.osmod.form_gui.window['in_pulsestartenvelopesigma'].get())
+
+
       #downconvert_shift = self.osmod.downconvert_shift
       downconvert_shift = self.osmod.getDownconvertShift()
 
@@ -1213,7 +1338,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       pulse_train_length = self.osmod.detector.pulse_train_length
 
-      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep]
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'"]
       #csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location]
       self.osmod.analysis.writeDataToFile(csv_data)
 
