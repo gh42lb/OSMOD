@@ -110,10 +110,10 @@ int buffer_tx_data(float* signal, int signal_len) {
 int get_rx_data(float* signal, int buffer_start, int num_sd_blocks) {
     printf("get_rx_data\n");
 
-    buffer_start--;
-    if (buffer_start < 0){
-        buffer_start = MAX_RX_BUFFER - 1;
-    }
+    //buffer_start--;
+    //if (buffer_start < 0){
+    //    buffer_start = MAX_RX_BUFFER - 1;
+    //}
 
     pthread_mutex_lock(&lock_in_buffer);
     for(int block_count = 0; block_count < num_sd_blocks; block_count++){

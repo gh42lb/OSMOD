@@ -255,6 +255,28 @@ class OsmodAnalysis(object):
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
 
 
+        elif test_type == 'FFT Filter':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_override_fft_filter'].update(True)
+          if count % 3 == 0:
+            random_1 = (float)(random.randint(1,600) / 100 )
+            random_2 = (float)(random.randint(1,600) / 100 ) 
+
+            random_string = '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) 
+            form_gui.window['in_fft_filter'].update(random_string)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+        elif test_type == 'FFT Interpolate':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_override_fft_interpolate'].update(True)
+          if count % 3 == 0:
+            random_1 = (float)(random.randint(1,600) / 100 )
+            random_2 = (float)(random.randint(1,600) / 100 ) 
+
+            random_string = '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) 
+            form_gui.window['in_fft_interpolate'].update(random_string)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
         #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
         ##if override_pulse_train_sigma:
         #  pulse_train_sigma_template = float(self.osmod.form_gui.window['in_pulsetrainsigma'].get())
@@ -264,6 +286,8 @@ class OsmodAnalysis(object):
 
         elif test_type == 'Test Standing Wave':
           form_gui.window['cb_override_standingwaveoffsets'].update(True)
+          #form_gui.window['cb_randomizepattern'].update(True)
+
           noise = values['btn_slider_awgn']
           rand_num_1 = random.randint(0,len(self.osmod.test_sw_patterns)-1)
           sw_series  = self.osmod.test_sw_patterns[rand_num_1]
@@ -736,6 +760,12 @@ DATA_CALC_2                = 23
           elif legend_type == 'Padding Character' and str(data[point][ocn.DATA_PADDING_CHARACTER]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'FFT Filter' and str(data[point][ocn.DATA_FFT_FILTER]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_FFT_FILTER])] = color_count
+            color_count = color_count + 1
+          elif legend_type == 'FFT Interpolate' and str(data[point][ocn.DATA_FFT_INTERPOLATE]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_FFT_INTERPOLATE])] = color_count
+            color_count = color_count + 1
           elif legend_type == 'Pulse Train Length' and data[point][ocn.DATA_PULSE_TRAIN_LENGTH] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]] = color_count
             color_count = color_count + 1
@@ -906,6 +936,12 @@ DATA_CALC_2                = 23
           elif legend_type == 'Padding Character':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER]) ]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'FFT Filter':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_FFT_FILTER]) ]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'FFT Interpolate':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_FFT_INTERPOLATE]) ]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Pulse Train Length':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_LENGTH]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
@@ -1056,6 +1092,22 @@ DATA_CALC_2                = 23
       elif legend_type == 'Padding Character':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           if True: #occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
+      elif legend_type == 'FFT Filter':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
+      elif legend_type == 'FFT Interpolate':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if occurrences[color_index] > filter_legend:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)

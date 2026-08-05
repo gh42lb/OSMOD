@@ -1193,23 +1193,6 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in fft_parabolic_interpolation: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-
-  """ calculate the noise of the entire passband"""
-  def calculateNoisePowerSNR(self, signal):
-    fft_output = np.fft.fft(signal)
-    frequencies = np.fft.fftfreq(len(fft_output), 1/self.osmod.sample_rate)
-    psd = np.abs(fft_output)**2
-
-    f_low = 250
-    f_high = 2750
-
-    indices = np.where((frequencies >= f_low) & (frequencies <= f_high))
-    psd_selected = psd[indices]
-    noise_power = np.sum(psd_selected)
-
-    return noise_power
-
-
   def calculateSNR(self, signal, signal_frequency):
     self.debug.info_message("calculateSNR")
 
@@ -1221,6 +1204,12 @@ class ModemCoreUtils(object):
       if self.osmod.tx_filter[2] > 0:
         freq_low_signal  = self.osmod.center_frequency - (self.osmod.tx_filter[2]/2)    
         freq_high_signal = self.osmod.center_frequency + (self.osmod.tx_filter[2]/2)    
+
+        # is this a Filtered Carrier mode?
+        if self.osmod.carrier_separation > (freq_high_signal - freq_low_signal):
+          freq_low_signal  = self.osmod.center_frequency - ((self.osmod.carrier_separation)/2)    
+          freq_high_signal = self.osmod.center_frequency + ((self.osmod.carrier_separation)/2)      
+
       else:
         freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
         freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
@@ -1273,28 +1262,16 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in calculateSNR: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  """
-  def calculateSNR(self, signal, signal_frequency):
-    t = np.arange(0, 1, 1/self.osmod.sample_rate)
-    fft_output = np.fft.fft(signal)
-    psd = np.abs(fft_output)**2
-    frequencies = np.fft.fftfreq(len(fft_output), 1/self.osmod.sample_rate)
 
-    signal_index1 = np.where(np.isclose(frequencies, signal_frequency[0], atol=1/(t[-1]*2)))[0][0]
-    signal_power1 = np.sum(psd[signal_index1-2:signal_index1+3])
-    signal_index2 = np.where(np.isclose(frequencies, signal_frequency[1], atol=1/(t[-1]*2)))[0][0]
-    signal_power2 = np.sum(psd[signal_index2-2:signal_index2+3])
+  def calculate_EbN0(self, noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
+    ebn0_db, ebn0, SNR_equiv_db = self.calculate_EbN0_1(noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency)
+    ebn0_db_alt, ebn0_alt, SNR_equiv_db_alt = self.calculate_EbN0_2(noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency)
+    #ebn0_alt = self.calculate_EbN0_2(noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency)
+    self.osmod.form_gui.window['text_ebn0db_value_alt'].update("Eb/N0 dB (alt): "f"{ebn0_db_alt:.3f}")
+    self.osmod.form_gui.window['text_snr_value_alt'].update("SNR dB (alt): "f"{SNR_equiv_db_alt:.3f}")
+    return ebn0_db, ebn0, SNR_equiv_db
 
-    signal_power = (signal_power1 + signal_power2)
-    noise_power = self.calculateNoisePowerSNR(signal) - signal_power
-
-    snr = 10 * np.log10( signal_power / noise_power)
-    self.debug.info_message("SNR: " + "{:.2f}".format(snr) + "dB")
-
-    return snr
-  """
-
-  def calculate_EbN0(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
+  def calculate_EbN0_1(self, noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
     self.debug.info_message("calculateSNR_EbN0")
 
     gc.collect()
@@ -1307,26 +1284,100 @@ class ModemCoreUtils(object):
       if self.osmod.tx_filter[2] > 0:
         freq_low_signal  = center_frequency - (self.osmod.tx_filter[2]/2)    
         freq_high_signal = center_frequency + (self.osmod.tx_filter[2]/2)    
+
+        # is this a Filtered Carrier mode?
+        if self.osmod.carrier_separation > (freq_high_signal - freq_low_signal):
+          freq_low_signal  = center_frequency - ((self.osmod.carrier_separation + 2)/2)    
+          freq_high_signal = center_frequency + ((self.osmod.carrier_separation + 2)/2)      
+
       else:
         freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
         freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+
+      signal_width = freq_high_signal - freq_low_signal
+
+      freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
+      signal_power_spectrum = np.abs(fft_signal[freq_indices])**2
+      self.debug.info_message("signal_power_spectrum: " + str(signal_power_spectrum) )
+
+      fft_noise = np.fft.fft(noisy_signal)
+      frequencies = np.fft.fftfreq(len(fft_noise), 1/self.osmod.sample_rate)
+      freq_low_noise = 0
+      freq_high_noise = 3000
+      freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_high_signal) & (frequencies < freq_high_noise) ))
+      noise_power_spectrum = (np.abs(fft_noise[freq_indices])**2) / (len(noisy_signal) ** 2)
+      average_power = np.mean(noise_power_spectrum)
+
+      N0 = average_power / (self.osmod.sample_rate / len(noise_free_signal))
+      self.debug.info_message("noise_psd: " + str(noise_power_spectrum) )
+
+      # Parseval's normalization
+      average_power = np.sum(signal_power_spectrum) / (len(noise_free_signal) ** 2)
+      Eb = average_power / bit_rate 
+      self.debug.info_message("Eb: " + str(Eb) )
+
+      ebn0 = Eb / N0
+      ebn0_db = 10 * np.log10(ebn0)
+      """ equivalent SNR over standard 2500 Hz bandwidth"""
+      SNR_equiv_db = ebn0 + 10 * np.log10(bit_rate / 2500)
+
+      self.debug.info_message("Eb/N0: " + "{:.2f}".format(ebn0) )
+      self.debug.info_message("Eb/N0 (dB): " + "{:.2f}".format(ebn0_db) + " (dB)")
+      self.debug.info_message("Equivalent SNR over 2500 Hz standard (dB): " + "{:.2f}".format(SNR_equiv_db) + " (dB)")
+
+      return float(ebn0_db), float(ebn0), float(SNR_equiv_db)
+    except:
+      self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+
+
+  def calculate_EbN0_2(self, noisy_signal, signal_frequency, numbits, bit_rate, noise_free_signal, center_frequency):
+    self.debug.info_message("calculateSNR_EbN0")
+
+    gc.collect()
+
+    try:
+      fft_signal = np.fft.fft(noise_free_signal)
+      frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
+
+      """ use best method to determine signal width"""
+      if self.osmod.tx_filter[2] > 0:
+      #if False:
+        freq_low_signal  = center_frequency - (self.osmod.tx_filter[2]/2)    
+        freq_high_signal = center_frequency + (self.osmod.tx_filter[2]/2)    
+
+        # is this a Filtered Carrier mode?
+        if self.osmod.carrier_separation > (freq_high_signal - freq_low_signal):
+          freq_low_signal  = center_frequency - ((self.osmod.carrier_separation + 2)/2)    
+          freq_high_signal = center_frequency + ((self.osmod.carrier_separation + 2)/2)      
+
+      else:
+        freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
+        freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+
+      signal_width = freq_high_signal - freq_low_signal
 
       freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
       signal_power = np.abs(fft_signal[freq_indices])**2
       self.debug.info_message("signal_power: " + str(signal_power) )
 
-      fft_noise = np.fft.fft(signal)
+      fft_noise = np.fft.fft(noisy_signal)
       frequencies = np.fft.fftfreq(len(fft_noise), 1/self.osmod.sample_rate)
       freq_low_noise = 0
-      freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_high_signal) ))
+      freq_high_noise = 3000
+      freq_indices = np.where(((frequencies > freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_high_signal) & (frequencies < freq_high_noise) ))
       noise_power = np.abs(fft_noise[freq_indices])**2
       self.debug.info_message("noise_psd: " + str(noise_power) )
 
-      Eb = np.mean(signal_power) / bit_rate
+      #Eb = np.mean(signal_power) / bit_rate
+      Eb = np.sum(signal_power) / bit_rate # total signal power
+      #Eb = (np.sum(signal_power) / len(noise_free_signal)) / bit_rate # total signal power
       self.debug.info_message("Eb: " + str(Eb) )
 
       """ N0 is often derived using average (mean)"""
-      N0 = np.mean(noise_power)
+      #N0 = np.mean(noise_power)
+      N0 = np.sum(noise_power) / (3000 - signal_width) # spectral density...power per 1 Hz
       self.debug.info_message("N0: " + str(N0) )
       """ ...but the definition states that N0 is psd in 1Hz of bandwidth..."""
 
@@ -1344,65 +1395,7 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
-  """ Eb/N0 = SNR(dB) + 10 * log10(Bandwidth / bit_rate)   """
-  def calculate_EbN0_old(self, signal, signal_frequency, numbits, bit_rate, noise_free_signal):
-    self.debug.info_message("calculateSNR_EbN0")
 
-    gc.collect()
-
-    try:
-      t = np.arange(0, 1, 1/self.osmod.sample_rate)
-      fft_output = np.fft.fft(noise_free_signal)
-      psd = np.abs(fft_output)**2
-      frequencies = np.fft.fftfreq(len(fft_output), 1/self.osmod.sample_rate)
-
-
-      freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
-      freq_low_signal_hi  = signal_frequency[0] + self.osmod.fft_filter[1]
-      freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
-      freq_high_signal_lo = signal_frequency[1] + self.osmod.fft_filter[2]
-
-
-      #freq_low_signal  = signal_frequency[0] - 2
-      #freq_low_signal_hi  = signal_frequency[0] + 2
-      #freq_high_signal = signal_frequency[1] + 2
-      #freq_high_signal_lo = signal_frequency[1] - 2
-
-      freq_indices = np.where(((frequencies >= freq_low_signal) & (frequencies <= freq_low_signal_hi)) | ((frequencies >= freq_high_signal_lo) & (frequencies <= freq_high_signal)) )[0]
-      signal_psd = np.abs(fft_output[freq_indices])**2
-      #self.debug.info_message("signal_psd: " + str(signal_psd) )
-
-      fft_output = np.fft.fft(signal)
-      psd = np.abs(fft_output)**2
-      frequencies = np.fft.fftfreq(len(fft_output), 1/self.osmod.sample_rate)
-
-      freq_low_noise = 250
-      freq_high_noise = 2750
-      freq_indices = np.where(((frequencies >= freq_low_noise) & (frequencies <= freq_low_signal)) | ((frequencies >= freq_low_signal_hi) & (frequencies <= freq_high_signal_lo)) | ((frequencies >= freq_high_signal) & (frequencies <= freq_high_noise)))
-      noise_psd = np.abs(fft_output[freq_indices])**2
-      self.debug.info_message("noise_psd: " + str(noise_psd) )
-
-      signal_energy = np.sum(signal_psd)
-      self.debug.info_message("signal_energy: " + str(signal_energy) )
-      eb = signal_energy / numbits
-      self.debug.info_message("eb: " + str(eb) )
-      """ N0 is often derived using average (mean)"""
-      N0 = np.mean(noise_psd)
-      self.debug.info_message("N0: " + str(N0) )
-      """ ...but the definition states that N0 is psd in 1Hz of bandwidth..."""
-
-      ebn0 = eb / N0
-      ebn0_db = 10 * np.log10(ebn0)
-      """ equivalent SNR over standard 2500 Hz bandwidth"""
-      SNR_equiv_db = ebn0 + 10 * np.log10(bit_rate / 2500)
-
-      self.debug.info_message("Eb/N0: " + "{:.2f}".format(ebn0) )
-      self.debug.info_message("Eb/N0 (dB): " + "{:.2f}".format(ebn0_db) + " (dB)")
-      self.debug.info_message("Equivalent SNR over 2500 Hz standard (dB): " + "{:.2f}".format(SNR_equiv_db) + " (dB)")
-
-      return float(ebn0_db), float(ebn0), float(SNR_equiv_db)
-    except:
-      self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   def calculateBER(self, bit_triplets):
@@ -2777,60 +2770,142 @@ class ModemCoreUtils(object):
     self.debug.info_message("findDecodeCandidates")
 
     try:
-      N = 1 # find top 5 in each segment
-      all_magnitudes = []
+      self.osmod.form_gui.window['text_input_detected_mode'].update("")
+      self.osmod.form_gui.window['text_input_detected_block_start'].update("")
 
+      #magnitude_trigger = 0.00001
+      magnitude_trigger = 0.0000001
+      N = 10
+      lo = 250
+      high = 2750
+      sub_signal = data[0:40000] # first 5 seconds of signal
+      fft_output = np.fft.fft(sub_signal)
+      frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
+      positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+      fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      frequencies_2 = frequencies[positive_frequency_indices]
+      top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      strongest_frequencies = frequencies_2[top_n_indices]
+      strongest_magnitudes  = fft_magnitudes[top_n_indices] / 40000
+
+      self.debug.info_message("strongest_frequencies: " + str(strongest_frequencies))
+      self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
+
+      candidate_segments = []
+      segment_width = 40
+      for frequency_count in range(0, N):
+        frequency = strongest_frequencies[frequency_count]
+        self.debug.info_message("frequency: " + str(frequency))
+        magnitude = strongest_magnitudes[frequency_count]
+        self.debug.info_message("magnitude: " + str(magnitude))
+        segment = int((frequency - 240 - (segment_width // 2)) // segment_width)
+        #if (segment not in candidate_segments) and magnitude > 100 : 
+        if (segment not in candidate_segments) and magnitude > magnitude_trigger : 
+          candidate_segments.append(segment)
+
+      self.debug.info_message("candidate_segments: " + str(candidate_segments))
+
+
+      N = 1
+      all_magnitudes = []
       carrier_transitions = []
       dict_last_frequency = {}
       dict_carrier_transitions = {}
+      dict_signal_start = {}
+      dict_signal_end = {}  # last block of signal detected
+      dict_signal_complete = {}
 
-      for center_frequency in range(240, 2960, 40):
-        dict_last_frequency[center_frequency] = 0
+      for segment_count in range(0, len(candidate_segments)):
+        center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240
         dict_carrier_transitions[center_frequency] = []
 
-      for signal_scan in range(0, len(data), 100): # analyze first 5 seconds of data only. use increments of 10 pulses (100 samples each)
-        sub_signal = data[signal_scan:signal_scan + 1000]
+      average_magnitude = 10000000
 
-        fft_output = np.fft.fft(sub_signal)
-        frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
+      for segment_count in range(0, len(candidate_segments)):
+        center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240 #+ (segment_width // 2))
+        self.debug.info_message("center_frequency: " + str(center_frequency))
+        lo = center_frequency - 18.5
+        high = center_frequency + 18.5
 
-        for center_frequency in range(240, 2960, 40):
-          lo = center_frequency - 18.5
-          high = center_frequency + 18.5
+        for signal_scan in range(0, len(data), 100): # analyze first 5 seconds of data only. use increments of 10 pulses (100 samples each)
+          sub_signal = data[signal_scan:signal_scan + 1000]
+          dict_signal_complete[center_frequency] = True
+
+          fft_output = np.fft.fft(sub_signal)
+          frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
+
+          total_magnitude = 0
+
           positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
           fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
           frequencies_2 = frequencies[positive_frequency_indices]
 
           top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
           strongest_frequencies = frequencies_2[top_n_indices]
-          strongest_magnitudes  = fft_magnitudes[top_n_indices]
-          sum_magnitude = np.sum(strongest_magnitudes)
-          #if len(strongest_frequencies) != 0 and sum_magnitude > 0.01:
-          if len(strongest_frequencies) != 0 and sum_magnitude > 0.005:
-            current_frequency = strongest_frequencies[0]
+          strongest_magnitudes  = fft_magnitudes[top_n_indices] / 1000
+          #self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
 
-            if current_frequency != dict_last_frequency[center_frequency]:
-              dict_last_frequency[center_frequency] = current_frequency
-              dict_carrier_transitions[center_frequency].append(signal_scan)
-         
+          if len(strongest_frequencies) != 0: # and sum_magnitude > average_magnitude * 1.5  :
+            current_frequency = strongest_frequencies[0]
+            current_magnitude = strongest_magnitudes[0]
+            self.debug.info_message("current_magnitude: " + str(current_magnitude))
+
+            if current_magnitude > magnitude_trigger:
+              dict_signal_end[center_frequency] = signal_scan
+              dict_signal_complete[center_frequency] = False
+              if center_frequency not in dict_signal_start:
+                self.debug.info_message("found signal start")
+                self.debug.info_message("signal_scan: " + str(signal_scan))
+                self.debug.info_message("current_magnitude: " + str(current_magnitude))
+                if signal_scan > 0:
+                  dict_signal_start[center_frequency] = signal_scan + 800 # 1st two pulses in 100 pulse sequence triggers detection
+                else:
+                  dict_signal_start[center_frequency] = signal_scan
+
+            if current_magnitude > magnitude_trigger:
+              if center_frequency not in dict_last_frequency:
+                dict_last_frequency[center_frequency] = current_frequency
+              elif current_frequency != dict_last_frequency[center_frequency]:
+                #self.debug.info_message("abs(current_frequency - center_frequency): " + str(abs(current_frequency - center_frequency)))
+                if abs(current_frequency - center_frequency) > 15:
+
+                  if current_frequency - center_frequency > 0 and dict_last_frequency[center_frequency] - center_frequency < 0:
+                    dict_last_frequency[center_frequency] = current_frequency
+                    dict_carrier_transitions[center_frequency].append(signal_scan)
+                    self.debug.info_message("found carrier transition")
+                    self.debug.info_message("signal_scan: " + str(signal_scan))
+                  elif current_frequency - center_frequency < 0 and dict_last_frequency[center_frequency] - center_frequency > 0:
+                    dict_last_frequency[center_frequency] = current_frequency
+                    dict_carrier_transitions[center_frequency].append(signal_scan)
+                    self.debug.info_message("found carrier transition")
+                    self.debug.info_message("signal_scan: " + str(signal_scan))
+
+                  #self.debug.info_message("found carrier transition")
+                  #self.debug.info_message("signal_scan: " + str(signal_scan))
+                  #dict_last_frequency[center_frequency] = current_frequency
+                  #dict_carrier_transitions[center_frequency].append(signal_scan)
+
+      self.debug.info_message("dict_signal_start: " + str(dict_signal_start))
+      self.debug.info_message("dict_signal_end: " + str(dict_signal_end))
+      self.debug.info_message("dict_signal_complete: " + str(dict_signal_complete))
+
       min_block_start_location = 100000000
-      for center_frequency in range(240, 2960, 40):
+
+      for segment_count in range(0, len(candidate_segments)):
+        center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240 
+
         if len(dict_carrier_transitions[center_frequency]) > 4:
-          #self.debug.info_message("center_frequency: " + str(center_frequency))
-          #self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
+          self.debug.info_message("center_frequency: " + str(center_frequency))
+          self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
 
           new_array = np.array(dict_carrier_transitions[center_frequency])
           for test in range(7, 2, -1):
             test_len = 2 ** test
-            #self.debug.info_message("test_len: " + str(test_len))
 
             new_array_2 = new_array % (test_len * 100)
-            #self.debug.info_message("new_array_2: " + str(new_array_2))
 
             """ rebase """
             unique_items, counts = np.unique(new_array_2, return_counts = True)
-            #self.debug.info_message("A unique_items: " + str(unique_items))
-            #self.debug.info_message("A counts: " + str(counts))
             min_count = 100000000
             for rebase_count in range(0, len(counts)):
               if counts[rebase_count] > len(new_array_2) * 0.3 and unique_items[rebase_count] < min_count:
@@ -2838,18 +2913,14 @@ class ModemCoreUtils(object):
             if min_count != 100000000:
               new_array_2 = new_array_2 - min_count
 
-            #self.debug.info_message("rebased new_array_2: " + str(new_array_2))
-
-
             new_array_3 = new_array_2 // 400
-            #self.debug.info_message("new_array_3: " + str(new_array_3))
 
             unique_items, counts = np.unique(new_array_3, return_counts = True)
 
-            #self.debug.info_message("B unique_items: " + str(unique_items))
-            #self.debug.info_message("B counts: " + str(counts))
+            self.debug.info_message("B unique_items: " + str(unique_items))
+            self.debug.info_message("B counts: " + str(counts))
 
-            if np.max(counts) > len(new_array_3) * 0.8:
+            if np.max(counts) > len(new_array_3) * 0.6 and center_frequency == self.osmod.center_frequency:
               self.debug.info_message("center_frequency: " + str(center_frequency))
               self.debug.info_message("MATCH. length is: " + str(test_len * 200))
               self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
@@ -2858,23 +2929,18 @@ class ModemCoreUtils(object):
                 min_block_start_location = block_start_location
               mode_name = str(test_len * 200)
               self.osmod.form_gui.window['text_input_detected_mode'].update("LB28-" + str(mode_name) + "-I3")
-              self.osmod.form_gui.window['text_input_detected_block_start'].update(str(block_start_location))
 
               break
 
-
-      if min_block_start_location != 100000000:
-        return data[min_block_start_location:]
+      if self.osmod.center_frequency in dict_signal_start:
+        signal_start = dict_signal_start[self.osmod.center_frequency]
+        signal_end   = dict_signal_end[self.osmod.center_frequency]
+        signal_length_seconds = (signal_end - signal_start) // 8000
+ 
+        self.osmod.form_gui.window['text_input_detected_block_start'].update(str(signal_start) + "," + str(signal_length_seconds))
+        return data[signal_start:]
       else:
         return data
-
-      #new_array_2 = new_array % 1600
-      #new_array_2 = new_array % 3200
-      #  strongest_index = np.argmax(fft_magnitudes)
-      #  top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
-      #  strongest_frequencies = frequencies[top_n_indices]
-      #  strongest_magnitudes  = fft_magnitudes[top_n_indices]
-
 
     except:
       self.debug.error_message("Exception in findDecodeCandidates: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))

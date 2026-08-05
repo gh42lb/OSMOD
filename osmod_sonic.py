@@ -271,6 +271,7 @@ class OsmodSonic(object):
       num_sd_blocks = self.tx_now(window, values, form_gui)
 
       if self.continuous: #self.osmod.form_gui.window['cb_continuous_decode'].get() == False:
+        bufferStart = self.getRxBufferStart()
         self.startOutputStream()
       else:
         self.startStream()
@@ -377,7 +378,8 @@ class OsmodSonic(object):
 
 
       #rxblocks = np.zeros((num_sd_blocks * self.osmod.getRxSampleRate(),), dtype = np.float32)
-      rxblocks = np.zeros((num_sd_blocks * self.osmod.get_sd_blocksize_rx(),), dtype = np.float32)
+      #rxblocks = np.zeros((num_sd_blocks * self.osmod.get_sd_blocksize_rx(),), dtype = np.float32)
+      rxblocks = np.zeros((num_sd_blocks * self.osmod.get_sd_blocksize_rx(),), dtype = np.float32, order='C')
       c_blocks = ptoc_float_array(rxblocks)
 
       self.osmod.compiled_lib.get_rx_data.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
@@ -557,7 +559,7 @@ class OsmodSonic(object):
 
 
         SNR_db = self.osmod.mod_2fsk8psk.calculateSNR(multi_block, frequency)
-        self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB: "f"{SNR_db:.3f}")
+        self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB (est.): "f"{SNR_db:.3f}")
 
 
 

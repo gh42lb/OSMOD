@@ -97,8 +97,10 @@ DATA_FDM_SEPARATOR          = 30
 DATA_PULSE_START_SIGMA      = 31
 DATA_PULSE_START_ENVELOPE_SIGMA = 32
 DATA_PADDING_CHARACTER      = 33
-DATA_CALC_1                 = 34
-DATA_CALC_2                 = 35
+DATA_FFT_FILTER             = 34
+DATA_FFT_INTERPOLATE        = 35
+DATA_CALC_1                 = 36
+DATA_CALC_2                 = 37
 
 
 """ used for intra block phase encoding """

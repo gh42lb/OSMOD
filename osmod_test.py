@@ -985,10 +985,11 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1417.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
 
 
-      self.osmod.modulation_object.findDecodeCandidates(audio_array)
+      #self.osmod.modulation_object.findDecodeCandidates(audio_array)
 
 
       """ END OF TEST CODE """
+
 
       """ add and correct for doppler shift """
       self.debug.info_message("processing doppler shift and downconvert...")
@@ -1019,6 +1020,28 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       #self.osmod.setInitializationBlockSR(mode, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
       self.osmod.setInitializationBlock(mode)
+
+
+
+      fft_interpolate_string = '1_1_1_1' 
+      fft_filter_string = '1_1_1_1'
+      override_fft_filter = self.osmod.form_gui.window['cb_override_fft_filter'].get()
+      fft_filter_values = self.osmod.form_gui.window['in_fft_filter'].get()
+      if override_fft_filter:
+        split_values = fft_filter_values.split(',')
+        self.osmod.fft_filter = ((float)(split_values[0]), (float)(split_values[1]), (float)(split_values[2]), (float)(split_values[3]))
+        fft_filter_string = fft_filter_values.replace(',','_')
+
+      override_fft_interpolate = self.osmod.form_gui.window['cb_override_fft_interpolate'].get()
+      fft_interpolate_values = self.osmod.form_gui.window['in_fft_interpolate'].get()
+      if override_fft_interpolate:
+        split_values = fft_interpolate_values.split(',')
+        self.osmod.fft_interpolate = ((float)(split_values[0]), (float)(split_values[1]), (float)(split_values[2]), (float)(split_values[3]))
+        fft_interpolate_string = fft_interpolate_values.replace(',','_')
+
+
+
+
 
       frequency = self.osmod.calcCarrierFrequenciesSR(center_frequency, carrier_separation_override, self.osmod.getRxSampleRate())
 
@@ -1218,7 +1241,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       self.osmod.form_gui.window['text_snr_value'].update("SNR dB: "f"{SNR_equiv_db:.3f}")
 
       SNR_db = self.osmod.mod_2fsk8psk.calculateSNR(audio_array_with_unfiltered_noise, frequency)
-      self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB: "f"{SNR_db:.3f}")
+      self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB (est.): "f"{SNR_db:.3f}")
 
 
       self.osmod.getSummary()
@@ -1338,7 +1361,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       pulse_train_length = self.osmod.detector.pulse_train_length
 
-      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'"]
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'", fft_filter_string, fft_interpolate_string]
       #csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location]
       self.osmod.analysis.writeDataToFile(csv_data)
 

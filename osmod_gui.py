@@ -169,7 +169,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     self.combo_modem_modes = combo_modem_modes
 
     #combo_modem_prod_modes  = 'TEST,LB28-240-N,LB28-400-I3,LB28-800-I3,LB28-800-I3E,LB28-800-I3E-FEC,LB28-800-I3-HFM,LB28-800-I3-FEC,LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3E,LB28-25600-I3,LB28-25600-I3E,LB28-51200-I3'.split(',')
-    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-25600-I3'.split(',')
+    combo_modem_prod_modes  = 'LB28-64-2-10-I,LB28-400-I3,LB28-800-I3,LB28-800-I3E,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC10-FEC,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC10-FEC,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC10-FEC,LB28-25600-I3'.split(',')
     self.combo_modem_prod_modes = combo_modem_prod_modes
 
     self.combo_modem_prod_modes_15_seconds = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
@@ -200,7 +200,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     self.combo_standingwave_patterns = combo_standingwave_patterns
 
-    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character'.split(',')
+    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character,FFT Filter,FFT Interpolate'.split(',')
 
     combo_filter1_matchtypes = 'Mode Name ==,Pattern Type ==,Preset Pattern ==,AWGN ==,Pulse Shape ==,Pulse Train Length ==,Disposition =='.split(',')
 
@@ -235,7 +235,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts,16:QUEEN OF HEARTS'.split(',')
 
-    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
 
     combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
 
@@ -320,7 +320,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.1 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -564,7 +564,7 @@ SOFTWARE.\n\
                           [ sg.Text('0           100          200          300          400          500          600           700          800          900        1000         1100        1200        1300        1400        1500        1600         1700       1800         1900        2000        2100         2200        2300         2400        2500        2600        2700        2800        2900     3000' )] ,
 
                           #[sg.Graph(key='graph_density', canvas_size = (1170, 250), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
-                          [sg.Graph(key='graph_density', canvas_size = (1430, 195), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
+                          [sg.Graph(key='graph_density', canvas_size = (1430, 180), graph_bottom_left=(0,0), graph_top_right = (3000, 100), background_color='white', expand_x=False, expand_y=False)],
 
                         ], size=(1500, 300))],
 
@@ -647,10 +647,12 @@ SOFTWARE.\n\
 
     self.layout_test = [
 
-                          [sg.Text('Eb/N0 (dB): -----', size=(30, 1), key='text_ebn0db_value' ) ,
+                          [sg.Text('Eb/N0 dB: -----', size=(30, 1), key='text_ebn0db_value' ) ,
+                           sg.Text('Eb/N0 dB (alt): -----', size=(30, 1), key='text_ebn0db_value_alt' ) ,
                            sg.Text('BER: -----', size=(30, 1), key='text_ber_value')  ,
-                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value' ) ,
-                           sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value' )],
+                           sg.Text('Eb/N0: -----', size=(30, 1), key='text_ebn0_value', visible = False ) ,
+                           sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value' ),
+                           sg.Text('SNR dB (alt): --------', size=(20, 1), key='text_snr_value_alt' )],
 
 
                         [   sg.Button('Run Test', size=(11, 1), key='btn_testit2'),
@@ -716,7 +718,9 @@ SOFTWARE.\n\
                            sg.Text('HiRes Upconvert: ')  ,
                            sg.InputText('10', key='in_doppler_hires_upconvert', size=(4, 1), enable_events=True),
                            sg.Text('Upconvert: ')  ,
-                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True)],
+                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True),
+                           sg.CBox('Override FFT Interpolate', key='cb_override_fft_interpolate', default=False ),
+                           sg.InputText('-3,2,-2,3', key='in_fft_interpolate', size=(20, 1), enable_events=True)],
 
 
 
@@ -731,7 +735,9 @@ SOFTWARE.\n\
                            sg.InputText('0.9', key='in_rrc_t', size=(20, 1), enable_events=True),
                            sg.CBox('Override carrier separation', key='cb_enable_separation_override', default=True ),
                            sg.CBox('Override Extraction Threshold', key='cb_override_extractionthreshold', default=False ),
-                           sg.InputText('600', key='in_extractionthreshold', size=(20, 1), enable_events=True)],
+                           sg.InputText('600', key='in_extractionthreshold', size=(20, 1), enable_events=True),
+                           sg.CBox('Override FFT Filter', key='cb_override_fft_filter', default=False ),
+                           sg.InputText('-3,2,-2,3', key='in_fft_filter', size=(20, 1), enable_events=True)],
                           [sg.CBox('Override Costas Loop', key='cb_override_costasloop', default=False, enable_events=True ),
                            sg.InputText('', key='in_costasloop_dampingfactor', size=(8, 1), enable_events=True),
                            sg.InputText('', key='in_costasloop_loopbandwidth', size=(8, 1), enable_events=True),
@@ -944,7 +950,7 @@ SOFTWARE.\n\
 
                           [
                            sg.Button('Rx - Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
-                           sg.CBox('Continuous', key='cb_continuous_decode', default=False , visible=True, enable_events = True),
+                           sg.CBox('Continuous', key='cb_continuous_decode', default=True , visible=True, enable_events = True),
                            sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
                            #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
                            #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
@@ -966,7 +972,7 @@ SOFTWARE.\n\
 
                            sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
 
-                           sg.CBox('Experimental Mode Detect', key='cb_enable_automatic_mode_detection', default=False ),
+                           sg.CBox('Mode Detect', key='cb_enable_automatic_mode_detection', default=True ),
 
                            #sg.Button('TEST', size=(5, 1), key='btn_testit'),
                            sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
@@ -979,14 +985,14 @@ SOFTWARE.\n\
 
 
                         [sg.Frame('Modulation', [
-                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[4], enable_events=True)],
+                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[8], enable_events=True)],
 
-                        ], size=(140, 60)),
+                        ], size=(150, 60)),
 
 
                          sg.Frame('Frequency', [
                           [
-                           sg.Slider(range=(0,3050), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
+                           sg.Slider(range=(240,2960), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
                            #sg.Slider(range=(0,3050), default_value = 1480, orientation='h', resolution=37, expand_x = True, enable_events = True, key='slider_frequency')],
                         ], size=(450, 60) ),
 
@@ -1000,7 +1006,7 @@ SOFTWARE.\n\
                            sg.Frame('Signal - Magnitude & SNR', [
                               [sg.Text('Magnitude: -----', size=(15, 1), key='text_input_signal_magnitude_passband' )],
 
-                              [sg.Text('SNR dB: --------', size=(15, 1), key='text_snr_value_new' )],
+                              [sg.Text('SNR dB (est.): --------', size=(15, 1), key='text_snr_value_new' )],
 
                               #[sg.Text('Avg -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband_smoothed' )],
 
@@ -1080,7 +1086,7 @@ SOFTWARE.\n\
 
                               #[sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
 
-                           ], size=(100, 60))],
+                           ], size=(100, 60), visible=False)],
 
 
                           #[sg.Button('Repository', key='btn_mainarea_visitgithub_123')],
@@ -1177,13 +1183,12 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.0 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.1 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
     self.osmod.osmod_net_dispatcher.window = self.window
     self.osmod.osmod_net.parser.window = self.window
-    #self.window = sg.Window("OSMOD de WH6GGO v0.0.6 Alpha - Test and Reference Code for LB28 Modulation", self.tabgrp, default_element_size=(40, 1), grab_anywhere=False, disable_close=True)                       
 
     return (self.window)
 
