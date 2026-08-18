@@ -169,7 +169,13 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     self.combo_modem_modes = combo_modem_modes
 
     #combo_modem_prod_modes  = 'TEST,LB28-240-N,LB28-400-I3,LB28-800-I3,LB28-800-I3E,LB28-800-I3E-FEC,LB28-800-I3-HFM,LB28-800-I3-FEC,LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3E,LB28-25600-I3,LB28-25600-I3E,LB28-51200-I3'.split(',')
-    combo_modem_prod_modes  = 'LB28-64-2-10-I,LB28-400-I3,LB28-800-I3,LB28-800-I3E,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC10-FEC,LB28-3200-I3E,LB28-3200-I3-FEC,LB28-3200-I3E-FEC,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC10-FEC,LB28-6400-I3-DP,LB28-6400-I3E,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC10-FEC,LB28-25600-I3'.split(',')
+
+    """ TEST """
+    #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
+    """ LIVE """
+    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC50,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC40,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40'.split(',')
+
+
     self.combo_modem_prod_modes = combo_modem_prod_modes
 
     self.combo_modem_prod_modes_15_seconds = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
@@ -200,14 +206,14 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     self.combo_standingwave_patterns = combo_standingwave_patterns
 
-    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character,FFT Filter,FFT Interpolate'.split(',')
+    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,LDPC SNR,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character,FFT Filter,FFT Interpolate'.split(',')
 
     combo_filter1_matchtypes = 'Mode Name ==,Pattern Type ==,Preset Pattern ==,AWGN ==,Pulse Shape ==,Pulse Train Length ==,Disposition =='.split(',')
 
     #combo_plotpulsetraintypes = 'Test,Smoothed Signal,Block Offsets,Block Offsets Half,Block Offsets Fourth,Block Offsets Fourth b,Interpolated Pulse Offsets,Dominant Series 1'.split(',')
     combo_plotpulsetraintypes = 'Refresh'.split(',')
 
-    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes,Translate Outbound,Translate Inbound'.split(',')
+    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes,Translate Outbound,Translate Inbound,Solve FFT Filter,Solve FFT Interpolate,Solve Standing Wave,Solve RRC Alpha T,Solve DCS,Solve All'.split(',')
 
     combo_analysis_compare_operator = '=,>,<'.split(',')
 
@@ -235,11 +241,15 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts,16:QUEEN OF HEARTS'.split(',')
 
-    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,LDPC SNR,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
 
     combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
 
     combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
+
+    combo_extrapolate  = 'Single,Multi Low,Multi Medium,Multi High'.split(',')
+
+    combo_txrx_choices = 'Tx Only,Tx + Rx'.split(',')
 
     combo_beacon_timer_interval  = '--Off--,1 Minute,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes,1 Hour,2 Hours'.split(',')
     #combo_beacon_type = 'General Beacon,p2pip Node,p2pip Gateway,Message Store'.split(',')
@@ -320,7 +330,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.1 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.2 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -483,9 +493,10 @@ SOFTWARE.\n\
 
                           [sg.InputText('LB28 Modulation Over AWGN Channel', key='in_analysisresultscharttitle', size=(50, 1), enable_events=True)],
 
-                          [sg.Graph(key='graph_dotplotdata', canvas_size = (1200, 700), graph_bottom_left=(0,0), graph_top_right = (2000, 500), background_color='white', expand_x=False, expand_y=True)],
+                          #[sg.Graph(key='graph_dotplotdata', canvas_size = (1200, 700), graph_bottom_left=(0,0), graph_top_right = (2000, 500), background_color='white', expand_x=False, expand_y=True)],
+                          [sg.Graph(key='graph_dotplotdata', canvas_size = (1400, 700), graph_bottom_left=(0,0), graph_top_right = (2000, 500), background_color='white', expand_x=False, expand_y=True)],
 
-                        ], size=(1200, 750), expand_y=True )],
+                        ], size=(1400, 750), expand_y=True )],
 
                         ] 
 
@@ -624,6 +635,8 @@ SOFTWARE.\n\
                             sg.InputText('13', key='in_fecgeneratorpolynomialdepth', size=(10, 1), enable_events=True),
                             sg.InputText('0o171', key='in_fecgeneratorpolynomial1', size=(10, 1), enable_events=True),
                             sg.InputText('0o123', key='in_fecgeneratorpolynomial2', size=(10, 1), enable_events=True),
+                            sg.CBox('Override FEC Puncture Code', key='cb_override_fec_puncture_code', default=False ),
+                            sg.InputText('0,1,1,1', key='in_fec_puncture_code', size=(10, 1), enable_events=True),
                             sg.CBox('Override FDM Separation', key='cb_overridefdmseparation', default=False ),
                             sg.Text('FDM pairing: '),
                             sg.Combo(combo_fdmpairlevel_options, key='combo_fdmpairlevel', default_value=combo_fdmpairlevel_options[0], enable_events=True),
@@ -660,12 +673,18 @@ SOFTWARE.\n\
                             sg.Button('Test Routine', size=(11, 1), key='btn_testit'),
                             sg.Combo(combo_test_routines, key='combo_test_routine_options', default_value=combo_test_routines[0], enable_events=True),
 
+                            sg.Text('Start At: ', size=(6, 1))  ,
+                            sg.InputText('1', key='in_convergence_engine_start_at', size=(6, 1), enable_events=True),
+
+                            sg.Button('Load Solve Data', size=(14, 1), key='btn_load_solve_data'),
+                            sg.InputText('solve_data.txt', key='in_solve_data_filename', size=(20, 1), enable_events=True),
+
                             sg.Text('Sequential Test Count: '),
                             sg.Text('0', key='text_sequential_test_counter'),
-                            sg.Button('Reset Test Counter', size=(11, 1), key='btn_resettestcounter'),
+                            sg.Button('Reset Test Counter', size=(16, 1), key='btn_resettestcounter'),
 
                             #sg.Text('', expand_x = True),
-                            sg.Button('Reset Mode', size=(8, 1), key='btn_reset'),
+                            sg.Button('Reset Mode', size=(12, 1), key='btn_reset'),
                             sg.Button('Save', size=(8, 1), key='btn_save')],
 
 
@@ -680,18 +699,24 @@ SOFTWARE.\n\
                            sg.Combo(combo_align_options, key='option_carrier_alignment', default_value=combo_align_options[10] ),
 
                            sg.CBox('Override Padding Character', key='cb_override_padding_character', default=False ),
-                           sg.InputText('a', key='in_padding_character', size=(5, 1), enable_events=True)],
+                           sg.InputText('a', key='in_padding_character', size=(5, 1), enable_events=True),
 
+                           sg.CBox('Override LDPC SNR', key='cb_override_ldpc_snr', default=False ),
+                           sg.InputText('5', key='in_ldpc_snr', size=(5, 1), enable_events=True)],
 
                           [sg.CBox('Override Sample Rate', key='cb_enable_sample_rate_override', default=False),
                            sg.InputText('', key='in_sample_rate_override', size=(8, 1), enable_events=True),
                            sg.CBox('Override Block Size: ', key='cb_override_blocksize', default=False ),
-                           sg.InputText('51200', key='in_symbol_block_size', size=(20, 1), enable_events=True),
+                           sg.InputText('51200', key='in_symbol_block_size', size=(8, 1), enable_events=True),
                            sg.CBox('48kHz sampling', key='cb_override_standard48k', default=False, enable_events=True ),
                            sg.CBox('16kHz sampling', key='cb_override_sampling16k', default=False, enable_events=True ),
                            sg.CBox('RX Frequency Delta', key='cb_enable_rxfrequencydelta', default=False, enable_events=True ),
-                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(20, 1), enable_events=True),
-                           sg.CBox('Random Message', key='cb_override_random_message', default=False, enable_events=True )],
+                           sg.InputText('-1.05', key='in_rxfrequencydelta', size=(8, 1), enable_events=True),
+                           sg.CBox('Random Message', key='cb_override_random_message', default=False, enable_events=True ),
+                           sg.CBox('Bypass Display', key='cb_bypass_display_during_test', default=False, enable_events=True ),
+                           sg.CBox('Override txrx filter width', key='cb_override_txrx_filter_width', default=False, enable_events=True ),
+                           sg.InputText('-190', key='in_txrx_filter_width', size=(8, 1), enable_events=True),
+                           sg.InputText('-190', key='in_txrx_filter_width_2', size=(8, 1), enable_events=True)],
 
 
                           [
@@ -718,9 +743,7 @@ SOFTWARE.\n\
                            sg.Text('HiRes Upconvert: ')  ,
                            sg.InputText('10', key='in_doppler_hires_upconvert', size=(4, 1), enable_events=True),
                            sg.Text('Upconvert: ')  ,
-                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True),
-                           sg.CBox('Override FFT Interpolate', key='cb_override_fft_interpolate', default=False ),
-                           sg.InputText('-3,2,-2,3', key='in_fft_interpolate', size=(20, 1), enable_events=True)],
+                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True)],
 
 
 
@@ -730,19 +753,24 @@ SOFTWARE.\n\
                           #[sg.Text('Chunk Size: ')  ,
                           # sg.Combo(combo_chunk_options, key='combo_chunk_options', default_value=combo_chunk_options[5], enable_events=True)],
                           [sg.CBox('Override RRC Alpha: ', key='cb_override_rrc_alpha', default=False ),
-                           sg.InputText('0.7', key='in_rrc_alpha', size=(20, 1), enable_events=True),
+                           sg.InputText('0.7', key='in_rrc_alpha', size=(8, 1), enable_events=True),
                            sg.CBox('Override RRC T: ', key='cb_override_rrc_t', default=False ),
-                           sg.InputText('0.9', key='in_rrc_t', size=(20, 1), enable_events=True),
+                           sg.InputText('0.9', key='in_rrc_t', size=(8, 1), enable_events=True),
                            sg.CBox('Override carrier separation', key='cb_enable_separation_override', default=True ),
                            sg.CBox('Override Extraction Threshold', key='cb_override_extractionthreshold', default=False ),
-                           sg.InputText('600', key='in_extractionthreshold', size=(20, 1), enable_events=True),
+                           sg.InputText('600', key='in_extractionthreshold', size=(8, 1), enable_events=True),
+
                            sg.CBox('Override FFT Filter', key='cb_override_fft_filter', default=False ),
-                           sg.InputText('-3,2,-2,3', key='in_fft_filter', size=(20, 1), enable_events=True)],
+                           sg.InputText('-3,2,-2,3', key='in_fft_filter', size=(20, 1), enable_events=True),
+
+                           sg.CBox('Override FFT Interpolate', key='cb_override_fft_interpolate', default=False ),
+                           sg.InputText('-3,2,-2,3', key='in_fft_interpolate', size=(20, 1), enable_events=True)],
+
                           [sg.CBox('Override Costas Loop', key='cb_override_costasloop', default=False, enable_events=True ),
-                           sg.InputText('', key='in_costasloop_dampingfactor', size=(8, 1), enable_events=True),
-                           sg.InputText('', key='in_costasloop_loopbandwidth', size=(8, 1), enable_events=True),
-                           sg.InputText('', key='in_costasloop_K1', size=(8, 1), enable_events=True),
-                           sg.InputText('', key='in_costasloop_K2', size=(8, 1), enable_events=True),
+                           sg.InputText('', key='in_costasloop_dampingfactor', size=(6, 1), enable_events=True),
+                           sg.InputText('', key='in_costasloop_loopbandwidth', size=(6, 1), enable_events=True),
+                           sg.InputText('', key='in_costasloop_K1', size=(6, 1), enable_events=True),
+                           sg.InputText('', key='in_costasloop_K2', size=(6, 1), enable_events=True),
                            sg.CBox('Override Downconvert Method', key='cb_override_downconvertmethod', default=False ),
                            sg.Combo(combo_downconvert_options, key='combo_downconvert_type', default_value=combo_downconvert_options[1], enable_events=True),
                            sg.Text('Text Options: ')  ,
@@ -767,7 +795,7 @@ SOFTWARE.\n\
                            sg.Text('Increments: '),
                            sg.InputText('1000', key='in_random_increments', size=(8, 1), enable_events=True),
                            sg.Text('Num Cycles: '),
-                           sg.InputText('100', key='in_random_numcycles', size=(8, 1), enable_events=True),
+                           sg.InputText('5000', key='in_random_numcycles', size=(8, 1), enable_events=True),
                            sg.Button('Generate', size=(8, 1), key='btn_generate_test_data'),
                            sg.InputText('osmod_v0-1-0_results_data.csv', key='in_resultsdatafilename', size=(30, 1), enable_events=True),
                            sg.FileBrowse('Select File', file_types=(('CSV Files', '*.csv'), ('All Files', '*.*')))],
@@ -839,7 +867,7 @@ SOFTWARE.\n\
 
                         sg.Frame('Auto Correct', [
                            [sg.CBox('LDS & FS', key='cb_enable_block_level_resample_auto_correct', default=False, enable_events=True, disabled=False )],
-                           [sg.CBox('FS Only', key='cb_enable_auto_correct_frequency_only', default=True, enable_events=True, disabled=False )],
+                           [sg.CBox('FS Only', key='cb_enable_auto_correct_frequency_only', default=False, enable_events=True, disabled=False )],
 
                         ], size=(100, 60)),
 
@@ -961,18 +989,20 @@ SOFTWARE.\n\
 
                            sg.CBox('Truncate - pad', key='cb_truncate_to_max_msglength', default=True ),
 
-                           sg.Text('Message Length: ', size=(13, 1) ) ,
+                           sg.Text('Msg Length: ', size=(13, 1) ) ,
                            sg.Combo(combo_modem_message_lengths, key='combo_max_message_length', size=(4, 1), font=("Helvetica", 10), default_value=combo_modem_message_lengths[2], enable_events=True),
 
-                           sg.CBox('Preset Message', key='cb_use_preset_message', default=True ),
+                           sg.CBox('Preset', key='cb_use_preset_message', default=True ),
 
 
 
-                           sg.CBox('Enable CRC', key='cb_enable_crc', default=True ),
+                           sg.CBox('CRC', key='cb_enable_crc', default=False ),
 
                            sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
 
-                           sg.CBox('Mode Detect', key='cb_enable_automatic_mode_detection', default=True ),
+                           sg.CBox('Mode Detect', key='cb_enable_automatic_mode_detection', default=False ),
+
+                           sg.CBox('Extrapolate', key='cb_override_extrapolate', default=False ),
 
                            #sg.Button('TEST', size=(5, 1), key='btn_testit'),
                            sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
@@ -985,16 +1015,16 @@ SOFTWARE.\n\
 
 
                         [sg.Frame('Modulation', [
-                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[8], enable_events=True)],
+                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[5], enable_events=True)],
 
-                        ], size=(150, 60)),
+                        ], size=(200, 60)),
 
 
                          sg.Frame('Frequency', [
                           [
                            sg.Slider(range=(240,2960), default_value = 1400, orientation='h', resolution=1, expand_x = True, enable_events = True, key='slider_frequency')],
                            #sg.Slider(range=(0,3050), default_value = 1480, orientation='h', resolution=37, expand_x = True, enable_events = True, key='slider_frequency')],
-                        ], size=(450, 60) ),
+                        ], size=(400, 60) ),
 
                        
                           
@@ -1030,7 +1060,7 @@ SOFTWARE.\n\
 
                            sg.Frame('Output Gain', [
                               [sg.CBox('hi-fi', key='cb_enable_hifi_output_sampling', font=("Helvetica", 12), default=False, enable_events=True, visible=False ),
-                               sg.Slider(range=(0, 1),size=(20, 25),  default_value = 0.1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
+                               sg.Slider(range=(0, 10),size=(20, 25),  default_value = 0.1, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_outgain')],
 
                            ], size=(140, 60)),
 
@@ -1058,11 +1088,11 @@ SOFTWARE.\n\
 
     self.layout_settings = [
                            [sg.Frame('Callsign & Group', [
-                              [sg.Text('Callsign: ', size=(7, 1) ) ,
+                              [sg.Text('Callsign: ', size=(9, 1) ) ,
                                sg.InputText('', key='in_station_callsign', size=(24, 1), enable_events=True)],
-                              [sg.Text('Group: ', size=(7, 1) ) ,
+                              [sg.Text('Group: ', size=(9, 1) ) ,
                                sg.InputText('', key='in_group', size=(24, 1), enable_events=True)],
-                              [sg.Text('Locator: ', size=(7, 1) ) ,
+                              [sg.Text('Locator: ', size=(9, 1) ) ,
                                sg.InputText('', key='in_locator_grid_square', size=(24, 1), enable_events=True)],
 
                               #[sg.Text('-----', size=(8, 1), font=("Helvetica", 20), text_color='light green', key='text_utc_clock' )],
@@ -1074,11 +1104,22 @@ SOFTWARE.\n\
 
                            [sg.Frame('IO Devices', [
 
-                          [sg.Text('Input: ', size=(7, 1) ) ,
+                          [sg.Text('Input: ', size=(9, 1) ) ,
                            sg.Combo(combo_modem_devices, key='combo_main_modem_input_device', size=(30, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_input_device_index], enable_events=True)],
-                         [sg.Text('Output: ', size=(7, 1) ) ,
+                         [sg.Text('Output: ', size=(9, 1) ) ,
                            sg.Combo(combo_modem_devices, key='combo_main_modem_output_device', size=(30, 1), font=("Helvetica", 10), default_value=combo_modem_devices[default_output_device_index], enable_events=True)],
                            ], size=(350, 70))],
+
+
+
+                           [sg.Frame('Options', [
+
+                          [sg.Text('Extrapolate: ', size=(9, 1) ) ,
+                           sg.Combo(combo_extrapolate, key='combo_extrapolate_option', size=(30, 1), font=("Helvetica", 10), default_value=combo_extrapolate[0], enable_events=True)],
+                          [sg.Text('Tx: ', size=(9, 1) ) ,
+                           sg.Combo(combo_txrx_choices, key='combo_txrx_option', size=(30, 1), font=("Helvetica", 10), default_value=combo_txrx_choices[0], enable_events=True)],
+                           ], size=(350, 70))],
+
 
 
                            [sg.Frame('Net Settings', [
@@ -1183,7 +1224,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.1 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.2 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
@@ -1357,7 +1398,8 @@ class ReceiveControlsProc(object):
           while form_gui.txwindowQueue.empty() == False:
             txdata = form_gui.txwindowQueue.get_nowait()
             if window['cb_use_preset_message'].get() == True:
-              window['ml_txrx_sendtext'].print(str(txdata), end="", text_color='black', background_color = 'white')
+              if window['cb_bypass_display_during_test'].get() == False:
+                window['ml_txrx_sendtext'].print(str(txdata), end="", text_color='black', background_color = 'white')
 
           if form_gui.spectralDensityQueue.empty() == False:
             while form_gui.spectralDensityQueue.empty() == False:
@@ -1671,7 +1713,7 @@ class ReceiveControlsProc(object):
 
 
 
-    test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+    test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, True)
 
   """ reset all values for the selected mode back to the default values"""
   def event_reset(self, window, values, form_gui):
@@ -1740,6 +1782,18 @@ class ReceiveControlsProc(object):
 
     except:
       sys.stdout.write("Exception in event_overridestandard48k: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+  def event_btn_load_solve_data(self, window, values, form_gui):
+    sys.stdout.write("event_btn_load_solve_data\n")
+    try:
+      filename = form_gui.window['in_solve_data_filename'].get()
+      mode = form_gui.osmod.getRealMode(values, form_gui)
+      dict_best_so_far = form_gui.osmod.loadSolveData(mode, filename)
+    except:
+      sys.stdout.write("Exception in event_btn_load_solve_data: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
 
 
   def event_btn_save_modem_settings(self, window, values, form_gui):
@@ -2328,6 +2382,8 @@ class ReceiveControlsProc(object):
     fixed_increments_enabled_40 = form_gui.window['cb_frequency_slider_resolution'].get()
     fixed_increments_enabled_10 = form_gui.window['cb_frequency_slider_resolution_10hz'].get()
 
+
+
     inc_amount = 1
     if fixed_increments_enabled_40:
       inc_amount = 40
@@ -2356,6 +2412,10 @@ class ReceiveControlsProc(object):
     form_gui.osmod.setCenterFrequency(center_frequency)
     form_gui.osmod.calcCarrierFrequencies(center_frequency, separation_override)
     form_gui.osmod.setCenterFrequency(center_frequency)
+
+    #check if rotation tables are loaded and frequency is available...
+    #if form_gui.osmod.dictionary.etc
+    #form_gui.window['cb_override_extrapolate'].update(disabled = False)
 
 
   def event_plotresults(self, window, values, form_gui):
@@ -2649,6 +2709,7 @@ class ReceiveControlsProc(object):
       'tbl_frequency_mode_message'            : event_tbl_frequency_mode_message,
       'tbl_callsign_locator'                  : event_tbl_callsign_locator,
       'cb_continuous_decode'                  : event_cb_continuous_decode,
+      'btn_load_solve_data'                   : event_btn_load_solve_data,
       #'add_stn'          : self.osmod.osmod_net_dispatcher.event_addstn, 
 
 

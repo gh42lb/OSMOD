@@ -385,6 +385,7 @@ class ModemCoreUtils(object):
   # 'tx_filter' : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
   def apply_filter_common(self, signal, params, center_frequency, sample_rate):
     try:
+      self.debug.info_message("apply_filter_common")
       filter_type = params[0]
       filter_pass_type = params[1]
       filter_width = params[2]
@@ -395,6 +396,13 @@ class ModemCoreUtils(object):
         return signal
       elif filter_type == ocn.FILTER_BUTTERWORTH:
         if filter_pass_type == ocn.FILTER_BAND_PASS:
+
+          override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
+          if override_txrx_filter_width:
+            filter_width  = int(self.osmod.form_gui.window['in_txrx_filter_width_2'].get())
+
+          self.debug.info_message("filter_width: " + str(filter_width))
+
           """ filter the output signal """
           for _ in range(repeats):
             sig1 = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal, center_frequency + filter_width/2, filter_order, sample_rate)
@@ -402,6 +410,43 @@ class ModemCoreUtils(object):
           for _ in range(repeats):
             sig2 = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency - filter_width/2, filter_order, sample_rate)
             signal = sig2
+
+        elif filter_pass_type == ocn.FILTER_NOTCH:
+          override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
+          if override_txrx_filter_width:
+            filter_width  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
+          for _ in range(repeats):
+            signal = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal, center_frequency - filter_width/2, filter_order, sample_rate)
+            signal = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency + filter_width/2, filter_order, sample_rate)
+
+        elif filter_pass_type == ocn.FILTER_NOTCH_2:
+          for _ in range(repeats):
+            sig2 = self.osmod.modulation_object.filter_sharp_cutoff_notch(signal, center_frequency - filter_width/2, center_frequency + filter_width/2, filter_order, sample_rate)
+            signal = sig2
+
+        elif filter_pass_type == ocn.FILTER_BAND_PASS_X2:
+          """ filter the output signal """
+          filter_width_offset = params[2]
+          filter_width  = filter_width_offset[0]
+          filter_offset = filter_width_offset[1] # offset from center frequncy +- for the two notches
+
+          override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
+          if override_txrx_filter_width:
+            filter_width  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
+
+          center_frequency_a = center_frequency - filter_offset
+          center_frequency_b = center_frequency + filter_offset
+          signal_a = signal.copy()
+          signal_b = signal.copy()
+
+          for _ in range(repeats):
+            signal_a = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal_a, center_frequency_a + filter_width/2, filter_order, sample_rate)
+            signal_a = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal_a, center_frequency_a - filter_width/2, filter_order, sample_rate)
+            signal_b = self.osmod.modulation_object.filter_sharp_cutoff_low_pass(signal_b, center_frequency_b + filter_width/2, filter_order, sample_rate)
+            signal_b = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal_b, center_frequency_b - filter_width/2, filter_order, sample_rate)
+
+          return (signal_a + signal_b) / 2
+
         return signal
 
     except:
@@ -432,6 +477,20 @@ class ModemCoreUtils(object):
 
     return return_value
 
+
+  def filter_sharp_cutoff_notch(self, signal, low_cutoff_freq, high_cutoff_freq, filter_order, sample_rate):
+    try:
+      nyquist_frequency = 0.5 * sample_rate
+      normalized_low_cutoff  = low_cutoff_freq / nyquist_frequency
+      normalized_high_cutoff = high_cutoff_freq / nyquist_frequency
+
+      sos = butter(N=filter_order, Wn=[normalized_low_cutoff, normalized_high_cutoff], btype="bandstop", fs=sample_rate, output='sos')
+      return_value = sosfiltfilt(sos, signal)
+
+    except:
+      self.debug.error_message("Exception in filter_low_pass_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return return_value
 
 
 
@@ -1201,6 +1260,10 @@ class ModemCoreUtils(object):
       frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
 
       """ use best method to determine signal width"""
+      freq_low_signal  = signal_frequency[0] + min(self.osmod.fft_filter[0], self.osmod.fft_interpolate[0])
+      freq_high_signal = signal_frequency[1] + max(self.osmod.fft_filter[3], self.osmod.fft_interpolate[3])
+
+      """
       if self.osmod.tx_filter[2] > 0:
         freq_low_signal  = self.osmod.center_frequency - (self.osmod.tx_filter[2]/2)    
         freq_high_signal = self.osmod.center_frequency + (self.osmod.tx_filter[2]/2)    
@@ -1213,6 +1276,7 @@ class ModemCoreUtils(object):
       else:
         freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
         freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+      """
 
       freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
       signal_psd = np.abs(fft_signal[freq_indices])**2
@@ -1280,19 +1344,8 @@ class ModemCoreUtils(object):
       fft_signal = np.fft.fft(noise_free_signal)
       frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
 
-      """ use best method to determine signal width"""
-      if self.osmod.tx_filter[2] > 0:
-        freq_low_signal  = center_frequency - (self.osmod.tx_filter[2]/2)    
-        freq_high_signal = center_frequency + (self.osmod.tx_filter[2]/2)    
-
-        # is this a Filtered Carrier mode?
-        if self.osmod.carrier_separation > (freq_high_signal - freq_low_signal):
-          freq_low_signal  = center_frequency - ((self.osmod.carrier_separation + 2)/2)    
-          freq_high_signal = center_frequency + ((self.osmod.carrier_separation + 2)/2)      
-
-      else:
-        freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
-        freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+      freq_low_signal  = signal_frequency[0] + min(self.osmod.fft_filter[0], self.osmod.fft_interpolate[0])
+      freq_high_signal = signal_frequency[1] + max(self.osmod.fft_filter[3], self.osmod.fft_interpolate[3])
 
       signal_width = freq_high_signal - freq_low_signal
 
@@ -1342,6 +1395,9 @@ class ModemCoreUtils(object):
       frequencies = np.fft.fftfreq(len(fft_signal), 1/self.osmod.sample_rate)
 
       """ use best method to determine signal width"""
+      freq_low_signal  = signal_frequency[0] + min(self.osmod.fft_filter[0], self.osmod.fft_interpolate[0])
+      freq_high_signal = signal_frequency[1] + max(self.osmod.fft_filter[3], self.osmod.fft_interpolate[3])
+      """
       if self.osmod.tx_filter[2] > 0:
       #if False:
         freq_low_signal  = center_frequency - (self.osmod.tx_filter[2]/2)    
@@ -1351,10 +1407,10 @@ class ModemCoreUtils(object):
         if self.osmod.carrier_separation > (freq_high_signal - freq_low_signal):
           freq_low_signal  = center_frequency - ((self.osmod.carrier_separation + 2)/2)    
           freq_high_signal = center_frequency + ((self.osmod.carrier_separation + 2)/2)      
-
       else:
         freq_low_signal  = signal_frequency[0] + self.osmod.fft_filter[0]
         freq_high_signal = signal_frequency[1] + self.osmod.fft_filter[3]
+      """
 
       signal_width = freq_high_signal - freq_low_signal
 
@@ -2404,9 +2460,8 @@ class ModemCoreUtils(object):
         self.osmod.form_gui.window['tbl_callsign_locator'].update(data_table)
         self.osmod.received_data_table_callsign = data_table
 
-
-      #self.osmod.form_gui.window['tbl_frequency_mode_message'].update([[center_frequency,mode,timestamp,message]])
-      self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
+      if self.osmod.form_gui.window['cb_bypass_display_during_test'].get() == False:
+        self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
 
       return timestamp
     except:
@@ -2848,7 +2903,7 @@ class ModemCoreUtils(object):
           if len(strongest_frequencies) != 0: # and sum_magnitude > average_magnitude * 1.5  :
             current_frequency = strongest_frequencies[0]
             current_magnitude = strongest_magnitudes[0]
-            self.debug.info_message("current_magnitude: " + str(current_magnitude))
+            #self.debug.info_message("current_magnitude: " + str(current_magnitude))
 
             if current_magnitude > magnitude_trigger:
               dict_signal_end[center_frequency] = signal_scan

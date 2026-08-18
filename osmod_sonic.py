@@ -55,8 +55,8 @@ class OsmodSonic(object):
   debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
   osmod = None
   window = None
-  #continuous = True
-  continuous = False
+  continuous = True
+  #continuous = False
 
   def __init__(self, osmod):  
     self.debug = db.Debug(ocn.DEBUG_INFO)
@@ -247,7 +247,9 @@ class OsmodSonic(object):
           send_text = form_gui.window['ml_txrx_sendtext'].get()
           txblocks = self.osmod.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
 
-      txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks))
+      #txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks))
+      txblocks = txblocks * (2**3 - 1) / np.max(np.abs(txblocks[2000:])) # bypass click at start of signal
+
       txblocks = txblocks.astype(np.float32)
 
       txblocks = txblocks * self.osmod.getOutputGain()
@@ -542,8 +544,8 @@ class OsmodSonic(object):
         frequency = self.osmod.calcCarrierFrequenciesSR(self.osmod.center_frequency, separation_override, self.osmod.getRxSampleRate())
 
         """ filter the input signal """
-        rx_filter_params = self.osmod.rx_filter
-        multi_block = self.osmod.modulation_object.apply_filterSR(multi_block, rx_filter_params, self.osmod.center_frequency, self.osmod.getRxSampleRate())
+        multi_block = self.osmod.modulation_object.apply_filterSR(multi_block, self.osmod.rx_filter, self.osmod.center_frequency, self.osmod.getRxSampleRate())
+        multi_block = self.osmod.modulation_object.apply_filterSR(multi_block, self.osmod.rx_filter2, self.osmod.center_frequency, self.osmod.getRxSampleRate())
 
         use_hifi_rx = self.osmod.form_gui.window['cb_enable_hifi_input_sampling'].get()
         if use_hifi_rx == True:

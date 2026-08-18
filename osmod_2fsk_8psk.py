@@ -303,11 +303,12 @@ class demod_2FSK8PSK(DemodulatorPSK):
         self.chart_data_dict['smoothed_b_imag_higher']  = intra_triple_charts[7]
         self.chart_data_dict['smoothed_c_imag_higher']  = intra_triple_charts[8]
 
-        binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+
         #decoded_bitstring_1, decoded_bitstring_2 = self.displayTextResults(decoded_intvalues1[0], decoded_intvalues1[1], decoded_intvalues2[0], decoded_intvalues2[1])
 
 
-        return decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec
+        return decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher
 
       def averageDataSingle(recovered_signal1, recovered_signal2):
         phase_data_before_averaging1 = recovered_signal1[0].copy()
@@ -461,7 +462,9 @@ class demod_2FSK8PSK(DemodulatorPSK):
           self.downconvert_I3_RelExp(pulse_start_index, [fft_filtered_lower, fft_filtered_higher], frequency, interpolated_lower, interpolated_higher, fine_tune_adjust)
 
           if self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_TRIPLE:
-            decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
+            decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
+            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+
             #decoded_bitstring_1, decoded_bitstring_2 = averageDataSingle([fft_filtered_lower.real, fft_filtered_lower.imag], [fft_filtered_higher.real, fft_filtered_higher.imag])
 
           """ calculate remainder to be tacked on front of next sample"""
@@ -880,9 +883,9 @@ class demod_2FSK8PSK(DemodulatorPSK):
         self.chart_data_dict['smoothed_b_imag_higher']  = intra_triple_charts[7]
         self.chart_data_dict['smoothed_c_imag_higher']  = intra_triple_charts[8]
 
-        binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
 
-        return decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec
+        return decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher
 
       def decodeChunkCharacters(signal, interpolated, shift):
         nonlocal pulse_start_index
@@ -895,8 +898,9 @@ class demod_2FSK8PSK(DemodulatorPSK):
         fft_filtered_lower, fft_filtered_higher = self.receive_pre_filters_filter_wave(pulse_start_index, signal, frequency)
 
         self.downconvert_I3_RelExp(pulse_start_index, [fft_filtered_lower, fft_filtered_higher], frequency, interpolated[0], interpolated[1], fine_tune_adjust)
-        decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
-        return decoded_bitstring_1, decoded_bitstring_2, signal
+        decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
+        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+        return decoded_bitstring_1, decoded_bitstring_2, signal, intlist_lower, intlist_higher
 
 
 
@@ -955,32 +959,134 @@ class demod_2FSK8PSK(DemodulatorPSK):
       residuals = None
       if self.osmod.extrapolate == 'no':
         self.extrapolate_step = ocn.EXTRAPOLATE_NONE
-        decoded_bitstring_1, decoded_bitstring_2, audio_array = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
+        decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
+        binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
       elif self.osmod.extrapolate == 'yes':
-        #if self.osmod.holographic_decode == ocn.HOLOGRAPH_DECODE_NONE:
+
+        half = int(self.osmod.symbol_block_size / self.osmod.pulses_per_block) // 2
 
         self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
         saved_shift_amount = shift_amount
         saved_pulse_start_index = pulse_start_index
         saved_audio_array = audio_array.copy()
-        decoded_bitstring_1, decoded_bitstring_2, audio_array = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
+
+        self.debug.info_message("len(interpolated_lower): " + str(len(interpolated_lower)))
+
+        if self.osmod.pulses_per_block == 256:
+          test_modulo = 9
+        else:
+          test_modulo = 3
+
+        interpolated_lower  = interpolated_lower[0:((len(interpolated_lower) // test_modulo) * test_modulo) ]
+        interpolated_higher = interpolated_higher[0:((len(interpolated_higher) // test_modulo) * test_modulo) ]
+
+        self.debug.info_message("len(interpolated_lower): " + str(len(interpolated_lower)))
+
+        decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
+        binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
         disposition = self.osmod.detector.findDisposition(interpolated_lower, interpolated_higher)
-        #disposition, match_type, best_ambiguous_match = self.osmod.detector.findDisposition(interpolated_lower, interpolated_higher)
-        #if match_type == ocn.DISPOSITION_MATCH_SINGLE:
-        if disposition >= 0:
+
+        combo_extrapolate_option = self.osmod.form_gui.window['combo_extrapolate_option'].get()
+
+        if disposition > 0 or len(interpolated_lower) // test_modulo != half // test_modulo or combo_extrapolate_option != 'Single':
           self.debug.info_message("processing extrapolation...")
           self.debug.info_message("residuals: " + str(residuals))
 
           audio_array = saved_audio_array
           shift_amount = saved_shift_amount + disposition
           pulse_start_index = saved_pulse_start_index
+
           interpolated = self.osmod.detector.createInterpolated()
           interpolated_lower  = interpolated[0]
           interpolated_higher = interpolated[1]
-          #self.extrapolate_step = ocn.EXTRAPOLATE_FIXED_ROTATION_DECODE
-          self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
-          decoded_bitstring_1, decoded_bitstring_2, audio_array = decodeChunkCharacters(audio_array.copy(), interpolated, shift_amount)
-          self.osmod.detector.findDisposition(interpolated[0], interpolated[1])
+
+          if combo_extrapolate_option == 'Multi Low' or combo_extrapolate_option == 'Multi Medium' or combo_extrapolate_option == 'Multi High':
+            self.debug.info_message("Extrapolate Multi")
+            decoded_message_pre_extrapolate = decoded_message
+            self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
+            half = int(self.osmod.pulses_per_block // 2)
+            self.debug.info_message("half: " + str(half))
+            extrapolation_type = half % 3
+            if extrapolation_type == 1: # 16, 64, 256
+              if combo_extrapolate_option == 'Multi Low':
+                extrapolation_end   = [half - 1, half - 1, half - 4, half - 4, half - 4]
+                disposition_items   = [0, 1, 0, 1, 2]
+                extrapolation_num_items = 3
+              elif combo_extrapolate_option == 'Multi Medium':
+                extrapolation_end   = [half - 1, half - 1, half - 4, half - 4, half - 4, half - 7]
+                disposition_items   = [0, 1, 0, 1, 2, 0]
+                extrapolation_num_items = 6
+              elif combo_extrapolate_option == 'Multi High':
+                extrapolation_end   = [half - 1, half - 1, half - 4, half - 4, half - 4, half - 7, half - 7, half - 7, half - 10]
+                disposition_items   = [0, 1, 0, 1, 2, 0, 1, 2, 0]
+                extrapolation_num_items = 9
+            elif extrapolation_type == 2: # 32, 128, 512
+              if combo_extrapolate_option == 'Multi Low':
+                extrapolation_end   = [half - 3, half - 3, half - 3]
+                disposition_items   = [0, 1, 2]
+                extrapolation_num_items = 3
+              elif combo_extrapolate_option == 'Multi Medium':
+                extrapolation_end   = [half - 3, half - 3, half - 3, half - 6, half - 6, half - 6]
+                disposition_items   = [0, 1, 2, 0, 1, 2]
+                extrapolation_num_items = 6
+              elif combo_extrapolate_option == 'Multi High':
+                extrapolation_end   = [half - 3, half - 3, half - 3, half - 6, half - 6, half - 6, half - 9, half - 9, half - 9]
+                disposition_items   = [0, 1, 2, 0, 1, 2, 0, 1, 2]
+                extrapolation_num_items = 9
+
+            extrapolation_result_list_lower  = []
+            extrapolation_result_list_higher = []
+            extrapolated_messages = []
+            for extrapolation_count in range(extrapolation_num_items):
+              interpolated_lower  = interpolated[0][0:extrapolation_end[extrapolation_count]]
+              interpolated_higher = interpolated[1][0:extrapolation_end[extrapolation_count]]
+              self.debug.info_message("interpolated_lower: " + str(interpolated_lower))
+              self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
+              pulse_start_index = saved_pulse_start_index
+              shift_amount = saved_shift_amount + disposition + disposition_items[extrapolation_count]
+              audio_array = saved_audio_array
+              decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
+              binary_array_post_fec, decoded_message_1 = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+
+              extrapolated_messages.append(decoded_message_1)
+              extrapolation_result_list_lower.append(intlist_lower)
+              extrapolation_result_list_higher.append(intlist_higher)
+
+            result_lower  = []
+            result_higher = []
+
+            for ext_item_count in range(len(extrapolation_result_list_lower[0])):
+              test_value_lower = 0
+              for list_count in range(extrapolation_num_items):
+                test_value_lower = test_value_lower + extrapolation_result_list_lower[list_count][ext_item_count]
+              result_lower.append(int(round(test_value_lower / extrapolation_num_items)))
+
+              test_value_higher = 0
+              for list_count in range(extrapolation_num_items):
+                test_value_higher = test_value_higher + extrapolation_result_list_higher[list_count][ext_item_count]
+              result_higher.append(int(round(test_value_higher / extrapolation_num_items)))
+
+            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(result_lower, result_higher)
+
+            self.debug.info_message("result_lower: " + str(result_lower))
+            self.debug.info_message("result_higher: " + str(result_higher))
+
+            decoded_message_post_extrapolate = decoded_message
+            self.debug.info_message("decoded_message_pre_extrapolate: " + str(decoded_message_pre_extrapolate))
+
+            for count in range(extrapolation_num_items):
+              self.debug.info_message("decoded message[count]: " + str(extrapolated_messages[count]))
+
+            self.debug.info_message("decoded_message_post_extrapolate: " + str(decoded_message_post_extrapolate))
+
+          elif combo_extrapolate_option == 'Single':
+            self.debug.info_message("Extrapolate Single")
+            #self.extrapolate_step = ocn.EXTRAPOLATE_FIXED_ROTATION_DECODE
+            self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
+            decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), interpolated, shift_amount)
+            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+            self.osmod.detector.findDisposition(interpolated[0], interpolated[1])
+
           #disposition, match_type, best_ambiguous_match = self.osmod.detector.findDisposition(interpolated[0], interpolated[1])
         #elif match_type == ocn.DISPOSITION_MATCH_AMBIGUOUS:
         #elif match_type == ocn.DISPOSITION_NO_MATCH:

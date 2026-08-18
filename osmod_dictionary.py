@@ -31,6 +31,8 @@ SOFTWARE.
 
 class PersistentData(object):
 
+  has_rotation_table = False
+
   """
   debug level 0=off, 1=info, 2=warning, 3=error
   """
@@ -172,7 +174,8 @@ class PersistentData(object):
       filename = mode + ".rtf"
 
       with open(filename, 'w') as convert_file:
-                convert_file.write(json.dumps(dict_rotation_table))
+        convert_file.write(json.dumps(dict_rotation_table))
+
       return()
 
     except:
@@ -191,9 +194,16 @@ class PersistentData(object):
  
       settings = json.loads(data)
 
+      self.has_rotation_table = True
+      self.osmod.form_gui.window['cb_override_extrapolate'].update(disabled = False)
+      #self.osmod.form_gui.window['cb_override_extrapolate'].update(True)
+
       return settings
 
     except:
+      self.has_rotation_table = False
+      self.osmod.form_gui.window['cb_override_extrapolate'].update(disabled = True)
+      self.osmod.form_gui.window['cb_override_extrapolate'].update(False)
       self.debug.error_message("Exception in readRotationTablesFromFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
       return {}
 

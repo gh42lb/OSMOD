@@ -1008,6 +1008,7 @@ class DemodulatorPSK(ModemCoreUtils):
     self.debug.info_message("displayTextFromIntlist" )
 
     try:
+      message_text = ""
       binary_array_post_fec = []
 
       if self.osmod.FEC != ocn.FEC_NONE:
@@ -1038,7 +1039,9 @@ class DemodulatorPSK(ModemCoreUtils):
         post_binary_string = "".join(binary_array_post_fec.astype(str))
         self.debug.info_message("post_binary_string : " + str(post_binary_string) )
 
-        self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
+        bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
+        if bypass_display_during_test == False:
+          self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
         message_text = ""
         for six_bits_index in range(0, len(post_binary_string), 6):
           index = int(post_binary_string[six_bits_index:six_bits_index+6], 2)
@@ -1054,10 +1057,13 @@ class DemodulatorPSK(ModemCoreUtils):
         #original_message = self.osmod.modulation_object.translateInbound(message_text)
         #self.osmod.modulation_object.appendTableRow(original_message)
 
+        self.debug.info_message("message_text: " + str(message_text))
         self.osmod.displayReceivedMessage(message_text, True, True)
 
       else:
-        self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded: ", end="", text_color='black', background_color = 'white')
+        bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
+        if bypass_display_during_test == False:
+          self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded: ", end="", text_color='black', background_color = 'white')
         message_text = ""
         for int_low, int_high in zip(decoded_intlist_1, decoded_intlist_2):
           char = self.b64_charfromindex_list[(int_low*8) + (int_high)]
@@ -1070,12 +1076,13 @@ class DemodulatorPSK(ModemCoreUtils):
         #original_message = self.osmod.modulation_object.translateInbound(message_text)
         #self.osmod.modulation_object.appendTableRow(original_message)
 
+        self.debug.info_message("message_text: " + str(message_text))
         self.osmod.displayReceivedMessage(message_text, True, True)
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlist: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-    return binary_array_post_fec
+    return binary_array_post_fec, message_text
 
 
     """

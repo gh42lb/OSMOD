@@ -85,6 +85,8 @@ class osModem(object):
   messages_by_frequency = {}
   messages_by_callsign = {}
 
+  solve_data_dict = {}
+
   test_mode_enabled = True
 
   received_data_table = None
@@ -332,10 +334,21 @@ message formats...
     self.test_viterbi_gp_1 = [(15, 20568, 31282), (12, 289, 1620), (16, 3664, 6646), (13, 5890, 6271), (13, 4441, 1481), (15, 23443, 19340), (15, 29104, 5402)]
     self.test_viterbi_gp_2 = [(19 , 104171 , 43597),(16 , 25867 , 64068),(15 , 22748 , 20515),(18 , 49870 , 25915),(14 , 2670 , 13353),(19 , 267052 , 292632),(14 , 10117 , 10273),(16 , 19094 , 45608),(18 , 147012 , 171229),(17 , 59952 , 35021),(18 , 223244 , 166886),(19 , 165277 , 44828)]
     self.test_viterbi_gp_3 = [(15 , 4293 , 27673),(19 , 75437 , 395530),(13 , 567 , 1044),(18 , 175858 , 114619),(17 , 24678 , 113783),(15 , 14047 , 24322),(11 , 1504 , 330),(17 , 102984 , 108103),(17 , 49292 , 39302),(18 , 26581 , 142760),(11 , 320 , 517),(17 , 11484 , 2257),(13 , 7120 , 4105),(19 , 315807 , 489515),(18 , 16885 , 110965)]
-
     self.test_viterbi_gp_4 = [(14 , 12874 , 2088),(19 , 487833 , 272009),(18 , 138813 , 136592),(17 , 56883 , 48672),(15 , 32454 , 29350),(17 , 109434 , 66931),(13 , 6375 , 5183),(19 , 454203 , 467489),(15 , 11481 , 14041),(17 , 125755 , 97716),(13 , 5426 , 1463),(16 , 53269 , 27876),(18 , 117917 , 109517),(18 , 21198 , 252632),(17 , 58879 , 96029),(14 , 4112 , 11103),(18 , 203771 , 210048),(15 , 10070 , 13902),(16 , 37139 , 63104),(17 , 62779 , 86412),(14 , 8074 , 15694),(14 , 2897 , 70),(12 , 3541 , 1599),(11 , 736 , 452),(17 , 59265 , 11061),(17 , 128295 , 5901),(19 , 316991 , 234689),(16 , 20506 , 54096),(15 , 13684 , 2676),(13 , 8154 , 7138),(12 , 2495 , 3051),(19 , 76197 , 499063),(13 , 1394 , 4569),(12 , 3972 , 388),(15 , 11382 , 26842),(19 , 94049 , 382551)]
 
-    self.all_viterbi_gps  = [self.test_viterbi_gp_4]
+    self.test_viterbi_gp_5  = [(14, 9725, 8427, [1,1,1,1,0,1,0,0,1,0,0,0]), (17, 92104, 28536, [1,1,1,1,0,0,0,0,1,0,0,1]), (19, 125643, 152972, [1,1,1,1,0,1,0,0,1,0,1,0]), (18, 16519, 138370, [1,1,1,1,0,0,0,0,1,0,1,0]), (14, 1432, 528, [1,1,1,1,0,0,0,0,1,0,0,1]), (17, 68853, 40425, [1,1,1,1,0,0,0,0,1,0,0,1]), (17, 22831, 5325, [1,1,1,1,0,1,0,0,0,0,1,0])]
+    self.test_viterbi_gp_6  = [(16 , 52915 , 12072,  [1,1,1,1,0,0,0,0,0,1,0,1]),(18 , 214645 , 70304,  [1,1,1,1,0,0,0,0,0,0,1,1]),(17 , 37298 , 26770,  [1,1,1,1,0,0,0,1,0,0,1,0]),(11 , 512 , 1570,  [1,0,1,0,0,0,1,0,1,0,1,1])]
+    self.test_viterbi_gp_7  = [(19 , 481747 , 86084,  [1,1,1,1,0,0,0,0,0,1,0,1]),(18 , 245535 , 156150,  [1,1,1,1,1,0,0,0,1,0,0,0]),(18 , 163543 , 62859,  [1,1,1,1,1,1,0,0,0,0,0,0]),(18 , 214645 , 70304,  [1,1,1,1,0,0,0,0,0,0,1,1]),(18 , 186220 , 217112,  [1,1,1,1,0,1,0,0,0,0,0,1])]
+    self.test_viterbi_gp_8  = [(14 , 13841 , 9738 , [1,1,1,1,0,0,1,0,0,1,0,0]),(15 , 28995 , 30779 , [1,1,1,1,1,0,0,0,1,0,0,0]),(17 , 108863 , 129336 , [1,1,1,1,0,0,0,1,0,1,0,0]),(15 , 10578 , 10911 , [1,1,1,1,0,0,1,0,0,0,1,0])]
+    self.test_viterbi_gp_9  = [(11 , 1360 , 1 , [0,1,0,1,0,0,1,1,1,0,1,0]),(11 , 1775 , 1808 , [1,1,1,1,0,1,1,0,0,0,0,0]),(11 , 752 , 483 , [1,1,1,1,1,0,0,0,0,0,0,1])]
+    self.test_viterbi_gp_10 = [(11 , 1775 , 1808 , [1,1,1,1,0,1,1,0,0,0,0,0]),(11 , 885 , 26 , [1,1,0,1,0,0,1,1,0,0,0,1]),(19 , 168183 , 20892 , [1,1,1,1,1,0,0,0,1,0,0,0]),(11 , 752 , 483 , [1,1,1,1,1,0,0,0,0,0,0,1])]
+
+    self.test_viterbi_gp_11 = [(13 , 5248 , 4576 , [1,1,1,0]),(12 , 16 , 2212 , [1,1,0,1]),(11 , 6 , 675 , [1,0,1,1]),(13 , 2419 , 669 , [1,1,1,0])]
+    self.test_viterbi_gp_12 = [(12 , 1423 , 16 , [1,1,0,1]), (11, 861, 2, [0,1,1,1]), (19, 93986, 444204, [0,1,1,1]), (11 , 505 , 551 , [0,1,1,1]), (13 , 4322 , 1875 , [0,1,1,1])]
+
+    self.all_viterbi_gps  = [self.test_viterbi_gp_11, self.test_viterbi_gp_12]
+
+
 
     #self.all_viterbi_gps  = [self.test_viterbi_gp_1, self.test_viterbi_gp_2, self.test_viterbi_gp_3]
     self.best_viterbi_gps = [(18 , 147012 , 171229), (15 , 4293 , 27673),(13 , 5890 , 6271),(15 , 14047 , 24322),(11 , 320 , 517)]
@@ -1690,6 +1703,8 @@ message formats...
                                     'rotation_increments'  : 40,
                                     'rx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
                                     'tx_filter'            : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
+                                    'rx_filter2'           : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
+                                    'tx_filter2'           : (ocn.FILTER_NONE, ocn.FILTER_NONE, 0, 0, 0),  #type, width, repeats, order
                                     'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
                                     'resample_params_48k'  : [ocn.RESAMPLE_UNAVAILABLE, 0, 0, 0], # available, low freq, hi freq
                                     'dcs_type'             : ocn.DCS_GENERAL,
@@ -2013,6 +2028,8 @@ message formats...
       self.rotation_increments = self.getParam(mode, 'rotation_increments')
       self.rx_filter           = self.getParam(mode, 'rx_filter')
       self.tx_filter           = self.getParam(mode, 'tx_filter')
+      self.rx_filter2          = self.getParam(mode, 'rx_filter2')
+      self.tx_filter2          = self.getParam(mode, 'tx_filter2')
       self.resample_params     = self.getParam(mode, 'resample_params')
       self.resample_params_48k = self.getParam(mode, 'resample_params_48k')
       self.dcs_type            = self.getParam(mode, 'dcs_type')
@@ -2027,6 +2044,10 @@ message formats...
       self.rx_symbol_block_size = self.symbol_block_size
       self.tx_symbol_block_size = self.symbol_block_size
 
+
+      override_extrapolate = self.form_gui.window['cb_override_extrapolate'].get()
+      if override_extrapolate:
+        self.extrapolate          = "yes"
 
 
       sys.stdout.write("          }, \n")
@@ -3552,9 +3573,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       data2 = self.modulation_object.modulate(frequency, bit_groups, self.getTxSampleRate(), self.getTxSymbolBlockSize())
 
       """ filter the output signal """
-      tx_filter_params = self.tx_filter
-      #data2 = self.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
-      data2 = self.modulation_object.apply_filterSR(data2, tx_filter_params, self.center_frequency, self.getTxSampleRate())
+      data2 = self.modulation_object.apply_filterSR(data2, self.tx_filter, self.center_frequency, self.getTxSampleRate())
+      data2 = self.modulation_object.apply_filterSR(data2, self.tx_filter2, self.center_frequency, self.getTxSampleRate())
+
 
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))
@@ -3573,6 +3594,11 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.debug.info_message("audio data type: " + str(audio_array.dtype))
       self.debug.info_message("demodulating")
       total_audio_length = len(audio_array)
+
+
+      """ normalize magnitude """
+      #audio_array = audio_array * (2**3 - 1) / np.max(np.abs(audio_array[8000:-8000]))
+
 
       """ add noise for testing..."""
       noise_free_signal = audio_array*0.00001 * float(amplitude)   
@@ -4009,7 +4035,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
     self.debug.info_message("displayReceivedMessage")
     try:
         """ erase existing display info """
-        if erase:
+        bypass_display_during_test = self.form_gui.window['cb_bypass_display_during_test'].get()
+
+        if erase and bypass_display_during_test == False:
           self.form_gui.window['ml_txrx_recvtext'].update('')
 
         message_struct = self.processFragmentedMessage(message)
@@ -4042,17 +4070,20 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           else:
             part_message = original_message
 
-          if pass_fail[count] == 'p':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='green', background_color = 'white')
-          elif pass_fail[count] == 'f':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='red', background_color = 'white')
-          elif pass_fail[count] == 'u':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='purple', background_color = 'white')
+
+          if bypass_display_during_test == False:
+            if pass_fail[count] == 'p':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='green', background_color = 'white')
+            elif pass_fail[count] == 'f':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='red', background_color = 'white')
+            elif pass_fail[count] == 'u':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='purple', background_color = 'white')
 
           #self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='orange', background_color = 'white')
           last_position = xref[count]
 
-        self.form_gui.window['ml_txrx_recvtext'].print("\n\n", end="", text_color='orange', background_color = 'white')
+        if bypass_display_during_test == False:
+          self.form_gui.window['ml_txrx_recvtext'].print("\n\n", end="", text_color='orange', background_color = 'white')
 
 
         #self.form_gui.window['ml_txrx_recvtext'].print(str(original_message) + "\n\n", end="", text_color='blue', background_color = 'white')
@@ -4066,14 +4097,16 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           else:
             fragment = fragments[frag_count]
 
-          if pass_fail[frag_count] == 'p':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='green', background_color = 'white')
-          elif pass_fail[frag_count] == 'f':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='red', background_color = 'white')
-          elif pass_fail[frag_count] == 'u':
-            self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='purple', background_color = 'white')
+          if bypass_display_during_test == False:
+            if pass_fail[frag_count] == 'p':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='green', background_color = 'white')
+            elif pass_fail[frag_count] == 'f':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='red', background_color = 'white')
+            elif pass_fail[frag_count] == 'u':
+              self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='purple', background_color = 'white')
 
-        self.form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='orange', background_color = 'white')
+        if bypass_display_during_test == False:
+          self.form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='orange', background_color = 'white')
 
         if update:
           timestamp = self.modulation_object.appendTableRow(original_message, sender_callsign)
@@ -4316,8 +4349,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
                     'MainGroup'          : window['in_group'].get().strip(),
                     'LocatorGridSquare'  : window['in_locator_grid_square'].get().strip(),
                     'InputDevice'        : window['combo_main_modem_input_device'].get(),
-                    'OutputDevice'       : window['combo_main_modem_output_device'].get() }
-
+                    'OutputDevice'       : window['combo_main_modem_output_device'].get(),
+                    'ExtrapolateMode'    : window['combo_extrapolate_option'].get() }
 
       self.dict_data = dict_data
 
@@ -4333,24 +4366,26 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
   def readModemSettingsFromFile(self, window, filename):
     self.debug.info_message("readModemSettingsFromFile")
     try:
-		  
+      """ set defaults """
+      dict_data = { 'StationCallsign'    : '<YOUR CALLSIGN HERE>',
+                    'MainGroup'          : '<GROUP NAME>',
+                    'LocatorGridSquare'  : '<GRID SQUARE>',
+                    'InputDevice'        : '',
+                    'OutputDevice'       : '' ,
+                    'ExtrapolateMode'    : 'Single' }
+
       with open(filename) as f:
         data = f.read()
   
-      """  
-      reconstructing the data as a dictionary
-      """
-      dict_data = json.loads(data)
+      """ reconstructing the data as a dictionary """
+      loaded_dict_data = json.loads(data)
 
+      """ overwrite values if exist in file otherwise use default setting."""
+      for param_name, param_value in loaded_dict_data.items():
+        dict_data[param_name] = param_value
 
     except:
       self.debug.info_message("creating settings data")
-
-      dict_data = {'StationCallsign'    : '<YOUR CALLSIGN HERE>',
-                   'MainGroup'          : '<GROUP NAME>',
-                   'LocatorGridSquare'  : '<GRID SQUARE>',
-                   'InputDevice'        : '',
-                   'OutputDevice'       : '' }
 
     window['in_station_callsign'].update(dict_data['StationCallsign'])
     window['in_group'].update(dict_data['MainGroup']),
@@ -4359,6 +4394,124 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       window['combo_main_modem_input_device'].update(dict_data['InputDevice']),
     if dict_data['OutputDevice'] != '':
       window['combo_main_modem_output_device'].update(dict_data['OutputDevice'])
+    window['combo_extrapolate_option'].update(dict_data['ExtrapolateMode']),
 
     self.dict_data = dict_data   
     return(dict_data)
+
+
+
+  def loadSolveData(self, mode, filename):
+    self.debug.info_message("loadSolveData")
+
+    try:
+
+      def saveDictData(filename, dict_data):
+        self.debug.info_message("saveDictData")
+
+        try:
+          self.solve_data_dict[mode] = dict_data
+          with open(filename, 'w') as convert_file:
+            convert_file.write(json.dumps(self.solve_data_dict))
+        except:
+          self.debug.error_message("Exception in saveDictData: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+      def loadDictData(filename):
+        self.debug.info_message("loadDictData")
+
+        try:
+          with open(filename) as f:
+            data = f.read() 
+          dict_data = json.loads(data)
+
+          self.solve_data_dict = dict_data
+          if mode in dict_data:
+            return dict_data[mode]
+          else:
+            return {}
+
+        except:
+          self.debug.error_message("no file in loadDictData: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+          return {}
+
+
+      def format_string_fft(random_1, random_2):
+        return '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) , ''
+
+      def unformat_string_fft(formatted_string):
+        split_values = formatted_string.split('_')
+        value_1 = abs(float(split_values[0]))
+        value_2 = abs(float(split_values[1]))
+        return value_1, value_2
+
+      def unformat_string_standing_wave(formatted_string):
+        self.debug.info_message("unformat_string_standing_wave")
+        split_values = formatted_string.split('_')
+        value_1 = split_values[0]                  # DATA_SW_PATTERN_TYPE
+        value_2 = abs(float(split_values[1]))      # DATA_SW_LOCATION
+        self.debug.info_message("value_1: " + str(value_1))
+        self.debug.info_message("value_2: " + str(value_2))
+        return value_1, value_2
+
+      def format_string_standing_wave_from_char(random_1, random_2):
+        self.debug.info_message("format_string_standing_wave")
+        self.debug.info_message("random_1: " + str(random_1))
+        self.debug.info_message("random_2: " + str(random_2))
+        return str(random_1), str(random_2)
+
+      def unformat_string_dcs(formatted_string):
+        self.debug.info_message("unformat_string_dcs")
+        value_1 = abs(float(formatted_string))
+        return value_1, 0.0
+
+      def format_string_dcs(random_1, random_2):
+        self.debug.info_message("format_string_dcs")
+        return random_1, random_2
+
+      def unformat_string_rrc_alpha_t(formatted_string):
+        self.debug.info_message("unformat_string_rrc_alpha_t")
+        split_values = formatted_string.split('_')
+        value_1 = abs(float(split_values[0]))
+        value_2 = abs(float(split_values[1]))
+        return value_1, value_2
+
+      def format_string_rrc_alpha_t(random_1, random_2):
+        self.debug.info_message("format_string_rrc_alpha_t")
+        return random_1, random_2
+
+
+      dict_best_so_far = loadDictData(filename)
+      if "DATA_FFT_FILTER" in dict_best_so_far:
+        value_1, value_2 = unformat_string_fft(dict_best_so_far["DATA_FFT_FILTER"])
+        new_string_1, new_string_2 = format_string_fft(value_1, value_2)
+        self.form_gui.window['in_fft_filter'].update(new_string_1)
+        self.form_gui.window['cb_override_fft_filter'].update(True)
+      if "DATA_FFT_INTERPOLATE" in dict_best_so_far:
+        value_1, value_2 = unformat_string_fft(dict_best_so_far["DATA_FFT_INTERPOLATE"])
+        new_string_1, new_string_2 = format_string_fft(value_1, value_2)
+        self.form_gui.window['in_fft_interpolate'].update(new_string_1)
+        self.form_gui.window['cb_override_fft_interpolate'].update(True)
+      if "DATA_PATTERN" in dict_best_so_far:
+        value_1, value_2 = unformat_string_standing_wave(dict_best_so_far["DATA_PATTERN"])
+        new_string_1, new_string_2 = format_string_standing_wave_from_char(value_1, value_2)
+        self.form_gui.window['combo_standingwave_pattern'].update(new_string_1)
+        self.form_gui.window['in_standingwavelocation'].update(new_string_2)
+        self.form_gui.window['cb_override_standingwaveoffsets'].update(True)
+      if "DATA_RRC_ALPHA_T" in dict_best_so_far:
+        value_1, value_2 = unformat_string_rrc_alpha_t(dict_best_so_far["DATA_RRC_ALPHA_T"])
+        new_string_1, new_string_2 = format_string_rrc_alpha_t(value_1, value_2)
+        self.form_gui.window['in_rrc_alpha'].update(new_string_1)
+        self.form_gui.window['in_rrc_t'].update(new_string_2)
+        self.form_gui.window['cb_override_rrc_alpha'].update(True)
+        self.form_gui.window['cb_override_rrc_t'].update(True)
+      if "DATA_DCS" in dict_best_so_far:
+        value_1, value_2 = unformat_string_dcs(dict_best_so_far["DATA_DCS"])
+        new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
+        self.form_gui.window['in_downconvertshift'].update(new_string_1)
+        self.form_gui.window['cb_overridedownconvertshift'].update(True)
+
+      return dict_best_so_far
+
+    except:
+      self.debug.error_message("Exception in loadSolveData: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))

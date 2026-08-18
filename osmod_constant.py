@@ -99,8 +99,10 @@ DATA_PULSE_START_ENVELOPE_SIGMA = 32
 DATA_PADDING_CHARACTER      = 33
 DATA_FFT_FILTER             = 34
 DATA_FFT_INTERPOLATE        = 35
-DATA_CALC_1                 = 36
-DATA_CALC_2                 = 37
+DATA_FEC_PUNCTURE_CODE      = 36
+DATA_LDPC_SNR               = 37
+DATA_CALC_1                 = 38
+DATA_CALC_2                 = 39
 
 
 """ used for intra block phase encoding """
@@ -275,7 +277,9 @@ FILTER_ELLIPTIC                 = 6
 FILTER_LOW_PASS                 = 7
 FILTER_HIGH_PASS                = 8
 FILTER_BAND_PASS                = 9
-FILTER_NOTCH                    = 10
+FILTER_BAND_PASS_X2             = 10
+FILTER_NOTCH                    = 11
+FILTER_NOTCH_2                  = 12
 
 RESAMPLE_UNAVAILABLE            = 0
 RESAMPLE_AVAILABLE              = 1

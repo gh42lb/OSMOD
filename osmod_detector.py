@@ -368,7 +368,7 @@ class OsmodDetector(object):
           elif aligh_type == ocn.ALIGN_MOVE_TO_MID:
             self.pulse_train_alignment_struct['blocks'][block_count] = self.pulse_train_offsets_mid
 
-        self.debug.info_message("pulse_train_alignment_struct: " + str(self.pulse_train_alignment_struct))
+        #self.debug.info_message("pulse_train_alignment_struct: " + str(self.pulse_train_alignment_struct))
 
         median_index = self.osmod.demodulation_object.getMode(self.pulse_train_alignment_struct['pulses'])
         self.debug.info_message("median_index: " + str(median_index))
@@ -675,8 +675,8 @@ class OsmodDetector(object):
 
             #FIXME_INDEX_MAX
             index_min = (np.where(sum_points == np.min(sum_points))[0]) + search_lo
-            self.debug.info_message("index_max: " + str(index_max) )
-            self.debug.info_message("index_min: " + str(index_min) )
+            #self.debug.info_message("index_max: " + str(index_max) )
+            #self.debug.info_message("index_min: " + str(index_min) )
             if self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_ALL and self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_PULSES:
               index_max = [50]
 

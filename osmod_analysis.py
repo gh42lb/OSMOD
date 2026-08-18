@@ -55,7 +55,7 @@ class OsmodAnalysis(object):
     self.osmod = osmod
     self.match_table = []
 
-  def writeDataToFile(self, data):
+  def writeDataToFile(self, data, file_append):
     self.debug.info_message("writeDataToFile")
 
     """ discard the data if it has invalid decodes"""
@@ -68,11 +68,14 @@ class OsmodAnalysis(object):
     try:
       file_name = self.osmod.form_gui.window['in_resultsdatafilename'].get()
 
-      #file_name = "osmod_v0-1-0_results_data.csv"
-      #with open(file_name, 'w', newline='') as csvfile:
-      with open(file_name, 'a', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerows([data])
+      if file_append == False:
+        with open(file_name, 'w', newline='') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerows([data])
+      else:
+        with open(file_name, 'a', newline='') as csvfile:
+          writer = csv.writer(csvfile)
+          writer.writerows([data])
 
     except:
       self.debug.error_message("Exception in writeDataToFile: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -114,7 +117,7 @@ class OsmodAnalysis(object):
       with open(file_name, 'r') as csvfile:
         csv_reader = csv.reader(csvfile)
         for row in csv_reader:
-          self.debug.info_message("row: " + str(row))
+          #self.debug.info_message("row: " + str(row))
           data.append(row)
           row_count = row_count + 1
 
@@ -142,6 +145,7 @@ class OsmodAnalysis(object):
 
       #mode = values['combo_main_modem_modes']
 
+      file_append = True
       text_num = values['combo_text_options'].split(':')[0]
       chunk_num = values['combo_chunk_options'].split(':')[0]
       amplitude = values['slider_amplitude']
@@ -159,7 +163,7 @@ class OsmodAnalysis(object):
           self.debug.info_message("adjustment: " + str(adjustment))
           if window['cb_enable_awgn'].get():
             noise = noise + adjustment
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
         elif test_type == 'I3 Standing Wave':
           form_gui.window['cb_override_standingwaveoffsets'].update(True)
           noise = values['btn_slider_awgn']
@@ -171,14 +175,14 @@ class OsmodAnalysis(object):
             if randomize_pattern:
               rand_num = random.randint(0,14)
               form_gui.window['combo_standingwave_pattern'].update(form_gui.combo_standingwave_pattern_options[rand_num])
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
         elif test_type == 'I3 Pattern':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_override_standingwavepattern'].update(True)
           if count % 3 == 0:
             rand_num = random.randint(0,49)
             form_gui.window['combo_selectstandingwavepattern'].update(form_gui.combo_standingwave_patterns[rand_num])
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'RRC Alpha & T':
           noise = values['btn_slider_awgn']
@@ -189,7 +193,7 @@ class OsmodAnalysis(object):
             form_gui.window['in_rrc_alpha'].update(rand_num/1000)
             rand_num = random.randint(0,1000)
             form_gui.window['in_rrc_t'].update(rand_num/1000)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Test Pulse Shape':
           noise = values['btn_slider_awgn']
@@ -201,7 +205,7 @@ class OsmodAnalysis(object):
             rrc_T     = self.osmod.test_pulse_shapes[rand_num][1]
             form_gui.window['in_rrc_alpha'].update(rrc_alpha)
             form_gui.window['in_rrc_t'].update(rrc_T)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Best Pulse Shape':
           noise = values['btn_slider_awgn']
@@ -213,7 +217,7 @@ class OsmodAnalysis(object):
             rrc_T     = self.osmod.best_pulse_shapes[rand_num][1]
             form_gui.window['in_rrc_alpha'].update(rrc_alpha)
             form_gui.window['in_rrc_t'].update(rrc_T)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
         elif test_type == 'Pulse Train Sigma':
@@ -225,7 +229,7 @@ class OsmodAnalysis(object):
             #rrc_T     = self.osmod.best_pulse_shapes[rand_num][1]
             pulse_train_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsetrainsigma'].update(pulse_train_sigma)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
         elif test_type == 'Pulse Start Sigma':
@@ -234,7 +238,7 @@ class OsmodAnalysis(object):
           if count % 3 == 0:
             pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsestartsigma'].update(pulse_start_sigma)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
         elif test_type == 'Pulse Start Envelope Sigma':
@@ -243,7 +247,7 @@ class OsmodAnalysis(object):
           if count % 3 == 0:
             pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsestartenvelopesigma'].update(pulse_start_sigma)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
         elif test_type == 'Padding Character':
@@ -252,7 +256,7 @@ class OsmodAnalysis(object):
           if count % 3 == 0:
             padding_character_num = random.randint(0,len(self.osmod.modulation_object.encoding_b64)) 
             form_gui.window['in_padding_character'].update(self.osmod.modulation_object.encoding_b64[padding_character_num])
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
         elif test_type == 'FFT Filter':
@@ -264,7 +268,7 @@ class OsmodAnalysis(object):
 
             random_string = '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) 
             form_gui.window['in_fft_filter'].update(random_string)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'FFT Interpolate':
           noise = values['btn_slider_awgn']
@@ -275,7 +279,7 @@ class OsmodAnalysis(object):
 
             random_string = '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) 
             form_gui.window['in_fft_interpolate'].update(random_string)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         #override_pulse_train_sigma = self.osmod.form_gui.window['cb_overridepulsetrainsigma'].get()
         ##if override_pulse_train_sigma:
@@ -296,7 +300,7 @@ class OsmodAnalysis(object):
           sw_value = sw_series[rand_num_2][1]
           form_gui.window['combo_standingwave_pattern'].update(sw_type)
           form_gui.window['in_standingwavelocation'].update(sw_value)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Downconvert Shift':
           form_gui.window['cb_overridedownconvertshift'].update(True)
@@ -304,7 +308,7 @@ class OsmodAnalysis(object):
           if count % 3 == 0:
             rand_num = random.randint(0,1000)
             form_gui.window['in_downconvertshift'].update(rand_num/1000)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Best Pulse Shapes':
           noise = values['btn_slider_awgn']
@@ -317,34 +321,67 @@ class OsmodAnalysis(object):
           rrc_T     = ps_series[rand_num_2][1]
           form_gui.window['in_rrc_alpha'].update(rrc_alpha)
           form_gui.window['in_rrc_t'].update(rrc_T)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'FEC Generator Polynomials':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_overridegeneratorpolynomials'].update(True)
-          #depth = 13
-          gpdepth    = random.randint(11, 19)
-          #gpdepth = 15
-          rand_num_1 = random.randint(1,2 ** gpdepth)
-          rand_num_2 = random.randint(1,2 ** gpdepth)
-          form_gui.window['in_fecgeneratorpolynomialdepth'].update(gpdepth)
-          form_gui.window['in_fecgeneratorpolynomial1'].update(rand_num_1)
-          form_gui.window['in_fecgeneratorpolynomial2'].update(rand_num_2)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+
+          if count == 0:
+            puncture_codes = ['0,1,1,1', '1,0,1,1', '1,1,0,1', '1,1,1,0']
+
+          """
+          #puncture_template = [1,0,0,0,1,0,1,0,1,1,1,0]
+          puncture_template = [0,0,0,0,0,0,0,0,0,0,0,0]
+          for puncture_counter in range(6):
+            added = False
+            while added == False:
+              rand_num = random.randint(0, 11)
+              if puncture_template[rand_num] == 0:
+                puncture_template[rand_num] = 1
+                added = True
+          self.debug.info_message("puncture_template: " + str(puncture_template))
+          """
+
+          if count % 3 == 0:
+            gpdepth    = random.randint(11, 19)
+            rand_num_1 = random.randint(1,2 ** gpdepth)
+            rand_num_2 = random.randint(1,2 ** gpdepth)
+            rand_num_3 = random.randint(0, 3)
+            form_gui.window['in_fecgeneratorpolynomialdepth'].update(gpdepth)
+            form_gui.window['in_fecgeneratorpolynomial1'].update(rand_num_1)
+            form_gui.window['in_fecgeneratorpolynomial2'].update(rand_num_2)
+            form_gui.window['in_fec_puncture_code'].update(puncture_codes[rand_num_3])
+            #form_gui.window['in_fec_puncture_code'].update(str(puncture_template).strip('[').strip(']').replace(' ',''))
+
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Test FEC Generator Polynomials':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_overridegeneratorpolynomials'].update(True)
-          rand_num_1 = random.randint(0,len(self.osmod.all_viterbi_gps)-1)
-          gp_series  = self.osmod.all_viterbi_gps[rand_num_1]
-          rand_num_2 = random.randint(0,len(gp_series)-1)
-          gpdepth    = gp_series[rand_num_2][0]
-          gp_poly_1  = gp_series[rand_num_2][1]
-          gp_poly_2  = gp_series[rand_num_2][2]
+          """ ensure each item represented only once and use single random number to minimize selection bias """
+          if count == 0:
+            form_gui.window['cb_override_fec_puncture_code'].update(True)
+     
+            selection_list = []
+            for num_1 in range(0,len(self.osmod.all_viterbi_gps)):
+              gp_series  = self.osmod.all_viterbi_gps[num_1]
+              for num_2 in range(len(gp_series)):
+                if gp_series[num_2] not in selection_list:
+                  selection_list.append(gp_series[num_2])
+
+          rand_num = random.randint(0,len(selection_list)-1)
+
+          gpdepth        = selection_list[rand_num][0]
+          gp_poly_1      = selection_list[rand_num][1]
+          gp_poly_2      = selection_list[rand_num][2]
+          puncture_code  = selection_list[rand_num][3]
           form_gui.window['in_fecgeneratorpolynomialdepth'].update(gpdepth)
           form_gui.window['in_fecgeneratorpolynomial1'].update(gp_poly_1)
           form_gui.window['in_fecgeneratorpolynomial2'].update(gp_poly_2)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          form_gui.window['in_fec_puncture_code'].update(str(puncture_code).strip('[').strip(']').replace(' ',''))
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+
 
 
         elif test_type == 'Best FEC Generator Polynomials':
@@ -357,7 +394,17 @@ class OsmodAnalysis(object):
           form_gui.window['in_fecgeneratorpolynomialdepth'].update(gpdepth)
           form_gui.window['in_fecgeneratorpolynomial1'].update(gp_poly_1)
           form_gui.window['in_fecgeneratorpolynomial2'].update(gp_poly_2)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+
+
+        elif test_type == 'LDPC SNR':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_override_ldpc_snr'].update(True)
+          if count % 3 == 0:
+            rand_num   = random.randint(-20,20)
+            form_gui.window['in_ldpc_snr'].update(int(rand_num / 1))
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+
 
         elif test_type == 'FDM Separation & DCS':
           noise = values['btn_slider_awgn']
@@ -377,7 +424,7 @@ class OsmodAnalysis(object):
           rand_num_dcs   = random.randint(0,1000)
           form_gui.window['in_fdmseparation'].update(rand_num_sep / 1000)
           form_gui.window['in_downconvertshift'].update(rand_num_dcs / 1000)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Test DCS':
           form_gui.window['cb_overridedownconvertshift'].update(True)
@@ -385,7 +432,7 @@ class OsmodAnalysis(object):
           rand_num = random.randint(0,len(self.osmod.test_dcs_values)-1)
           dcs = self.osmod.test_dcs_values[rand_num]
           form_gui.window['in_downconvertshift'].update(dcs)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Costas K1 & K2':
           if count == 0:
@@ -404,7 +451,7 @@ class OsmodAnalysis(object):
           costas_K2 = rand_num/1000
           #form_gui.window['in_costasloop_K1'].update(costas_K1)
           form_gui.window['in_costasloop_K2'].update(costas_K2)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Costas Damping & Loop BW':
           if count == 0:
@@ -423,7 +470,7 @@ class OsmodAnalysis(object):
           costas_loopbw = rand_num/100
           form_gui.window['in_costasloop_dampingfactor'].update(costas_damping)
           #form_gui.window['in_costasloop_loopbandwidth'].update(costas_loopbw)
-          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
     except:
@@ -790,6 +837,9 @@ DATA_CALC_2                = 23
             dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]] = color_count
             #dict_preset_pattern[str(data[point][ocn.DATA_DOWNCONVERT_SHIFT])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'LDPC SNR' and data[point][ocn.DATA_LDPC_SNR] not in dict_preset_pattern:
+            dict_preset_pattern[data[point][ocn.DATA_LDPC_SNR]] = color_count
+            color_count = color_count + 1
           elif legend_type == 'Pulse Train Sigma' and data[point][ocn.DATA_PULSE_TRAIN_SIGMA] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]] = color_count
             color_count = color_count + 1
@@ -799,8 +849,8 @@ DATA_CALC_2                = 23
           elif legend_type == 'Pulse Start Envelope Sigma' and data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA]] = color_count
             color_count = color_count + 1
-          elif legend_type == 'Generator Polynomials' and str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) not in dict_preset_pattern:
-            dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])] = color_count
+          elif legend_type == 'Generator Polynomials' and str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) + ' : [' + str(data[point][ocn.DATA_FEC_PUNCTURE_CODE] + ']') not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) + ' : [' + str(data[point][ocn.DATA_FEC_PUNCTURE_CODE]) + ']'] = color_count
             color_count = color_count + 1
           elif legend_type == 'FDM Separator' and data[point][ocn.DATA_FDM_SEPARATOR] not in dict_preset_pattern:
             dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]] = color_count
@@ -912,6 +962,9 @@ DATA_CALC_2                = 23
           elif legend_type == 'DC Shift':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_DOWNCONVERT_SHIFT]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'LDPC SNR':
+            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_LDPC_SNR]]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Pulse Train Sigma':
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_TRAIN_SIGMA]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
@@ -952,7 +1005,7 @@ DATA_CALC_2                = 23
           elif legend_type == 'BER Range All':
             plot_color_index = dict_preset_pattern[int((( float(data[point][ocn.DATA_BER]) - ber_range_min) / (ber_range_max - ber_range_min) ) * num_range_increments )]
           elif legend_type == 'Generator Polynomials':
-            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2])]
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) + ' : [' + str(data[point][ocn.DATA_FEC_PUNCTURE_CODE]) + ']']
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
             #if float(data[point][x_index]) - data_x_min <  float((data_x_max - data_x_min) / 2):
             if float(data[point][x_index]) == 0.0:
@@ -1018,6 +1071,19 @@ DATA_CALC_2                = 23
           graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
           count = count + 1
       elif legend_type == 'DC Shift':
+        debug_string = '['
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            debug_string = debug_string + ',(' + pattern_location_name + ')'
+            count = count + 1
+        debug_string = debug_string + ']'
+        self.debug.info_message("debug_string: " + str(debug_string))
+      elif legend_type == 'LDPC SNR':
         debug_string = '['
         filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
 
@@ -1139,17 +1205,19 @@ DATA_CALC_2                = 23
           count = count + 1
       elif legend_type == 'Generator Polynomials':
         debug_string = '['
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
           lower_half_ratio = "{:.2f}".format(occurrences_less_than_mid_x[color_index] / occurrences[color_index])
 
           #best_ratio = float(pattern_location_name.split(':')[2])
-          if True:
+          if occurrences[color_index] > filter_legend:
+          #if True:
           #if float(lower_half_ratio) > 0.7:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]) + '-' + lower_half_ratio, location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
             count = count + 1
-            debug_string = debug_string + ',(' + pattern_location_name.split(':')[0] + ',' + pattern_location_name.split(':')[1] + ',' + pattern_location_name.split(':')[2] + ')'
+            debug_string = debug_string + ',(' + pattern_location_name.split(':')[0] + ',' + pattern_location_name.split(':')[1] + ',' + pattern_location_name.split(':')[2] + ',' + pattern_location_name.split(':')[3].replace('_',',') + ')'
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
 

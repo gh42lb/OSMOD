@@ -11,6 +11,7 @@ import threading
 import wave
 import sys
 import random
+import json
 
 from numpy import pi
 from numpy import arange, array, zeros, pi, sqrt, log2, argmin, \
@@ -54,6 +55,7 @@ class OsmodTest(object):
   osmod  = None
   window = None
   values = None
+  solve_data_dict = {}
 
   def __init__(self, osmod, window):  
     self.debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
@@ -63,6 +65,472 @@ class OsmodTest(object):
   def testRoutines(self, values, mode, routine_type, chunk_num, carrier_separation_override, amplitude):
     self.debug.info_message("testRoutines")
     try:
+
+      def unformat_string_rrc_alpha_t(formatted_string):
+        self.debug.info_message("unformat_string_rrc_alpha_t")
+        split_values = formatted_string.split('_')
+        value_1 = abs(float(split_values[0]))
+        value_2 = abs(float(split_values[1]))
+        return value_1, value_2
+
+      def format_string_rrc_alpha_t(random_1, random_2):
+        self.debug.info_message("format_string_rrc_alpha_t")
+        return random_1, random_2
+
+      def field_update_rrc_alpha_t(field_1, field_2, value_1, value_2):
+        self.debug.info_message("field_update_rrc_alpha_t")
+        self.osmod.form_gui.window[field_1].update(value_1)
+        self.osmod.form_gui.window[field_2].update(value_2)
+
+      def unformat_string_dcs(formatted_string):
+        self.debug.info_message("unformat_string_dcs")
+        value_1 = abs(float(formatted_string))
+        return value_1, 0.0
+
+      def format_string_dcs(random_1, random_2):
+        self.debug.info_message("format_string_dcs")
+        return random_1, random_2
+
+      def field_update_dcs(field_1, field_2, value_1, value_2):
+        self.debug.info_message("field_update_dcs")
+        self.osmod.form_gui.window[field_1].update(value_1)
+
+
+      def unformat_string_standing_wave(formatted_string):
+        self.debug.info_message("unformat_string_standing_wave")
+        split_values = formatted_string.split('_')
+        value_1 = split_values[0]                  # DATA_SW_PATTERN_TYPE
+        value_2 = abs(float(split_values[1]))      # DATA_SW_LOCATION
+        self.debug.info_message("value_1: " + str(value_1))
+        self.debug.info_message("value_2: " + str(value_2))
+        return value_1, value_2
+
+      def format_string_standing_wave_from_char(random_1, random_2):
+        self.debug.info_message("format_string_standing_wave")
+        self.debug.info_message("random_1: " + str(random_1))
+        self.debug.info_message("random_2: " + str(random_2))
+        return str(random_1), str(random_2)
+
+      def format_string_standing_wave(random_1, random_2):
+        self.debug.info_message("format_string_standing_wave")
+        self.debug.info_message("random_1: " + str(random_1))
+        self.debug.info_message("random_2: " + str(random_2))
+
+        pattern = self.osmod.form_gui.combo_standingwave_pattern_options[int(random_1)]
+        self.debug.info_message("pattern: " + str(pattern))
+
+        return pattern, str(random_2)
+
+        #return str(random_1), str(random_2)
+
+      def field_update_standing_wave(field_1, field_2, value_1, value_2):
+        self.debug.info_message("field_update_standing_wave")
+        self.debug.info_message("field_1: " + str(field_1))
+        self.debug.info_message("field_2: " + str(field_2))
+        self.debug.info_message("value_1: " + str(value_1))
+        self.debug.info_message("value_2: " + str(value_2))
+        #self.osmod.form_gui.window[field_2].update(self.osmod.form_gui.combo_standingwave_pattern_options[value_2])
+        self.osmod.form_gui.window[field_1].update(value_1)
+        self.osmod.form_gui.window[field_2].update(value_2)
+
+
+      def format_string_fft(random_1, random_2):
+        return '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) , ''
+
+      def unformat_string_fft(formatted_string):
+        split_values = formatted_string.split('_')
+        value_1 = abs(float(split_values[0]))
+        value_2 = abs(float(split_values[1]))
+        return value_1, value_2
+
+      def field_update_fft(field_1, field_2, value_1, value_2):
+        self.osmod.form_gui.window[field_1].update(value_1)
+
+
+      def saveDictData(filename, dict_data):
+
+        self.solve_data_dict[mode] = dict_data
+
+        with open(filename, 'w') as convert_file:
+          #convert_file.write(json.dumps(dict_data))
+          convert_file.write(json.dumps(self.solve_data_dict))
+
+      def loadDictData(filename):
+        try:
+          with open(filename) as f:
+            data = f.read() 
+          dict_data = json.loads(data)
+
+          self.solve_data_dict = dict_data
+          if mode in dict_data:
+            return dict_data[mode]
+          else:
+            return {}
+
+          #return dict_data
+        except:
+          self.debug.error_message("no file in loadDictData: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+          return {}
+
+      def rrc_alpha_T_section():
+        try:
+          self.debug.info_message("rrc_alpha_T_section")
+
+          self.osmod.form_gui.window['cb_override_rrc_alpha'].update(True)
+          self.osmod.form_gui.window['cb_override_rrc_t'].update(True)
+
+          # first pass
+          dict_data = loadDictData("solve_data.txt")
+          if "DATA_RRC_ALPHA_T" in dict_data:
+            last_best = dict_data["DATA_RRC_ALPHA_T"]
+          else:
+            last_best = ""
+
+          test_values = []
+          # range_rrc_alpha_T
+          do_the_loop('in_rrc_alpha', 'in_rrc_t', [0, 1000, 1000], [0, 1000, 1000], solve_params[3], format_string_rrc_alpha_t, format_string_rrc_alpha_t, unformat_string_rrc_alpha_t, field_update_rrc_alpha_t, True, test_values, last_best)
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("sorted_data: " + str(sorted_data))
+
+          #test_values = get_test_values(ocn.DATA_RRC_ALPHA, ocn.DATA_RRC_T, sorted_data, convert_field_rrc_alpha_t, 3, 5, 20, False)
+          test_values = get_test_values(ocn.DATA_RRC_ALPHA, ocn.DATA_RRC_T, sorted_data, convert_field_rrc_alpha_t, 3, solve_params[1], solve_params[2], False)
+          self.debug.info_message("test_values: " + str(test_values))
+
+          # second pass
+          do_the_loop('in_rrc_alpha', 'in_rrc_t', [0, 1000, 1000], [0, 1000, 1000], solve_params[4], format_string_rrc_alpha_t, format_string_rrc_alpha_t, unformat_string_rrc_alpha_t, field_update_rrc_alpha_t, False, test_values, "")
+
+          data = self.osmod.analysis.readDataFromFile()
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+
+          final_values = get_test_values(ocn.DATA_RRC_ALPHA, ocn.DATA_RRC_T, sorted_data, convert_field_rrc_alpha_t, solve_params[5], 1, 1, True)
+          self.debug.info_message("final_values: " + str(final_values))
+
+          return final_values
+
+        except:
+          self.debug.error_message("Exception in rrc_alpha_T_section: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+      def downconvert_shift_section():
+        try:
+          self.debug.info_message("downconvert_shift_section")
+
+          self.osmod.form_gui.window['cb_overridedownconvertshift'].update(True)
+
+          # first pass
+          dict_data = loadDictData("solve_data.txt")
+          if "DATA_DCS" in dict_data:
+            last_best = dict_data["DATA_DCS"]
+          else:
+            last_best = ""
+
+          test_values = []
+          # range_downconvert_shift
+          do_the_loop('in_downconvertshift', '', [0, 1000, 1000], [], solve_params[3], format_string_dcs, format_string_dcs, unformat_string_dcs, field_update_dcs, True, test_values, last_best)
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("sorted_data: " + str(sorted_data))
+
+          #test_values = get_test_values(ocn.DATA_DOWNCONVERT_SHIFT, None, sorted_data, convert_field_dcs, 3, 5, 20, False)
+          test_values = get_test_values(ocn.DATA_DOWNCONVERT_SHIFT, None, sorted_data, convert_field_dcs, 3, solve_params[1], solve_params[2], False)
+          self.debug.info_message("test_values: " + str(test_values))
+
+          # second pass
+          do_the_loop('in_downconvertshift', '', [0, 1000, 1000], [], solve_params[4], format_string_dcs, format_string_dcs, unformat_string_dcs, field_update_dcs, False, test_values, "")
+
+          data = self.osmod.analysis.readDataFromFile()
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+
+          final_values = get_test_values(ocn.DATA_DOWNCONVERT_SHIFT, None, sorted_data, convert_field_dcs, solve_params[5], 1, 1, True)
+          self.debug.info_message("final_values: " + str(final_values))
+
+          return final_values
+
+        except:
+          self.debug.error_message("Exception in downconvert_shift_section: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+      def standing_wave_section():
+        try:
+          self.debug.info_message("standing_wave_section")
+
+          """ Standing Wave Section """ 
+          self.osmod.form_gui.window['cb_override_standingwaveoffsets'].update(True)
+
+          # first pass
+          dict_data = loadDictData("solve_data.txt")
+          if "DATA_PATTERN" in dict_data:
+            last_best = dict_data["DATA_PATTERN"]
+          else:
+            last_best = ""
+
+          test_values = []
+          # range_standing_wave
+          do_the_loop('combo_standingwave_pattern', 'in_standingwavelocation', [0, 14, 1], [0, 1000, 1000], solve_params[3], format_string_standing_wave, format_string_standing_wave_from_char, unformat_string_standing_wave, field_update_standing_wave, True, test_values, last_best)
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("sorted_data: " + str(sorted_data))
+
+          #test_values = get_test_values(ocn.DATA_SW_PATTERN_TYPE, ocn.DATA_SW_LOCATION, sorted_data, convert_field_standing_wave, 3, 5, 20, False)
+          test_values = get_test_values(ocn.DATA_SW_PATTERN_TYPE, ocn.DATA_SW_LOCATION, sorted_data, convert_field_standing_wave, 3, solve_params[1], solve_params[2], False)
+          self.debug.info_message("test_values: " + str(test_values))
+
+          # second pass
+          do_the_loop('combo_standingwave_pattern', 'in_standingwavelocation', [0, 14, 1], [0, 1000, 1000], solve_params[4], format_string_standing_wave, format_string_standing_wave_from_char, unformat_string_standing_wave, field_update_standing_wave, False, test_values, "")
+
+          data = self.osmod.analysis.readDataFromFile()
+          #self.debug.info_message("second pass data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          #self.debug.info_message("second pass sorted_data: " + str(sorted_data))
+
+          final_values = get_test_values(ocn.DATA_SW_PATTERN_TYPE, ocn.DATA_SW_LOCATION, sorted_data, convert_field_standing_wave, solve_params[5], 1, 1, True)
+          #final_values = get_test_values(ocn.DATA_SW_PATTERN_TYPE, ocn.DATA_SW_LOCATION, sorted_data, convert_field_standing_wave, 20, 1, 1, True)
+          self.debug.info_message("final_values: " + str(final_values))
+
+          return final_values
+
+
+        except:
+          self.debug.error_message("Exception in standing_wave_section: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+      def fft_interpolate_section():
+        try:
+          self.debug.info_message("fft_interpolate_section")
+
+          """ FFT Interpolate Section """ 
+          self.osmod.form_gui.window['cb_override_fft_interpolate'].update(True)
+
+          # first pass
+          dict_data = loadDictData("solve_data.txt")
+          if "DATA_FFT_INTERPOLATE" in dict_data:
+            last_best = dict_data["DATA_FFT_INTERPOLATE"]
+          else:
+            last_best = ""
+
+          test_values = []
+          # range_fft_interpolate
+          #do_the_loop('in_fft_interpolate', '', [1, 700, 100], [], solve_params[3], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, True, test_values, last_best)
+          do_the_loop('in_fft_interpolate', '', range_fft_interpolate[0], range_fft_interpolate[1], solve_params[3], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, True, test_values, last_best)
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("sorted_data: " + str(sorted_data))
+
+          #test_values = get_test_values(ocn.DATA_FFT_INTERPOLATE, None, sorted_data, convert_field_fft, 3, 5, 20, False)
+          test_values = get_test_values(ocn.DATA_FFT_INTERPOLATE, None, sorted_data, convert_field_fft, 3, solve_params[1], solve_params[2], False)
+          self.debug.info_message("test_values: " + str(test_values))
+
+          # second pass
+          #do_the_loop('in_fft_interpolate', '', [1, 700, 100], [], solve_params[4], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, False, test_values, "")
+          do_the_loop('in_fft_interpolate', '', range_fft_interpolate[0], range_fft_interpolate[1], solve_params[4], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, False, test_values, "")
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("second pass data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          #self.debug.info_message("second pass sorted_data: " + str(sorted_data))
+
+          final_values = get_test_values(ocn.DATA_FFT_INTERPOLATE, None, sorted_data, convert_field_fft, solve_params[5], 1, 1, True)
+          self.debug.info_message("final_values: " + str(final_values))
+
+          return final_values
+
+        except:
+          self.debug.error_message("Exception in fft_interpolate_section: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+      def fft_filter_section():
+        try:
+          """ FFT Filter Section """ 
+          self.osmod.form_gui.window['cb_override_fft_filter'].update(True)
+
+          # first pass
+          dict_data = loadDictData("solve_data.txt")
+          if "DATA_FFT_FILTER" in dict_data:
+            last_best = dict_data["DATA_FFT_FILTER"]
+            self.debug.info_message("last_best: " + str(last_best))
+          else:
+            last_best = ""
+
+          test_values = []
+          #range_fft_filter
+          #do_the_loop('in_fft_filter', '', [1, 700, 100], [], solve_params[3], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, True, test_values, last_best)
+          do_the_loop('in_fft_filter', '', range_fft_filter[0], range_fft_filter[1], solve_params[3], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, True, test_values, last_best)
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("sorted_data: " + str(sorted_data))
+
+          #test_values = get_test_values(ocn.DATA_FFT_FILTER, None, sorted_data, convert_field_fft, 3, 5, 20, False)
+          test_values = get_test_values(ocn.DATA_FFT_FILTER, None, sorted_data, convert_field_fft, 3, solve_params[1], solve_params[2], False)
+          self.debug.info_message("test_values: " + str(test_values))
+
+          # second pass
+          #do_the_loop('in_fft_filter', '', [1, 700, 100], [], solve_params[4], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, False, test_values, "")
+          do_the_loop('in_fft_filter', '', range_fft_filter[0], range_fft_filter[1], solve_params[4], format_string_fft, format_string_fft, unformat_string_fft, field_update_fft, False, test_values, "")
+
+          data = self.osmod.analysis.readDataFromFile()
+          self.debug.info_message("second pass data: " + str(data))
+
+          sorted_data = sorted(data, key=lambda x: x[ocn.DATA_BER])
+          self.debug.info_message("second pass sorted_data: " + str(sorted_data))
+
+          final_values = get_test_values(ocn.DATA_FFT_FILTER, None, sorted_data, convert_field_fft, solve_params[5], 1, 1, True)
+          self.debug.info_message("final_values: " + str(final_values))
+
+          return final_values
+        except:
+          self.debug.error_message("Exception in fft_filter_section: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+      # convert csv format to internal format - different from field format
+      def convert_field_fft(data, point, data_field_1, data_field_2):
+          return data[point][data_field_1]
+
+      def convert_field_standing_wave(data, point, data_field_1, data_field_2):
+          return str(data[point][data_field_1]) + '_' + str(data[point][data_field_2])
+
+      def convert_field_rrc_alpha_t(data, point, data_field_1, data_field_2):
+          return str(data[point][data_field_1]) + '_' + str(data[point][data_field_2])
+
+      def convert_field_dcs(data, point, data_field_1, data_field_2):
+          return data[point][data_field_1]
+
+      def get_test_values(data_field_1, data_field_2, sorted_data, convert_function, multiple_value_threshold, max_multiple_values, max_unique_values, return_final):
+        try:
+          data_keys = {}
+          multiple_value_counter = 0
+          unique_counter = 1
+          #data_keys[sorted_data[0][data_field]] = 1
+          data_keys[convert_function(sorted_data, 0, data_field_1, data_field_2)] = 1
+          for point in range(1, len(sorted_data)): 
+            data_value = float(sorted_data[point][ocn.DATA_BER] )
+            #data_count = data_count + 1
+
+            #if sorted_data[point][data_field] in data_keys:
+            if convert_function(sorted_data, point, data_field_1, data_field_2) in data_keys:
+              #data_keys[sorted_data[point][data_field]] = data_keys[sorted_data[point][data_field]] + 1
+              data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] = data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] + 1
+
+              # best 5 with consistent track record
+              #if data_keys[sorted_data[point][data_field]] >= multiple_value_threshold:
+              if data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] >= multiple_value_threshold:
+                #if data_keys[sorted_data[point][data_field]] != 100:
+                if data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] != 100:
+                  multiple_value_counter = multiple_value_counter + 1
+                  #data_keys[sorted_data[point][data_field]] = 100
+                  data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] = 100
+            else:
+              # top 20 one hit wonders
+              unique_counter = unique_counter + 1
+              #if unique_counter < max_unique_values
+              #data_keys[sorted_data[point][data_field]] = 1
+              data_keys[convert_function(sorted_data, point, data_field_1, data_field_2)] = 1
+
+            if multiple_value_counter >= max_multiple_values and unique_counter > max_unique_values:
+              break
+
+          unique_count = 0
+          if return_final == False:
+            new_test_values = []
+            for key, value in data_keys.items(): 
+              if data_keys[key] < multiple_value_threshold and unique_count < max_unique_values:
+                new_test_values.append(key)
+              elif data_keys[key] >= multiple_value_threshold:
+                new_test_values.append(key)
+
+              unique_count = unique_count + 1
+            self.debug.info_message("data_keys: " + str(data_keys))
+            return new_test_values
+          else:
+            new_test_values = []
+            for key, value in data_keys.items(): 
+              if data_keys[key] >= multiple_value_threshold:
+                new_test_values.append(key)
+            self.debug.info_message("data_keys: " + str(data_keys))
+            return new_test_values
+
+
+        except:
+          self.debug.error_message("Exception in get_test_values: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+
+      #def do_the_loop(update_field, start, end, divisor, modulo, format_function, unformat_function, first_pass, test_values, last_best):
+      def do_the_loop(update_field_1, update_field_2, random_a, random_b, modulo, format_function, format_function_2, unformat_function, field_update_function, first_pass, test_values, last_best):
+        try:
+          file_append = False
+
+          start_1   = random_a[0]
+          end_1     = random_a[1]
+          divisor_1 = random_a[2]
+
+          if random_b == []:
+            start_2   = start_1
+            end_2     = end_1
+            divisor_2 = divisor_1
+          else:
+            start_2   = random_b[0]
+            end_2     = random_b[1]
+            divisor_2 = random_b[2]
+
+          self.debug.info_message("do_the_loop")
+          self.debug.info_message("last_best: " + str(last_best))
+
+          if first_pass:
+            self.debug.info_message("first pass")
+            if last_best != "":
+              value_1, value_2 = unformat_function(last_best) # unformat from csv format
+              new_string_1, new_string_2 = format_function_2(value_1, value_2)  # re-format into override field format
+              field_update_function(update_field_1, update_field_2, new_string_1, new_string_2)
+              #self.osmod.form_gui.window[update_field_1].update(new_string_1)
+              for count in range(0,int(modulo)):  
+                self.testRoutine2(mode, self.osmod.form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+                file_append = True
+
+            #for count in range(0,int(num_cycles)):
+            for count in range(0,int(solve_params[0])):
+              if count % modulo == 0:
+                random_1 = (float)(random.randint(start_1, end_1) / divisor_1 )
+                random_2 = (float)(random.randint(start_2, end_2) / divisor_2 ) 
+
+                new_string_1, new_string_2 = format_function(random_1, random_2)
+                field_update_function(update_field_1, update_field_2, new_string_1, new_string_2)
+                #self.osmod.form_gui.window[update_field_1].update(new_string_1)
+              self.testRoutine2(mode, self.osmod.form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+              file_append = True
+
+          else:
+            self.debug.info_message("second pass")
+            file_append = False
+            for data_values_counter in range(0, len(test_values)):
+              value_string = test_values[data_values_counter]
+
+              self.debug.info_message("value_string: " + str(value_string))
+            
+              value_1, value_2 = unformat_function(value_string)
+              new_string_1, new_string_2 = format_function_2(value_1, value_2)
+              field_update_function(update_field_1, update_field_2, new_string_1, new_string_2)
+
+              for _ in range(0, modulo):
+                self.testRoutine2(mode, self.osmod.form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+                file_append = True
+        except:
+          self.debug.error_message("Exception in do_the_loop: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
 
       if routine_type == 'Interpolation':
         self.testInterpolate(mode)
@@ -116,6 +584,233 @@ class OsmodTest(object):
         test_message = "Hi there this is a test"
         translated_message = self.osmod.modulation_object.translateInbound(test_message)
         self.debug.info_message("translated_message: " + str(translated_message))
+
+
+      elif routine_type == 'Solve FFT Filter':
+        self.debug.info_message("Solve FFT Filter")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        #num_cycles = 1000
+        solve_params = [800, 8, 16, 3, 15, 14]
+
+        final_values = fft_filter_section()
+
+        if final_values != []:
+          dict_best_so_far = loadDictData("solve_data.txt")
+          dict_best_so_far["DATA_FFT_FILTER"] = final_values[0]
+          saveDictData("solve_data.txt", dict_best_so_far)
+          value_1, value_2 = unformat_string_fft(final_values[0])
+          new_string = format_string_fft(value_1, value_2)
+          self.osmod.form_gui.window['in_fft_filter'].update(new_string)
+
+      elif routine_type == 'Solve FFT Interpolate':
+        self.debug.info_message("Solve FFT Interpolate")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        #num_cycles = 1000
+        solve_params = [800, 8, 16, 3, 15, 14]
+
+        final_values = fft_interpolate_section()
+
+        if final_values != []:
+          dict_best_so_far = loadDictData("solve_data.txt")
+          dict_best_so_far["DATA_FFT_INTERPOLATE"] = final_values[0]
+          saveDictData("solve_data.txt", dict_best_so_far)
+          value_1, value_2 = unformat_string_fft(final_values[0])
+          new_string = format_string_fft(value_1, value_2)
+          self.osmod.form_gui.window['in_fft_interpolate'].update(new_string)
+
+      elif routine_type == 'Solve Standing Wave':
+        self.debug.info_message("Solve Standing Wave")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        #num_cycles = 1000
+        solve_params = [800, 8, 16, 3, 15, 14]
+
+        final_values = standing_wave_section()
+
+        if final_values != []:
+          dict_best_so_far = loadDictData("solve_data.txt")
+          dict_best_so_far["DATA_PATTERN"] = final_values[0]
+          saveDictData("solve_data.txt", dict_best_so_far)
+          value_1, value_2 = unformat_string_standing_wave(final_values[0])
+          new_string_1, new_string_2 = format_string_standing_wave_from_char(value_1, value_2)
+          self.osmod.form_gui.window['combo_standingwave_pattern'].update(new_string_1)
+          self.osmod.form_gui.window['in_standingwavelocation'].update(new_string_2)
+
+      elif routine_type == 'Solve RRC Alpha T':
+        self.debug.info_message("Solve RRC Alpha T")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        #num_cycles = 1000
+        solve_params = [800, 8, 16, 3, 15, 14]
+
+        final_values = rrc_alpha_T_section()
+
+        if final_values != []:
+          dict_best_so_far = loadDictData("solve_data.txt")
+          dict_best_so_far["DATA_RRC_ALPHA_T"] = final_values[0]
+          saveDictData("solve_data.txt", dict_best_so_far)
+          value_1, value_2 = unformat_string_rrc_alpha_t(final_values[0])
+          new_string_1, new_string_2 = format_string_rrc_alpha_t(value_1, value_2)
+          self.osmod.form_gui.window['in_rrc_alpha'].update(new_string_1)
+          self.osmod.form_gui.window['in_rrc_t'].update(new_string_2)
+
+
+
+      elif routine_type == 'Solve DCS':
+        self.debug.info_message("Solve DCS")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        #num_cycles = 1000
+        solve_params = [800, 8, 16, 3, 15, 14]
+
+        final_values = downconvert_shift_section()
+
+        if final_values != []:
+          dict_best_so_far = loadDictData("solve_data.txt")
+          dict_best_so_far["DATA_DCS"] = final_values[0]
+          saveDictData("solve_data.txt", dict_best_so_far)
+          value_1, value_2 = unformat_string_dcs(final_values[0])
+          new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
+          self.osmod.form_gui.window['in_downconvertshift'].update(new_string_1)
+
+
+
+
+      elif routine_type == 'Solve All':
+        self.debug.info_message("Solve All")
+        text_num = values['combo_text_options'].split(':')[0]
+        chunk_num = values['combo_chunk_options'].split(':')[0]
+        amplitude = values['slider_amplitude']
+        noise = values['btn_slider_awgn']
+        carrier_separation_override = values['slider_carrier_separation']
+
+        """
+        Iterative Convergence Engine. Solve for main 5 paramaters: Main FFT Filter, FFT Interpolation Filter, Downconvert Shift, Standing Wave Pattern, RRC Alpha and T 
+
+        solve_params = [a,b,c,d,e,f,g,h]
+
+        a - num iterations first pass
+        b - max number of multi hit values selected from first pass
+        c - max number of 1 hit values selected from first pass
+        d - iterations per selected raondom value first pass
+        e - iterations per selected value second pass
+        f - number of matches for selection second pass (must be less than e)
+
+        solve_params = [1000, 5, 20 , 3, 30, 27]
+        solve_params = [800, 10, 30,  3, 20, 17]
+
+        """
+        #solve_params = [800, 8, 16, 3, 15, 14] 
+        solve_params = [501, 6, 12, 3, 11, 10]      
+        #solve_params = [300, 6, 12, 3, 11, 10] 
+
+        # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
+        #range_fft_filter        = [[1, 700, 100], []] # 1600 thru 3200
+        #range_fft_interpolate   = [[1, 700, 100], []]
+        range_fft_filter        = [[1, 3500, 1000], []] # 6400 thru 25600
+        range_fft_interpolate   = [[1, 3500, 1000], []]
+
+        #range_standing_wave     = [[0, 14, 1], [0, 1000, 1000]]
+        #range_downconvert_shift = [[0, 1000, 1000], []]
+        #range_rrc_alpha_T       = [[0, 1000, 1000], [0, 1000, 1000]]
+
+        dict_best_so_far = self.osmod.loadSolveData(mode, "solve_data.txt")
+         
+        start_at = int(self.osmod.form_gui.window['in_convergence_engine_start_at'].get())
+        #start_at = 3
+
+        for count in range(0, 100):
+          #chosen_section = random.randint(1,5)
+          #chosen_section = (count % 5) + 1 
+
+          chosen_section = ((count + start_at - 1) % 5) + 1 
+
+          if chosen_section == 1:
+
+            final_values = fft_filter_section()
+
+            if final_values != []:
+              dict_best_so_far = loadDictData("solve_data.txt")
+              dict_best_so_far["DATA_FFT_FILTER"] = final_values[0]
+              saveDictData("solve_data.txt", dict_best_so_far)
+              value_1, value_2 = unformat_string_fft(final_values[0])
+              new_string_1, new_string_2 = format_string_fft(value_1, value_2)
+              self.osmod.form_gui.window['in_fft_filter'].update(new_string_1)
+
+          elif chosen_section == 2:
+
+            final_values = fft_interpolate_section()
+
+            if final_values != []:
+              dict_best_so_far = loadDictData("solve_data.txt")
+              dict_best_so_far["DATA_FFT_INTERPOLATE"] = final_values[0]
+              saveDictData("solve_data.txt", dict_best_so_far)
+              value_1, value_2 = unformat_string_fft(final_values[0])
+              new_string_1, new_string_2 = format_string_fft(value_1, value_2)
+              self.osmod.form_gui.window['in_fft_interpolate'].update(new_string_1)
+
+          elif chosen_section == 3:
+
+            final_values = downconvert_shift_section()
+
+            if final_values != []:
+              dict_best_so_far = loadDictData("solve_data.txt")
+              dict_best_so_far["DATA_DCS"] = final_values[0]
+              saveDictData("solve_data.txt", dict_best_so_far)
+              value_1, value_2 = unformat_string_dcs(final_values[0])
+              new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
+              self.osmod.form_gui.window['in_downconvertshift'].update(new_string_1)
+
+          elif chosen_section == 4:
+
+            final_values = standing_wave_section()
+
+            if final_values != []:
+              dict_best_so_far = loadDictData("solve_data.txt")
+              dict_best_so_far["DATA_PATTERN"] = final_values[0]
+              saveDictData("solve_data.txt", dict_best_so_far)
+              value_1, value_2 = unformat_string_standing_wave(final_values[0])
+              new_string_1, new_string_2 = format_string_standing_wave_from_char(value_1, value_2)
+              self.osmod.form_gui.window['combo_standingwave_pattern'].update(new_string_1)
+              self.osmod.form_gui.window['in_standingwavelocation'].update(new_string_2)
+
+          elif chosen_section == 5:
+
+            final_values = rrc_alpha_T_section()
+
+            if final_values != []:
+              dict_best_so_far = loadDictData("solve_data.txt")
+              dict_best_so_far["DATA_RRC_ALPHA_T"] = final_values[0]
+              saveDictData("solve_data.txt", dict_best_so_far)
+              value_1, value_2 = unformat_string_rrc_alpha_t(final_values[0])
+              new_string_1, new_string_2 = format_string_rrc_alpha_t(value_1, value_2)
+              self.osmod.form_gui.window['in_rrc_alpha'].update(new_string_1)
+              self.osmod.form_gui.window['in_rrc_t'].update(new_string_2)
+
+
+
 
       elif routine_type == 'Calculate Constellation Shift Tables':
         self.createConstellationShiftTables(values, mode, chunk_num, carrier_separation_override, amplitude)
@@ -511,11 +1206,11 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
     self.window = form_gui.window
     self.test_double_carrier_8psk(mode)
 
-  def testRoutine2(self, mode, form_gui, values, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude):
+  def testRoutine2(self, mode, form_gui, values, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude, file_append):
     self.debug.info_message("testRoutine2")
     self.window = form_gui.window
     self.values = values
-    self.test1(mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude)
+    self.test1(mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
 
@@ -560,10 +1255,8 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
 
       """ filter the output signal """
-      tx_filter_params = self.osmod.tx_filter
-      #audio_block = self.osmod.modulation_object.apply_filter(audio_block, tx_filter_params, center_frequency)
-      data2 = self.osmod.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.osmod.getTxSampleRate())
-
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter, center_frequency, self.osmod.getTxSampleRate())
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter2, center_frequency, self.osmod.getTxSampleRate())
 
 
       #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
@@ -585,36 +1278,44 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(audio_block, values, center_frequency, self.osmod.getTxSampleRate())
 
       """ filter the input signal """
-      rx_filter_params = self.osmod.rx_filter
-      #audio_block = self.osmod.modulation_object.apply_filter(audio_block, rx_filter_params, center_frequency)
-      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, rx_filter_params, center_frequency, self.osmod.getRxSampleRate())
+      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, self.osmod.rx_filter, center_frequency, self.osmod.getRxSampleRate())
+      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, self.osmod.rx_filter2, center_frequency, self.osmod.getRxSampleRate())
 
       """ locate pulse start index """
       #ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_block, audio_block], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
       #pulse_start_index = ret_values[0]
 
 
-
-
       base_signal = audio_block[0].copy()
       half = int(self.osmod.pulses_per_block / 2)
 
-      #rotation_dict = {}
-
       rotation_dict = self.osmod.opd.readRotationTablesFromFile(tablename)
 
-
       if full_partial == "full":
-        loop_start = 3
-        loop__end = half + 1
+        loop__end = half
+        if self.osmod.pulses_per_block == 64:
+          loop_start = 12
+          loop_increment = 3
+        elif self.osmod.pulses_per_block == 128:
+          loop_start = 21
+          loop_increment = 3
+        elif self.osmod.pulses_per_block == 256:
+          loop_start = 45
+          loop_increment = 9
+        elif self.osmod.pulses_per_block == 512:
+          loop_start = 84
+          loop_increment = 3
+        else:
+          loop_start = 3
+          loop_increment = 1
+
       elif full_partial == "partial":
-        loop_start = half - 3   #18 #half - 6
-        loop__end  = half + 1
+        loop_increment = 1
+        loop_start = half - 3
+        loop__end  = half
         #self.osmod.rotation_increments = 100000
 
-      #for pulse_train_length in range(3,33):
-      for pulse_train_length in range(loop_start,loop__end):
-
+      for pulse_train_length in range(loop_start,loop__end + 1, loop_increment):
         test_limit = half - pulse_train_length
 
         interpolated_lower = []
@@ -626,7 +1327,6 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         self.debug.info_message("interpolated_lower: " + str(interpolated_lower))
         self.debug.info_message("interpolated_higher: " + str(interpolated_higher))
 
-        #rotation_dict[pulse_train_length] = []
         rotation_dict[str(int(center_frequency)) + "_" + str(pulse_train_length)] = []
 
         for offset in range(0, test_limit + 1):
@@ -732,7 +1432,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
 
 
-  def test1(self, mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude):
+  def test1(self, mode, noise_mode, text_num, chunk_num, carrier_separation_override, amplitude, file_append):
     self.debug.info_message("test1")
 
     try:
@@ -863,9 +1563,8 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
       """ filter the output signal """
-      tx_filter_params = self.osmod.tx_filter
-      #data2 = self.osmod.modulation_object.apply_filter(data2, tx_filter_params, center_frequency)
-      data2 = self.osmod.modulation_object.apply_filterSR(data2, tx_filter_params, center_frequency, self.osmod.getTxSampleRate())
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter, center_frequency, self.osmod.getTxSampleRate())
+      data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter2, center_frequency, self.osmod.getTxSampleRate())
 
       """
       signal_width = 48 # 50 actually works at 1.5 AWGN to 0.06 BER
@@ -1066,9 +1765,8 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       """ receive section """
 
       """ filter the input signal """
-      rx_filter_params = self.osmod.rx_filter
-      #audio_array = self.osmod.modulation_object.apply_filter(audio_array, rx_filter_params, center_frequency)
-      audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, rx_filter_params, center_frequency, self.osmod.getRxSampleRate())
+      audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, self.osmod.rx_filter, center_frequency, self.osmod.getRxSampleRate())
+      audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, self.osmod.rx_filter2, center_frequency, self.osmod.getRxSampleRate())
 
 
       if use_hifi_tx == True and use_hifi_rx == True:
@@ -1348,6 +2046,18 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         gp2 = 0 #self.osmod.fec_params[2]
         gpdepth = 0
 
+      override_fec_puncture_code = self.osmod.form_gui.window['cb_override_fec_puncture_code'].get()
+      if override_fec_puncture_code:
+        puncture_code =  self.osmod.form_gui.window['in_fec_puncture_code'].get()
+        puncture_code = puncture_code.replace(',','_')
+      else:
+        puncture_code = '0_0_0_0'
+
+      override_ldpc_snr = self.osmod.form_gui.window['cb_override_ldpc_snr'].get()
+      if override_ldpc_snr:
+        ldpc_snr = self.osmod.form_gui.window['in_ldpc_snr'].get()
+      else:
+        ldpc_snr = 0.0
 
       detector_threshold_1 = 1
       detector_threshold_2 = 1
@@ -1361,9 +2071,9 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       pulse_train_length = self.osmod.detector.pulse_train_length
 
-      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'", fft_filter_string, fft_interpolate_string]
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'", fft_filter_string, fft_interpolate_string, puncture_code, ldpc_snr]
       #csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location]
-      self.osmod.analysis.writeDataToFile(csv_data)
+      self.osmod.analysis.writeDataToFile(csv_data, file_append)
 
       self.debug.info_message("strongest frequency is: " + str(self.osmod.modulation_object.getStrongestFrequency(audio_array, 500, 2000)))
       self.debug.info_message("strongest frequencies over range is: " + str(self.osmod.modulation_object.getStrongestFrequencies(audio_array, 20, 500, 2000)))

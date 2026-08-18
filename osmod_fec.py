@@ -234,7 +234,17 @@ class OsmodViterbi(object):
       gp1     = self.osmod.fec_params[1]
       gp2     = self.osmod.fec_params[2]
 
-    puncture_code = self.osmod.fec_params[3]
+    override_fec_puncture_code = self.osmod.form_gui.window['cb_override_fec_puncture_code'].get()
+    if override_fec_puncture_code:
+      puncture_code = self.osmod.form_gui.window['in_fec_puncture_code'].get()
+      self.debug.info_message("puncture_code: " + str(puncture_code) )
+      puncture_code_str = puncture_code.split(',')
+      puncture_code = [int(puncture_code_str[0]) , int(puncture_code_str[1]) , int(puncture_code_str[2]) , int(puncture_code_str[3])]
+      self.debug.info_message("puncture_code: " + str(puncture_code) )
+    else:
+      puncture_code = self.osmod.fec_params[3]
+
+
     if len(puncture_code) == 0:
       self.codec = Viterbi(gpdepth, [gp1, gp2])
     else:
@@ -298,61 +308,85 @@ class OsmodViterbi2(object):
 
 class OsmodLDPC(object):
 
-  debug  = db.Debug(ocn.DEBUG_OSMOD_MAIN)
-  osmod  = None
-  window = None
-  values = None
+  debug    = db.Debug(ocn.DEBUG_OSMOD_MAIN)
+  osmod    = None
+  window   = None
+  values   = None
+  ldpc_snr = None
 
   def __init__(self, osmod, window):  
     self.debug = db.Debug(ocn.DEBUG_OSMOD_MAIN)
-    self.debug.info_message("__init__")
+    self.debug.info_message("OsmodLDPC __init__")
     self.osmod = osmod
 
-
   def init_params(self):
+    self.debug.info_message("OsmodLDPC init_params")
     """ set parameters for fixed frame message """
     """ source bits 641...total 800 """
-    n = self.osmod.ldpc_params[0] #400
-    d_v = self.osmod.ldpc_params[2] #2    # increasing this number redues number of source bits relative to fixed length message
-    d_c = self.osmod.ldpc_params[3] #20
-    self.seed = np.random.RandomState(42)
-    self.H, self.G = make_ldpc(n, d_v, d_c, seed=self.seed, systematic=True, sparse=True)
-    n, k = self.G.shape
-    print("Number of coded bits:", k)
-    self.n_trials = 1  # number of transmissions with different noise
+    try:
+      override_ldpc_snr = self.osmod.form_gui.window['cb_override_ldpc_snr'].get()
+      if override_ldpc_snr:
+        self.ldpc_snr = int(self.osmod.form_gui.window['in_ldpc_snr'].get())
+      else:
+        self.ldpc_snr = self.osmod.fec_params[4]
+
+      n = self.osmod.fec_params[0] #400
+      d_v = self.osmod.fec_params[2] #2    # increasing this number redues number of source bits relative to fixed length message
+      d_c = self.osmod.fec_params[3] #20
+      self.seed = np.random.RandomState(42)
+      self.H, self.G = make_ldpc(n, d_v, d_c, seed=self.seed, systematic=True, sparse=True)
+      n, k = self.G.shape
+
+      print("Number of coded bits:", k)
+      self.n_trials = 1  # number of transmissions with different noise
+    except:
+      self.debug.error_message("Exception in OsmodLDPC::init_params: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   def encode(self, message):
-    count =self.osmod.ldpc_params[1] - len(message)  #    361 - len(message)
-    sys.stdout.write("fixed message length difference: " + str(count) + "\n")
+    try:
+      count =self.osmod.fec_params[1] - len(message)  #    361 - len(message)
+      sys.stdout.write("fixed message length difference: " + str(count) + "\n")
 
-    for i in range(0, count):
-      message = np.append(message, 0)
+      for i in range(0, count):
+        message = np.append(message, 0)
 
-    count = len(message)
-    sys.stdout.write("fixed message length: " + str(count) + "\n")
+      count = len(message)
+      sys.stdout.write("fixed message length: " + str(count) + "\n")
 
+      V = np.tile(message, (self.n_trials, 1)).T  # stack v in columns
+      sys.stdout.write("fixed message pre ldpc: " + str(message) + "\n")
+      sys.stdout.write("len fixed message pre ldpc: " + str(len(message)) + "\n")
 
-    V = np.tile(message, (self.n_trials, 1)).T  # stack v in columns
-    sys.stdout.write("fixed message pre ldpc: " + str(message) + "\n")
-    sys.stdout.write("len fixed message pre ldpc: " + str(len(message)) + "\n")
+      #y = encode(self.G, V, 1000, seed=self.seed)
+      #y = encode(self.G, V, snr=self.osmod.fec_params[4], seed=self.seed)
+      y = encode(self.G, V, snr=self.ldpc_snr, seed=self.seed)
 
-    y = encode(self.G, V, 1000, seed=self.seed)
-    y_binary = (y > 0).astype(int)
+      y_binary = (y > 0).astype(int)
+      y_binary_converted = y_binary.flatten()
 
-    y_binary_converted = y_binary.flatten()
+      sys.stdout.write("converted binary encoded message: " + str(y_binary_converted) + "\n")
+      #sys.stdout.write("binary encoded message: " + str(y_binary) + "\n")
+      #sys.stdout.write("len binary encoded message: " + str(len(y_binary)) + "\n")
 
-    sys.stdout.write("converted binary encoded message: " + str(y_binary_converted) + "\n")
-    #sys.stdout.write("binary encoded message: " + str(y_binary) + "\n")
-    #sys.stdout.write("len binary encoded message: " + str(len(y_binary)) + "\n")
+    except:
+      self.debug.error_message("Exception in OsmodLDPC::encode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
     return y_binary_converted
 
   def decode(self, y_binary):
 
-    D = decode(self.H, y_binary, 2, self.osmod.ldpc_params[4])   #500)
-    x = get_message(self.G, D[:])      #use if n_trials == 1
-    sys.stdout.write("decoded message: " + str(x) + "\n")
+    try:
+      #D = decode(self.H, y_binary, 2, self.osmod.fec_params[4])   #500)
+      #D = decode(self.H, y_binary, -20, maxiter = 40000)   #500)
+      #D = decode(self.H, y_binary, snr=-20, maxiter = 200)
+      D = decode(self.H, y_binary, snr=self.ldpc_snr, maxiter = 1000)
+
+      x = get_message(self.G, D[:])      #use if n_trials == 1
+      sys.stdout.write("decoded message: " + str(x) + "\n")
+
+    except:
+      self.debug.error_message("Exception in OsmodLDPC::decode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
     return x
 
