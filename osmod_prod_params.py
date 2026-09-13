@@ -71,10 +71,12 @@ class OsmodProdParams(object):
         # LB28-25600-512-2-15-I   
         #"""
 
-        'LB28-25600-256-2-15-I':  {'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
+        'LB28-25600-256-2-15-I':  {
+
+                    'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
                     'decoder_callback'     : self.osmod.demod_2fsk8psk.demodulate_2fsk_8psk,
                     'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTriplet,
-                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextResults,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlist,
                     'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                     'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                     'symbol_block_size'    : 25600,
@@ -93,16 +95,23 @@ class OsmodProdParams(object):
                     'fft_interpolate'      : (-1, 1, -1, 1),
                     'pulses_per_block'     : 256,
                     'process_debug'        : False,
+                    'parameters'           : (1500, 0.986, 0.015, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 17, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 17, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 17, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 17, 5, 50),
 
-                    'parameters'           : (1500, 0.986, 0.015, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-        'LB28-64-2-10-I':    {'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
+        }, 
+
+
+
+        'LB28-64-2-10-I': {
+                    'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
                     'decoder_callback'     : self.osmod.demod_2fsk8psk.demodulate_2fsk_8psk,
                     'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTriplet,
-                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextResults,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlist,
                     'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                     'info'                 : '0.625 characters per second, 3.75 baud (bits per second)',
                     'symbol_block_size'    : 12800,
@@ -121,25 +130,29 @@ class OsmodProdParams(object):
                     'fft_interpolate'      : (-3, 2, -2, 3),
                     'pulses_per_block'     : 64,
                     'process_debug'        : False,
+                    'parameters'           : (600, 0.70, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
                     #Filter carriers
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 10, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 10, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 10, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 10, 5, 50),
 
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'parameters'           : (600, 0.70, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+        }, 
+
 
         'LB28-240-N' :{ 
                     'info'                 : 'mode - based on LB28-240-2-2-100-N lo carrier must be on 100Hz boundary.  33.333 characters per second, 200 baud (bits per second).',
                     'encoder_callback'     : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
                     'decoder_callback'     : self.osmod.demod_2fsk8psk.demodulate_2fsk_8psk,
                     'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTriplet,
-                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextResults,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlist,
                     'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
                     'info'                 : '33.33 characters per second, 200 baud (bits per second)',
                     'symbol_block_size'    : 240,
@@ -163,6 +176,75 @@ class OsmodProdParams(object):
         }, 
         
 
+
+        'LB28-102400-I3-FC40' :{ 
+                    'inherit_from'          : 'LB28-102400-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.15625 characters per second, 0.9375 baud (bits per second).',
+                    'carrier_separation'    : 40,
+
+                    #'fft_filter'            : (-6.33,6.72,-6.72,6.33),
+                    #'fft_interpolate'       : (-4.29,1.44,-1.44,4.29),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.909),
+                    #'downconvert_shift'     : 0.932, 
+                    #'parameters'            : (1500, 0.042, 0.885, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
+
+        }, 
+
+
+        'LB28-102400-I3-FC5' :{ 
+                    'inherit_from'        : 'LB28-102400-I3',
+                    'info'                  : 'Filtered Carriers - 10 Hz Wide - 0.15625 characters per second, 0.9375 baud (bits per second).',
+                    'carrier_separation'    : 5,
+
+                    'fft_filter'           : (-2.641,3.476,-3.476,2.641),
+                    'fft_interpolate'      : (-2.588,0.729,-0.729,2.588),
+                    'parameters'            : (1500, 0.727, 0.82, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.894),
+                    'downconvert_shift'     : 0.744,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+
+        }, 
+
+
+
+        'LB28-102400-I3' :{ 
+                    'inherit_from'          : 'LB28-I3-BASE',
+                    'info'                  : '0.15625 characters per second, 0.9375 baud (bits per second).',
+                    'symbol_block_size'     : 102400,
+                    'pulses_per_block'      : 1024,
+                    'symbol_wave_function'  : self.osmod.mod_2fsk8psk.fivehundredtwelfths_symbol_wave_function,
+                    'fft_filter'            : (-0.8, 0.8, -0.8, 0.8),
+                    'fft_interpolate'       : (-0.8, 0.8, -0.8, 0.8),
+                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'A-D', 0.619),
+        }, 
+
+
+
+        'LB28-51200-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-51200-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.15625 characters per second, 0.9375 baud (bits per second).',
+                    'carrier_separation'    : 40,
+
+                    #'fft_filter'            : (-6.33,6.72,-6.72,6.33),
+                    #'fft_interpolate'       : (-4.29,1.44,-1.44,4.29),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.909),
+                    #'downconvert_shift'     : 0.932, 
+                    #'parameters'            : (1500, 0.042, 0.885, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
         'LB28-51200-I3-FC40' :{ 
                     'inherit_from'          : 'LB28-51200-I3',
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.15625 characters per second, 0.9375 baud (bits per second).',
@@ -174,11 +256,29 @@ class OsmodProdParams(object):
                     #'downconvert_shift'     : 0.932, 
                     #'parameters'            : (1500, 0.042, 0.885, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
 
+        }, 
+
+
+
+
+        'LB28-51200-I3-FC5' :{ 
+                    'inherit_from'        : 'LB28-51200-I3',
+                    'info'                  : 'Filtered Carriers - 10 Hz Wide - 0.15625 characters per second, 0.9375 baud (bits per second).',
+                    'carrier_separation'    : 5,
+
+                    'fft_filter'           : (-2.641,3.476,-3.476,2.641),
+                    'fft_interpolate'      : (-2.588,0.729,-0.729,2.588),
+                    'parameters'            : (1500, 0.727, 0.82, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.894),
+                    'downconvert_shift'     : 0.744,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -235,8 +335,8 @@ class OsmodProdParams(object):
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.552), # 15 Hz
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.434), # 9 Hz
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 12, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 12, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 12, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 12, 5, 50),
 
                     'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -18.12438208730191,  18.74388701266639, 257.8458], # available, low freq relative center, hi freq relative center
 
@@ -257,11 +357,45 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.684), # 4 of 6
                     'downconvert_shift'     : 0.461, # 4 of 6 - 4 of 10 @18
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
 
         }, 
 
+
+        'LB28-25600-I3-FC50' :{ 
+                    'inherit_from'          : 'LB28-25600-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
+                    'carrier_separation'    : 50,
+
+                    'fft_filter'            : (-0.694,0.767,-0.767,0.694),
+                    'fft_interpolate'       : (-0.99,0.866,-0.866,0.99),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.676),
+                    'downconvert_shift'     : 0.414, 
+                    'parameters'            : (1500, 0.115, 0.945, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 25), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 25), 2, 50),
+
+        }, 
+
+
+
+        'LB28-25600-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-25600-I3',
+                    'info'                  : 'Filtered Carriers - 41.2 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-0.63,0.369,-0.369,0.63),
+                    'fft_interpolate'       : (-0.606,0.475,-0.475,0.606),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.431),
+                    'downconvert_shift'     : 0.112, 
+                    'parameters'            : (1500, 0.878, 0.941, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
 
 
         'LB28-25600-I3-FC40' :{ 
@@ -269,19 +403,55 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
                     'carrier_separation'    : 40,
 
-                    'fft_filter'            : (-1.072,0.509,-0.509,1.072),
-                    'fft_interpolate'       : (-3.027,0.519,-0.519,3.027),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.651),
-                    'downconvert_shift'     : 0.977, 
-                    'parameters'            : (1500, 0.052, 0.844, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-0.516,0.643,-0.643,0.516),
+                    'fft_interpolate'       : (-0.677,0.756,-0.756,0.677),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.944),
+                    'downconvert_shift'     : 0.969, 
+                    'parameters'            : (1500, 0.02, 0.888, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
-
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
 
         }, 
+
+
+
+        'LB28-25600-I3-FC25' :{ 
+                    'inherit_from'          : 'LB28-25600-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-0.391,0.628,-0.628,0.391),
+                    'fft_interpolate'       : (-1.142,0.468,-0.468,1.142),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.313),
+                    'downconvert_shift'     : 0.008, 
+                    'parameters'            : (1500, 0.578, 0.977, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+
+        }, 
+
+
+
+        'LB28-25600-I3-FC20' :{ 
+                    'inherit_from'          : 'LB28-25600-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
+                    'carrier_separation'    : 20,
+
+                    'fft_filter'            : (-0.619,0.657,-0.657,0.619),
+                    'fft_interpolate'       : (-0.495,0.351,-0.351,0.495),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.818),
+                    'downconvert_shift'     : 0.885, 
+                    'parameters'            : (1500, 0.621, 0.819, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+
+        }, 
+
 
 
         'LB28-25600-I3-FC10' :{ 
@@ -289,17 +459,41 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 10Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second). ',
                     'carrier_separation'    : 10,
 
-                    #'fft_filter'            : (-5.83, 5.4, -5.4, 5.83),
-                    #'fft_interpolate'       : (-6.27, 1.42, -1.42, 6.27),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.042),
-                    #'downconvert_shift'     : 0.814, 
-                    #'parameters'            : (1500, 0.216, 0.807, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'           : (-0.662,0.755,-0.755,0.662),
+                    'fft_interpolate'      : (-0.796,0.687,-0.687,0.796),
+                    'parameters'            : (1500, 0.433, 0.951, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.799),
+                    'downconvert_shift'     : 0.711,
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 5), 2, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 5), 2, 50),
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50), 
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
 
         }, 
+
+
+
+
+        'LB28-25600-I3-FC5' :{ 
+                    'inherit_from'        : 'LB28-25600-I3',
+                    'info'                  : 'Filtered Carriers - 10 Hz Wide - 0.3125 characters per second, 1.875 baud (bits per second).',
+                    'carrier_separation'    : 5,
+
+                    'fft_filter'           : (-0.986,0.628,-0.628,0.986),
+                    'fft_interpolate'      : (-0.644,0.419,-0.419,0.644),
+                    'parameters'            : (1500, 0.697, 0.929, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.397),
+                    'downconvert_shift'     : 0.147,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 2.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 2.5), 2, 50),
+
+        }, 
+
+
 
 
         'LB28-25600-I3' :{ 
@@ -340,11 +534,29 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.172),
                     'downconvert_shift'     : 0.784,
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 6, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 6, 5, 50),
 
         }, 
 
+
+
+
+        'LB28-12800-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-12800-I3',
+                    'info'                  : 'FFT Filtered - 42.5 Hz Wide - 0.625 characters per second, 3.75 baud (bits per second).',
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-1.287,0.962,-0.962,1.287),
+                    'fft_interpolate'       : (-1.08,0.735,-0.735,1.08),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.916),
+                    'downconvert_shift'     : 0.972, 
+                    'parameters'            : (1500, 0.166, 0.953, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
 
 
 
@@ -359,11 +571,45 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.018, 
                     'parameters'            : (1500, 0.166, 0.953, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-56, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-56, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -47, 2, 40),
 
+        }, 
+
+
+        'LB28-12800-I3-FC25' :{ 
+                    'inherit_from'          : 'LB28-12800-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.625 characters per second, 3.75 baud (bits per second).',
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-0.812,1.555,-1.555,0.812),
+                    'fft_interpolate'       : (-1.747,0.714,-0.714,1.747),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.916),
+                    'downconvert_shift'     : 0.476, 
+                    'parameters'            : (1500, 0.166, 0.953, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+
+        }, 
+
+
+
+        'LB28-12800-I3-FC20' :{ 
+                    'inherit_from'          : 'LB28-12800-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 0.625 characters per second, 3.75 baud (bits per second).',
+                    'carrier_separation'    : 20,
+
+                    'fft_filter'            : (-0.812,1.555,-1.555,0.812),
+                    'fft_interpolate'       : (-1.747,0.714,-0.714,1.747),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.916),
+                    'downconvert_shift'     : 0.476, 
+                    'parameters'            : (1500, 0.166, 0.953, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
 
         }, 
 
@@ -385,20 +631,42 @@ class OsmodProdParams(object):
 
         'LB28-12800-I3-FC10' :{ 
                     'inherit_from'          : 'LB28-12800-I3',
-                    'info'                  : 'Filtered Carriers - 10Hz Wide - 0.625 characters per second, 3.75 baud (bits per second). ',
+                    'info'                  : 'Filtered Carriers - 12Hz Wide - 0.625 characters per second, 3.75 baud (bits per second). ',
                     'carrier_separation'    : 10,
 
-                    'fft_filter'            : (-1.23, 2.25, -2.25, 1.23),
-                    'fft_interpolate'      : (-1.0, 0.1, -0.1, 1.0),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.973),
-                    'downconvert_shift'     : 0.722,
-                    'parameters'            : (1500, 0.704, 0.982, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'fft_filter'            : (-1.006,0.698,-0.698,1.006),
+                    'fft_interpolate'       : (-1.96,2.326,-2.326,1.96),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.945),
+                    'downconvert_shift'     : 0.072,
+                    'parameters'            : (1500, 0.603, 0.967, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50), 
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50), 
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
 
         }, 
+
+
+
+
+
+        'LB28-12800-I3-FC5' :{ 
+                    'inherit_from'        : 'LB28-12800-I3',
+                    'info'                  : 'Filtered Carriers - 10 Hz Wide - 0.625 characters per second, 3.75 baud (bits per second).',
+                    'carrier_separation'    : 5,
+
+                    'fft_filter'           : (-1.056,1.662,-1.662,1.056),
+                    'fft_interpolate'      : (-1.148,1.139,-1.139,1.148),
+                    'parameters'            : (1500, 0.608, 0.786, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.646),
+                    'downconvert_shift'     : 0.872,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+
+        }, 
+
+
 
 
         'LB28-12800-I3-GC32' :{ 
@@ -411,8 +679,8 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.399,
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 32, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 32, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 32, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 32, 5, 50),
 
         }, 
 
@@ -464,18 +732,35 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second).',
                     'carrier_separation'    : 50,
 
-                    #'fft_filter'            : (-6.33,6.72,-6.72,6.33),
-                    #'fft_interpolate'       : (-4.29,1.44,-1.44,4.29),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.909),
-                    #'downconvert_shift'     : 0.932, 
-                    #'parameters'            : (1500, 0.042, 0.885, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-1.916,1.877,-1.877,1.916),
+                    'fft_interpolate'       : (-1.221,1.631,-1.631,1.221),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.826),
+                    'downconvert_shift'     : 0.691, 
+                    'parameters'            : (1500, 0.856, 0.747, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 25), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 25), 2, 50),
 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-120, 25), 2, 60),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-120, 25), 2, 60),
-                    #'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -40, 2, 60),
-                    #'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -40, 2, 60),
+        }, 
 
+
+
+
+        'LB28-6400-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-6400-I3',
+                    'info'                  : 'FFT Filtered - 45 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second).',
+                    'carrier_separation'    : 40,
+
+                    # final (for now)
+                    'fft_filter'            : (-1.953,1.984,-1.984,1.953),
+                    'fft_interpolate'       : (-0.763,2.357,-2.357,0.763),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.854),
+                    'downconvert_shift'     : 0.295, 
+                    'parameters'            : (1500, 0.289, 0.819, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
         }, 
 
@@ -487,20 +772,111 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 40,
 
                     # final (for now)
-                    'fft_filter'            : (-2.416,2.039,-2.039,2.416),
-                    'fft_interpolate'       : (-1.111,1.895,-1.895,1.111),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.273),
-                    'downconvert_shift'     : 0.665, 
-                    'parameters'            : (1500, 0.148, 0.923, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-1.953,1.984,-1.984,1.953),
+                    'fft_interpolate'       : (-0.763,2.357,-2.357,0.763),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.854),
+                    'downconvert_shift'     : 0.295, 
+                    'parameters'            : (1500, 0.289, 0.819, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-115, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-115, 20), 2, 40),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-53, 20), 2, 40),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-53, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -47, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 20), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 20), 2, 50),
 
         }, 
+
+
+        # define parameter group for use with inclue_params
+        'FEC_VITERBI' :{ 
+                    'FEC'                  : ocn.FEC_VITERBI,
+                    'fec_params'           : (13 , 5890 , 6271, []),
+                    'msg_sections'         : (8,0,48), #init sequence length, msg ID length, message length
+                    'msg_type'             : ocn.MSGTYPE_FIXED_LENGTH,
+                    'extrapolate_seqlen'   : 8,
+        }, 
+
+        'LB28-6400-I3-FC25-VCE' :{ 
+                    'inherit_from'         : 'LB28-6400-I3-FC25',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI',
+                    'rotation_table_name'  : 'LB28-6400-I3-FC25',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+                    #'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+        'LB28-6400-I3-FC25-CE' :{ 
+                    'inherit_from'         : 'LB28-6400-I3-FC25',
+                    'info'                 : 'CRC with Extrapolate - 10Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTriplet,
+
+                    'rotation_table_name'  : 'LB28-6400-I3-FC25',
+                    'crc_params'           : (ocn.CRC_ENABLE, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 8),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+        'LB28-6400-I3-FC25' :{ 
+                    'inherit_from'          : 'LB28-6400-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
+                    'carrier_separation'    : 25,
+
+                    # final (for now)
+                    'fft_filter'            : (-1.859,2.158,-2.158,1.859),
+                    'fft_interpolate'       : (-1.378,1.472,-1.472,1.378),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.251),
+                    'downconvert_shift'     : 0.729, 
+                    'parameters'            : (1500, 0.266, 0.99, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'receive_pre_filter'    : ocn.RCV_PRE_FILTER_DISABLE,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+
+        }, 
+
+
+
+        'LB28-6400-I3-FC20' :{ 
+                    'inherit_from'          : 'LB28-6400-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
+                    'carrier_separation'    : 20,
+
+                    # final (for now)
+                    'fft_filter'            : (-1.432,1.947,-1.947,1.432),
+                    'fft_interpolate'       : (-2.252,2.438,-2.438,2.252),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.251),
+                    'downconvert_shift'     : 0.011, 
+                    'parameters'            : (1500, 0.266, 0.99, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+
+        }, 
+
+
+
+
+        'LB28-6400-I3-FC16' :{ 
+                    'inherit_from'          : 'LB28-6400-I3',
+                    'info'                  : 'Filtered Carriers - 30 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
+                    'carrier_separation'    : 16,
+
+                    # final (for now)
+                    'fft_filter'            : (-1.255,2.259,-2.259,1.255),
+                    'fft_interpolate'       : (-1.585,0.646,-0.646,1.585),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.58),
+                    'downconvert_shift'     : 0.816, 
+                    'parameters'            : (1500, 0.366, 0.93, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #Filter carriers
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+
+        }, 
+
 
 
         'LB28-6400-I3-FC15' :{ 
@@ -514,10 +890,10 @@ class OsmodProdParams(object):
                     #'downconvert_shift'     : 0.836, 
                     #'parameters'            : (1500, 0.331, 0.63, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 2, 4, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 2, 4, 50),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -49, 4, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -49, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 2, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 2, 4, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -49, 4, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -49, 4, 50),
 
                     #'extrapolate'           : 'yes',
 
@@ -543,17 +919,17 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 10Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
                     'carrier_separation'    : 10,
 
-                    'fft_filter'            : (-1.51, 4.46, -4.46, 1.51),
-                    'fft_interpolate'       : (-3.18, 02.45, -2.45, 3.18),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.655),
-                    'downconvert_shift'     : 0.014,
-                    'parameters'            : (1500, 0.27, 1.0, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-2.27,2.126,-2.126,2.27),
+                    'fft_interpolate'       : (-2.318,2.407,-2.407,2.318),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.458),
+                    'downconvert_shift'     : 0.328,
+                    'parameters'            : (1500, 0.32, 0.993, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     #Filter carriers
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50), 
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -2, 5, 50), 
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -2, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50), 
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -2, 5, 50), 
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -2, 5, 50),
 
         }, 
 
@@ -571,8 +947,8 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.894),
                     'downconvert_shift'     : 0.744,
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -589,8 +965,8 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.47),
                     'downconvert_shift'     : 0.944,
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -607,8 +983,8 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.111),
                     'downconvert_shift'     : 0.44,
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -625,11 +1001,11 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-D', 0.147),
                     'downconvert_shift'     : 0.552,
 
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -31, 2, 30),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -31, 2, 30),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -31, 2, 30),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -31, 2, 30),
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -645,11 +1021,11 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-D', 0.147),
                     'downconvert_shift'     : 0.552,
 
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -19, 4, 40),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -19, 4, 40),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -19, 4, 40),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -19, 4, 40),
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -22, 4, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
 
@@ -777,10 +1153,10 @@ class OsmodProdParams(object):
 
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_NOTCH, -50, 2, 40),
                     #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_NOTCH, -50, 2, 40),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 25), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 25), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 25), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 25), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
         }, 
 
@@ -802,6 +1178,26 @@ class OsmodProdParams(object):
 
 
 
+
+        'LB28-3200-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 40,
+
+                    # final (for now)
+                    #'fft_filter'            : (-3.08,2.6,-2.6,3.08),
+                    #'fft_interpolate'       : (-6.22,6.05,-6.05,6.22),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.626),
+                    #'downconvert_shift'     : 0.336, 
+                    #'parameters'            : (1500, 0.849, 0.948, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
         'LB28-3200-I3-FC40' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
@@ -814,15 +1210,75 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.336, 
                     'parameters'            : (1500, 0.849, 0.948, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    #distortion
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-190, 20), 2, 30),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-190, 20), 2, 30),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
         }, 
+
+
+
+        'LB28-3200-I3-FC25' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 25,
+
+                    # final (for now)
+                    'fft_filter'            : (-3.855,3.686,-3.686,3.855),
+                    'fft_interpolate'       : (-1.369,4.133,-4.133,1.369),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.6),
+                    'downconvert_shift'     : 0.015, 
+                    'parameters'            : (1500, 0.641, 0.536, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+
+        }, 
+
+
+
+        'LB28-3200-I3-FC20' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 20,
+
+                    # final (for now)
+                    'fft_filter'            : (-3.855,3.686,-3.686,3.855),
+                    'fft_interpolate'       : (-1.369,4.133,-4.133,1.369),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.6),
+                    'downconvert_shift'     : 0.015, 
+                    'parameters'            : (1500, 0.641, 0.536, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 10), 2, 50),
+
+        }, 
+
+
+
+
+        'LB28-3200-I3-FC16' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 30 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 16,
+
+                    # final (for now)
+                    'fft_filter'            : (-2.736,4.269,-4.269,2.736),
+                    'fft_interpolate'       : (-3.996,2.898,-2.898,3.996),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.75),
+                    'downconvert_shift'     : 0.802, 
+                    'parameters'            : (1500, 0.907, 0.512, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+
+                    #Filter carriers
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+
+        }, 
+
 
 
         'LB28-3200-I3-FC10-LFEC' :{ 
@@ -864,8 +1320,6 @@ class OsmodProdParams(object):
                     'msg_type'              : ocn.MSGTYPE_FIXED_LENGTH,
                     'extrapolate_seqlen'    : 8,
 
-                    #'extrapolate'           : 'yes',
-
         }, 
 
 
@@ -875,7 +1329,6 @@ class OsmodProdParams(object):
                     'inherit_from'          : 'LB28-3200-I3',
                     'info'                  : 'Filtered Carriers - 10Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 10,
-                    #'extrapolate'           : 'yes',
 
                     'fft_filter'            : (-2.97, 5.25, -5.25, 2.97),
                     'fft_interpolate'       : (-3.12, 3.65, -3.65, 3.12),      
@@ -884,27 +1337,34 @@ class OsmodProdParams(object):
                     'parameters'            : (1500, 0.498, 0.865, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 3, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 3, 50),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 3, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 3, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
 
         }, 
 
 
-        #'LB28-3200-I3-FC10' :{ 
-        #            'inherit_from'          : 'LB28-3200-I3',
-        #            'info'                  : 'Filtered Carriers - 10Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
-        #            'carrier_separation'    : 10,
-        #            'fft_filter'            : (-4.29, 4.65, -4.65, 4.29),
-        #            'fft_interpolate'       : (-4.78, 4.22, -4.22, 4.78),
-        #            'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.24),
-        #            'downconvert_shift'     : 0.141, 
-        #            #Filter carriers
-        #            'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
-        #            'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 5, 50),
-        #}, 
+        'LB28-3200-I3-FC5' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 10Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 5,
 
+                    'fft_filter'            : (-4.203,2.519,-2.519,4.203),
+                    'fft_interpolate'       : (-4.886,5.063,-5.063,4.886),      
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.94),
+                    'downconvert_shift'     : 0.165, 
+                    'parameters'            : (1500, 0.233, 0.991, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
+
+                    'dcs_type'              : ocn.DCS_GENERAL,
+
+                    #'rotation_increments'  : 40,
+
+                    #Filter carriers
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -20, 3, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -20, 3, 50),
+
+        }, 
 
 
         'LB28-3200-I3' :{ 
@@ -917,11 +1377,9 @@ class OsmodProdParams(object):
 
                     'fft_filter'            : (-4, 4, -4, 4),
                     'fft_interpolate'       : (-3, 2, -2, 3),
-                    'downconvert_shift'     : 0.32,     # 1.1 of 3,  0.4 of 3,   0.5 of 3,  0.5 of 3
+                    'downconvert_shift'     : 0.32, 
                     'parameters'            : (1500, 0.512, 0.466, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.748), 
-
-                    #'extrapolate'           : 'yes',
 
                     #'dcs_type'              : ocn.DCS_GENERAL,
                     'dcs_type'              : ocn.DCS_FREQUENCY_SPECIFIC,
@@ -1000,23 +1458,11 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.184, 
                     'parameters'            : (1500, 0.167, 0.952, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-200, 50), 2, 30), #0.28 to 0.4    0.4
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-200, 50), 2, 30),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 50), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 50), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
-                    #distortion
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-190, 50), 2, 30), #0.22 to 0.4    1.4
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-190, 50), 2, 30),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 50), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 50), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 50), 2, 30), #0.23 to 0.36    2.2
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 50), 2, 30),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-220, 40), 2, 30), #0.25 to 0.34    0.6
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-220, 40), 2, 30),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-230, 40), 2, 30), #0.28 to 0.45    -1.2
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-230, 40), 2, 30),
 
         }, 
 
@@ -1033,11 +1479,10 @@ class OsmodProdParams(object):
                     #'downconvert_shift'     : 0.136, 
                     #'parameters'            : (1500, 0.926, 0.74, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 12.5), 2, 30), #0.36 to 0.43    2.1
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 12.5), 2, 30),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 40), 2, 30), #0.30 to 0.44
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 40), 2, 30),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 40), 2, 40), #0.30 to 0.44
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 40), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
         }, 
 
@@ -1048,22 +1493,38 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 50,
 
                     # final (for now)
-                    'fft_filter'            : (-1.29,6.94,-6.94,1.29),
-                    'fft_interpolate'       : (-4.6,3.66,-3.66,4.6),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.236),
-                    'downconvert_shift'     : 0.656, 
-                    'parameters'            : (1500, 0.366, 0.926, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-6.599,7.551,-7.551,6.599),
+                    'fft_interpolate'       : (-2.21,5.812,-5.812,2.21),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.123),
+                    'downconvert_shift'     : 0.036, 
+                    'parameters'            : (1500, 0.003, 0.381, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    #distortion
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 12.5), 2, 30), 
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-180, 12.5), 2, 30),
-
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 25), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 25), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 25), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 25), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
         }, 
+
+
+
+        'LB28-1600-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 40,
+
+                    # final (for now)
+                    #'fft_filter'            : (-3.683,6.816,-6.816,3.683),
+                    #'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
+                    #'downconvert_shift'     : 0.083, 
+                    #'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
 
         'LB28-1600-I3-FC40' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
@@ -1071,22 +1532,19 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 40,
 
                     # final (for now)
-                    'fft_filter'            : (-6.33,6.72,-6.72,6.33),
-                    'fft_interpolate'       : (-4.29,1.44,-1.44,4.29),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.909),
-                    'downconvert_shift'     : 0.932, 
-                    'parameters'            : (1500, 0.042, 0.885, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-3.683,6.816,-6.816,3.683),
+                    'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
+                    'downconvert_shift'     : 0.083, 
+                    'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    #distortion
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-160, 12.5), 2, 30),  #0.13 to 26     1.76
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-160, 12.5), 2, 30),
-
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 20), 2, 40),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-50, 20), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, -50, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 20), 2, 40),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 20), 2, 40),
+                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
         }, 
+
 
         'LB28-1600-I3-FC25' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
@@ -1100,8 +1558,8 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.699, 
                     'parameters'            : (1500, 0.381, 0.746, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-15, 12.5), 2, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS_X2, (-15, 12.5), 2, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
 
         }, 
 
@@ -1112,15 +1570,15 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 20,
 
                     # final (for now)
-                    'fft_filter'            : (-5.88,6.91,-6.91,5.88),
-                    'fft_interpolate'       : (-4.77,6.09,-6.09,4.77),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.816),
-                    'downconvert_shift'     : 0.128, 
-                    'parameters'            : (1500, 0.929, 0.977, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-5.481,9.931,-9.931,5.481),
+                    'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
+                    'downconvert_shift'     : 0.54, 
+                    'parameters'            : (1500, 0.254, 0.911, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 3, 3, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 3, 3, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 3, 3, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 3, 3, 50),
 
                     'tx_filter2'           : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_NOTCH_2, 40, 2, 30),
                     'rx_filter2'           : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_NOTCH_2, 40, 2, 30),
@@ -1128,21 +1586,24 @@ class OsmodProdParams(object):
         }, 
 
 
-        'LB28-1600-I3-FC15' :{ 
+        'LB28-1600-I3-FC16' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
-                    'info'                  : 'Filtered Carriers - 25.6 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
-                    'carrier_separation'    : 15,
+                    'info'                  : 'Filtered Carriers - 30 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 16,
 
                     # final (for now)
-                    'fft_filter'            : (-5.3,5.8,-5.8,5.3),
-                    'fft_interpolate'       : (-1.73,6.64,-6.64,1.73),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.6),
-                    'downconvert_shift'     : 0.598, 
-                    'parameters'            : (1500, 0.453, 0.761, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-6.299,6.941,-6.941,6.299),
+                    'fft_interpolate'       : (-3.219,3.708,-3.708,3.219),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.113),
+                    'downconvert_shift'     : 0.432, 
+                    'parameters'            : (1500, 0.795, 0.939, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 2, 4, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 2, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
 
         }, 
 
@@ -1229,17 +1690,43 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 10,
 
                     # final (for now)
-                    'fft_filter'            : (-6.65, 4.98, -4.98, 6.65),
-                    'fft_interpolate'       : (-6.26, 1.24, -1.24, 6.26),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.716),
-                    'downconvert_shift'     : 0.283, 
-                    'parameters'            : (1500, 0.717, 0.733, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-9.002,5.313,-5.313,9.002),
+                    'fft_interpolate'       : (-9.158,2.2,-2.2,9.158),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.428),
+                    'downconvert_shift'     : 0.355, 
+                    'parameters'            : (1500, 0.923, 0.59, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
 
         }, 
+
+
+        'LB28-1600-I3-FC5' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 17.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 5,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.855,4.149,-4.149,5.855),
+                    'fft_interpolate'       : (-5.42,4.721,-4.721,5.42),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.622),
+                    'downconvert_shift'     : 0.684, 
+                    'parameters'            : (1500, 0.676, 0.759, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #Filter carriers
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
+
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -10, 4, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -10, 4, 50),
+
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
+
+        }, 
+
 
 
 
@@ -1261,8 +1748,8 @@ class OsmodProdParams(object):
 
                     'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.68012094363803, 18.907336705869966, 247.1610], # available, low freq, hi freq
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 87, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 87, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
 
         }, 
 
@@ -1285,8 +1772,8 @@ class OsmodProdParams(object):
                     'holographic_decode'   : ocn.HOLOGRAPH_DECODE_NONE,
                     'msg_sections'         : (8,0,48), #init sequence length, msg ID length, message length
                     'msg_type'             : ocn.MSGTYPE_FIXED_LENGTH,
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 70, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 70, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 70, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 70, 5, 50),
                      'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-E', 0.205),
                     'extrapolate_seqlen'   : 8,
                     #'extrapolate'           : 'yes',
@@ -1305,8 +1792,8 @@ class OsmodProdParams(object):
                     'downconvert_shift'    : 0.158,
                     #'downconvert_shift'    : 0.04,
                     'FDM_parameters'       : [2, 95.768], #frequency division mutiplexing: multiplier, separation
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 200, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 200, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 200, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 200, 5, 50),
                     'tx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
                     'rx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
                     'I3_parameters'         : (0.99, 0.99, 2e-3, 'B-D', 0.178), 
@@ -1337,6 +1824,63 @@ class OsmodProdParams(object):
 
         }, 
 
+
+
+
+        'LB28-800-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-800-I3',
+                    'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
+                    'carrier_separation'    : 40,
+
+                    # final (for now)
+                    #'fft_filter'            : (-7.364,8.739,-8.739,7.364),
+                    #'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
+                    #'downconvert_shift'     : 0.164, 
+                    #'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+                    'pulse_train_sigma'     : 12.47,
+                    'pulse_start_sigma'     : 9.66,
+                    'pulse_start_envelope_sigma' : 18.69,
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+
+        'LB28-800-I3-FC16' :{ 
+                    'inherit_from'          : 'LB28-800-I3',
+                    'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
+                    'carrier_separation'    : 16,
+
+                    # final (for now)
+                    'fft_filter'            : (-7.364,8.739,-8.739,7.364),
+                    'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
+                    'downconvert_shift'     : 0.164, 
+                    'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+                    'pulse_train_sigma'     : 12.47,
+                    'pulse_start_sigma'     : 9.66,
+                    'pulse_start_envelope_sigma' : 18.69,
+
+                    #Filter carriers
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -14, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -17, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -17, 4, 50),
+
+        }, 
+
+
+
         # bypass for now
         'LB28-800-I3-FC10' :{ 
                     'inherit_from'          : 'LB28-800-I3',
@@ -1356,10 +1900,10 @@ class OsmodProdParams(object):
                     #'pulse_start_envelope_sigma' : 5.99,
 
                     #Filter carriers
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50), #0.19
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 1, 50), #0.16
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 1, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50), #0.19
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 1, 50), #0.16
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 1, 50),
 
         }, 
 
@@ -1374,10 +1918,10 @@ class OsmodProdParams(object):
                     'pulses_per_block'      : 8,
                     'fft_filter'            : (-20, 16, -16, 20),
                     'fft_interpolate'       : (-3, 2, -2, 3),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 85, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 85, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 68, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 68, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 85, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 85, 5, 50),
 
                     #'pulse_train_sigma'    : 12.33,
                     #'pulse_train_sigma'     : 13.36,
@@ -1417,8 +1961,8 @@ class OsmodProdParams(object):
                     #'parameters'            : (1500, 0.216, 0.807, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     #Filter carriers
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 1, 4, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
 
         }, 
 
@@ -1436,14 +1980,14 @@ class OsmodProdParams(object):
                     #'fft_filter'            : (-18, 18, -18, 18),
                     #'fft_filter'            : (-20, 20, -20, 20),
                     #'fft_filter'            : (-25, 25, -25, 25),
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 68, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 68, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 68, 5, 50),
 
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 75, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 75, 5, 50),
+                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 75, 5, 50),
+                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 75, 5, 50),
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 150, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 150, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 150, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 150, 5, 50),
 
                     'persistent_search'     : (1, 0.95, -0.001, "yes"), #hi range, lo range, inc, scan entire range
                     #'persistent_search'     : (1, 0.93, -0.001, "yes"), #hi range, lo range, inc, scan entire range
@@ -1475,7 +2019,7 @@ class OsmodProdParams(object):
                     'encoder_callback'      : self.osmod.mod_2fsk8psk.encoder_8psk_callback,
                     'decoder_callback'      : self.osmod.demod_2fsk8psk.demodulate_2fsk_8psk,
                     'text_encoder'          : self.osmod.mod_2fsk8psk.stringToTriplet,
-                    'text_decoder'          : self.osmod.demod_2fsk8psk.displayTextResults,
+                    'text_decoder'          : self.osmod.demod_2fsk8psk.displayTextFromIntlist,
 
                     'mode_selector'         : ocn.OSMOD_MODEM_8FSK,
                     'sample_rate'           : 8000,
@@ -1486,8 +2030,8 @@ class OsmodProdParams(object):
                     'symbols_per_block'     : 1,  # per carrier!
                     'phase_encoding'        : ocn.PHASE_INTRA_TRIPLE,
                     'doppler_adjust'        : ocn.DOPPLER_ADJUST_NONE,
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 48, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 48, 5, 50),
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 48, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 48, 5, 50),
 
                     'symbol_wave_function'  : self.osmod.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
                     'modulation_object'     : self.osmod.mod_2fsk8psk,

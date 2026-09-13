@@ -706,6 +706,9 @@ class OsmodTest(object):
         noise = values['btn_slider_awgn']
         carrier_separation_override = values['slider_carrier_separation']
 
+        self.osmod.form_gui.window['cb_override_random_message'].update(True)
+        self.osmod.form_gui.window['cb_bypass_display_during_test'].update(True)
+
         """
         Iterative Convergence Engine. Solve for main 5 paramaters: Main FFT Filter, FFT Interpolation Filter, Downconvert Shift, Standing Wave Pattern, RRC Alpha and T 
 
@@ -727,10 +730,30 @@ class OsmodTest(object):
         #solve_params = [300, 6, 12, 3, 11, 10] 
 
         # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
-        #range_fft_filter        = [[1, 700, 100], []] # 1600 thru 3200
-        #range_fft_interpolate   = [[1, 700, 100], []]
-        range_fft_filter        = [[1, 3500, 1000], []] # 6400 thru 25600
-        range_fft_interpolate   = [[1, 3500, 1000], []]
+        if self.osmod.symbol_block_size <= 800: 
+          range_fft_filter        = [[6000, 16000, 1000], []] # 800 
+          range_fft_interpolate   = [[6000, 16000, 1000], []]
+        elif self.osmod.symbol_block_size == 1600: 
+          range_fft_filter        = [[2000, 6000, 1000], []] # 1600
+          range_fft_interpolate   = [[2000, 6000, 1000], []]
+        elif self.osmod.symbol_block_size == 3200: 
+          range_fft_filter        = [[2000, 7000, 1000], []] # 3200
+          range_fft_interpolate   = [[2000, 7000, 1000], []]
+        elif self.osmod.symbol_block_size == 6400: 
+          range_fft_filter        = [[500, 3000, 1000], []] # 6400
+          range_fft_interpolate   = [[500, 3000, 1000], []]
+        elif self.osmod.symbol_block_size == 12800: 
+          range_fft_filter        = [[400, 2100, 1000], []] # 12800
+          range_fft_interpolate   = [[400, 2100, 1000], []]
+        elif self.osmod.symbol_block_size == 25600: 
+          range_fft_filter        = [[250, 1200, 1000], []] # 25600
+          range_fft_interpolate   = [[250, 1200, 1000], []]
+        elif self.osmod.symbol_block_size == 51200: 
+          range_fft_filter        = [[100, 700, 1000], []] # 51200 ????
+          range_fft_interpolate   = [[100, 700, 1000], []]
+        elif self.osmod.symbol_block_size == 102400: 
+          range_fft_filter        = [[100, 600, 1000], []] # 102400 ????
+          range_fft_interpolate   = [[100, 600, 1000], []]
 
         #range_standing_wave     = [[0, 14, 1], [0, 1000, 1000]]
         #range_downconvert_shift = [[0, 1000, 1000], []]
@@ -740,6 +763,9 @@ class OsmodTest(object):
          
         start_at = int(self.osmod.form_gui.window['in_convergence_engine_start_at'].get())
         #start_at = 3
+
+        if "DATA_LAST_SECTION" in dict_best_so_far:
+          start_at = 1 + int(dict_best_so_far["DATA_LAST_SECTION"])
 
         for count in range(0, 100):
           #chosen_section = random.randint(1,5)
@@ -754,6 +780,9 @@ class OsmodTest(object):
             if final_values != []:
               dict_best_so_far = loadDictData("solve_data.txt")
               dict_best_so_far["DATA_FFT_FILTER"] = final_values[0]
+
+              dict_best_so_far["DATA_LAST_SECTION"] = 1
+
               saveDictData("solve_data.txt", dict_best_so_far)
               value_1, value_2 = unformat_string_fft(final_values[0])
               new_string_1, new_string_2 = format_string_fft(value_1, value_2)
@@ -766,6 +795,9 @@ class OsmodTest(object):
             if final_values != []:
               dict_best_so_far = loadDictData("solve_data.txt")
               dict_best_so_far["DATA_FFT_INTERPOLATE"] = final_values[0]
+
+              dict_best_so_far["DATA_LAST_SECTION"] = 2
+
               saveDictData("solve_data.txt", dict_best_so_far)
               value_1, value_2 = unformat_string_fft(final_values[0])
               new_string_1, new_string_2 = format_string_fft(value_1, value_2)
@@ -778,6 +810,9 @@ class OsmodTest(object):
             if final_values != []:
               dict_best_so_far = loadDictData("solve_data.txt")
               dict_best_so_far["DATA_DCS"] = final_values[0]
+
+              dict_best_so_far["DATA_LAST_SECTION"] = 3
+
               saveDictData("solve_data.txt", dict_best_so_far)
               value_1, value_2 = unformat_string_dcs(final_values[0])
               new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
@@ -790,6 +825,9 @@ class OsmodTest(object):
             if final_values != []:
               dict_best_so_far = loadDictData("solve_data.txt")
               dict_best_so_far["DATA_PATTERN"] = final_values[0]
+
+              dict_best_so_far["DATA_LAST_SECTION"] = 4
+
               saveDictData("solve_data.txt", dict_best_so_far)
               value_1, value_2 = unformat_string_standing_wave(final_values[0])
               new_string_1, new_string_2 = format_string_standing_wave_from_char(value_1, value_2)
@@ -803,6 +841,9 @@ class OsmodTest(object):
             if final_values != []:
               dict_best_so_far = loadDictData("solve_data.txt")
               dict_best_so_far["DATA_RRC_ALPHA_T"] = final_values[0]
+ 
+              dict_best_so_far["DATA_LAST_SECTION"] = 5
+
               saveDictData("solve_data.txt", dict_best_so_far)
               value_1, value_2 = unformat_string_rrc_alpha_t(final_values[0])
               new_string_1, new_string_2 = format_string_rrc_alpha_t(value_1, value_2)

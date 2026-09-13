@@ -370,7 +370,7 @@ message formats...
     self.modulation_initialization_block = {'LB28-2048-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 409600,
@@ -394,7 +394,7 @@ message formats...
                                         'LB28-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 409600,
@@ -418,7 +418,7 @@ message formats...
                                  'LB28-204800-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 204800,
@@ -442,7 +442,7 @@ message formats...
                                  'LB28-102400-2048-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 102400,
@@ -467,7 +467,7 @@ message formats...
                                         'LB28-1024-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 204800,
@@ -491,7 +491,7 @@ message formats...
                                         'LB28-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 204800,
@@ -515,7 +515,7 @@ message formats...
                                  'LB28-102400-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 102400,
@@ -539,7 +539,7 @@ message formats...
                                    'LB28-51200-1024-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 51200,
@@ -563,7 +563,7 @@ message formats...
                                          'LB28-512-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 102400,
@@ -587,7 +587,7 @@ message formats...
                                          'LB28-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 102400,
@@ -611,7 +611,7 @@ message formats...
                                    'LB28-51200-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 51200,
@@ -637,7 +637,7 @@ message formats...
                                    'LB28-25600-512-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 25600,
@@ -662,7 +662,7 @@ message formats...
                                          'LB28-256-2-10-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 51200,
@@ -686,7 +686,7 @@ message formats...
                                          'LB28-256-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 51200,
@@ -710,7 +710,7 @@ message formats...
                                    'LB28-25600-256-2-15-I':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.15625 characters per second, 0.9375 baud (bits per second)',
                                                               'symbol_block_size'    : 25600,
@@ -737,7 +737,7 @@ message formats...
                                         'LB28-128-2-10-I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.3125 characters per second, 1.875 baud (bits per second)',
                                                               'symbol_block_size'    : 25600,
@@ -760,7 +760,7 @@ message formats...
                                         'LB28-128-2-15-I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.3125 characters per second, 1.875 baud (bits per second)',
                                                               'symbol_block_size'    : 25600,
@@ -784,7 +784,7 @@ message formats...
                                     'LB28-6400-128-2-15-I':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.3125 characters per second, 1.875 baud (bits per second)',
                                                               'symbol_block_size'    : 6400,
@@ -809,7 +809,7 @@ message formats...
                                         'LB28-64-2-10-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.625 characters per second, 3.75 baud (bits per second)',
                                                               'symbol_block_size'    : 12800,
@@ -832,7 +832,7 @@ message formats...
                                         'LB28-64-2-15-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '0.625 characters per second, 3.75 baud (bits per second)',
                                                               'symbol_block_size'    : 12800,
@@ -1132,7 +1132,7 @@ message formats...
                                                               'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.312), 
                                                               #'I3_parameters'        : (0.99, 0.99, 2e-3, 'A-D', 0.311), 
 
-                                                              'tx_filter'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BAND_PASS, 48, 5, 50),
+                                                              'tx_filter'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 48, 5, 50),
 
 
                                                               #'I3_combine'           : ocn.INTRA_COMBINE_TYPE5,
@@ -1292,7 +1292,7 @@ message formats...
                                    'LB28-6400-64-2-15-I':    {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '1.25 characters per second, 7.5 baud (bits per second)',
                                                               'symbol_block_size'    : 6400,
@@ -1320,7 +1320,7 @@ message formats...
                                         'LB28-32-2-10-I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '1.25 characters per second, 7.5 baud (bits per second)',
                                                               'symbol_block_size'    : 6400,
@@ -1344,7 +1344,7 @@ message formats...
                                   'LB28-3200-32-2-15-I':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '2.5 characters per second, 15 baud (bits per second)',
                                                               'symbol_block_size'    : 3200,
@@ -1370,7 +1370,7 @@ message formats...
                                       'LB28-16-2-10-I':        {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '2.5 characters per second, 15 baud (bits per second)',
                                                               'symbol_block_size'    : 3200,
@@ -1394,7 +1394,7 @@ message formats...
                                       'LB28-16-2-15-I':        {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '2.5 characters per second, 15 baud (bits per second)',
                                                               'symbol_block_size'    : 3200,
@@ -1419,7 +1419,7 @@ message formats...
                                           'LB28-4-2-20-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '10 characters per second, 60 baud (bits per second)',
                                                               'symbol_block_size'    : 800,
@@ -1443,7 +1443,7 @@ message formats...
                                           'LB28-8-2-10-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : 'Narrow bandwidth 2fsk + 8psk, 64 bit characters: 5 characters per second, 30 baud (bits per second)',
                                                               'extraction_points'    : (2/8, 6/8),
@@ -1467,7 +1467,7 @@ message formats...
                                       'LB28-320-8-2-50-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '25 characters per second, 150 baud (bits per second)',
                                                               'extraction_points'    : (2/8, 6/8),
@@ -1492,7 +1492,7 @@ message formats...
                                            'LB28-4-2-40-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '10 characters per second, 60 baud (bits per second)',
                                                               'symbol_block_size'    : 800,
@@ -1516,7 +1516,7 @@ message formats...
                                       'LB28-160-4-2-100-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '50 characters per second, 300 baud (bits per second)',
                                                               'symbol_block_size'    : 160,
@@ -1540,7 +1540,7 @@ message formats...
                                       'LB28-160-4-2-50-N':  {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8FSK,
                                                               'info'                 : '50 characters per second, 300 baud (bits per second)',
                                                               'symbol_block_size'    : 160,
@@ -1566,7 +1566,7 @@ message formats...
                                        'LB28-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
                                                               'info'                 : 'Double Carrier 8psk 64 bit characters:- 20 characters per second, 120 baud (bits per second)',
                                                               'symbol_block_size'    : 400,
@@ -1590,7 +1590,7 @@ message formats...
                                    'LB28-240-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
                                                               'info'                 : '33.33 characters per second, 200 baud (bits per second)',
                                                               'symbol_block_size'    : 240,
@@ -1614,7 +1614,7 @@ message formats...
                                    'LB28-160-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
                                                               'info'                 : '50 characters per second, 300 baud (bits per second)',
                                                               'symbol_block_size'    : 160,
@@ -1638,7 +1638,7 @@ message formats...
                                    'LB28-80-2-2-100-N':     {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                                               'decoder_callback'     : self.demod_2fsk8psk.demodulate_2fsk_8psk,
                                                               'text_encoder'         : self.mod_2fsk8psk.stringToTriplet,
-                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextResults,
+                                                              'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                                               'mode_selector'        : ocn.OSMOD_MODEM_8PSK,
                                                               'info'                 : '100 characters per second, 600 baud (bits per second)',
                                                               'symbol_block_size'    : 80,
@@ -1710,7 +1710,10 @@ message formats...
                                     'dcs_type'             : ocn.DCS_GENERAL,
                                     'dcs_by_frequency'     : {},
                                     'pattern_by_msglen'    : {},
-
+                                    'receive_pre_filter'   : ocn.RCV_PRE_FILTER_ENABLE,
+                                    'crc_params'           : (ocn.CRC_DISABLE, ocn.EXTRAPOLATE_NONE, 0, 0),
+                                    'rotation_table_name'  : '',
+                                    'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
 
                                    }
 
@@ -1868,11 +1871,19 @@ message formats...
         self.optional_param_values[param] = self.getInitBlockParam(mode, param)
 
 
-  """ recursive... multi level inheritance"""
-  def processInheritFrom(self, mode):
+  """ recursive... multi level inheritance + current level include"""
+  def processInheritFrom(self, mode, inherit):
     self.debug.info_message("processInheritFrom mode: " + str(mode))
-    if 'inherit_from' in self.getInitBlockMode(mode):
-      self.processInheritFrom(self.getInitBlockParam(mode, 'inherit_from'))
+
+    # inherit parameters from another mode
+    if inherit == True and 'inherit_from' in self.getInitBlockMode(mode):
+      self.processInheritFrom(self.getInitBlockParam(mode, 'inherit_from'), True)
+
+    # similar to inherit_from but always runs *after* inherit_from and works as current level override of all inherited params so far
+    if 'include_params' in self.getInitBlockMode(mode):
+      self.processInheritFrom(self.getInitBlockParam(mode, 'include_params'), False) # disable inherit for includes
+
+    # process individual params for this mode...final override at current level
     for param in self.getInitBlockMode(mode):
       self.optional_param_values[param] = self.getInitBlockParam(mode, param)
 
@@ -1968,7 +1979,7 @@ message formats...
 
       self.debug.info_message("optional_param_values (before inherit): " + str(self.optional_param_values))
 
-      self.processInheritFrom(mode)
+      self.processInheritFrom(mode, True)
 
       self.debug.info_message("optional_param_values (after inherit): " + str(self.optional_param_values))
 
@@ -1980,6 +1991,7 @@ message formats...
       self.encoder_callback     = self.getParam(mode, 'encoder_callback')
       self.decoder_callback     = self.getParam(mode, 'decoder_callback')
       self.text_encoder         = self.getParam(mode, 'text_encoder')
+      self.text_decoder         = self.getParam(mode, 'text_decoder')
       self.mode_selector        = self.getParam(mode, 'mode_selector')
       self.symbol_block_size    = self.getParam(mode, 'symbol_block_size')
       self.sample_rate          = self.getParam(mode, 'sample_rate')
@@ -2035,6 +2047,10 @@ message formats...
       self.dcs_type            = self.getParam(mode, 'dcs_type')
       self.dcs_by_frequency    = self.getParam(mode, 'dcs_by_frequency')
       self.pattern_by_msglen   = self.getParam(mode, 'pattern_by_msglen')
+      self.receive_pre_filter  = self.getParam(mode, 'receive_pre_filter')
+      self.crc_params          = self.getParam(mode, 'crc_params')
+      self.rotation_table_name = self.getParam(mode, 'rotation_table_name')
+
 
 
 
@@ -2104,7 +2120,41 @@ message formats...
       """ keep track of the chunks being processed """
       self.chunk_num = 0
 
-      self.rotation_tables      = self.opd.readRotationTablesFromFile(mode)
+      if self.rotation_table_name == '':
+        self.rotation_tables      = self.opd.readRotationTablesFromFile(mode)
+      else:
+        self.rotation_tables      = self.opd.readRotationTablesFromFile(self.rotation_table_name)
+
+      if self.crc_params[0] == ocn.CRC_ENABLE or self.crc_params[0] == ocn.CRC_VFEC:
+        self.form_gui.window['cb_enable_crc'].update(True)
+        self.form_gui.window['cb_enable_crc'].update(disabled=True)
+        self.form_gui.window['in_crc_fragment_size'].update(self.crc_params[2])
+        self.form_gui.window['in_crc_fragment_size'].update(disabled=True)
+
+        if self.crc_params[1] != ocn.EXTRAPOLATE_NONE:
+          self.form_gui.window['cb_override_extrapolate'].update(True)
+          self.form_gui.window['cb_override_extrapolate'].update(disabled=True)
+          self.form_gui.window['combo_extrapolate_option'].update(disabled=True)
+
+        if self.crc_params[1] == ocn.EXTRAPOLATE_MULTI_LOW:
+          self.form_gui.window['combo_extrapolate_option'].update(self.form_gui.combo_extrapolate[1])
+        elif self.crc_params[1] == ocn.EXTRAPOLATE_MULTI_MEDIUM:
+          self.form_gui.window['combo_extrapolate_option'].update(self.form_gui.combo_extrapolate[2])
+        elif self.crc_params[1] == ocn.EXTRAPOLATE_MULTI_HIGH:
+          self.form_gui.window['combo_extrapolate_option'].update(self.form_gui.combo_extrapolate[3])
+      else:
+        self.form_gui.window['cb_enable_crc'].update(False)
+        self.form_gui.window['cb_enable_crc'].update(disabled=False)
+        self.form_gui.window['combo_extrapolate_option'].update(disabled=False)
+        self.form_gui.window['in_crc_fragment_size'].update(disabled=False)
+
+        if self.opd.has_rotation_table == True:
+          self.form_gui.window['cb_override_extrapolate'].update(disabled = False)
+        else:
+          self.form_gui.window['cb_override_extrapolate'].update(disabled = True)
+
+        self.form_gui.window['cb_override_extrapolate'].update(False)
+
 
       """
       self.info                 = self.getInitBlockParam(mode, 'info')
@@ -4131,6 +4181,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
     except:
       self.debug.error_message("Exception in displayReceivedMessage: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return message_struct
 
   """ cross reference to map crc verified sections of text to translated text """
   def createMessageXref(self, untranslated_message):

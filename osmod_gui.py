@@ -24,7 +24,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 from app_pipes import AppPipes
 from osmod_main import osModem
 from queue import Queue
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy import signal
 from scipy.signal import find_peaks
 from osmod_test import OsmodTest
@@ -173,7 +173,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC50,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC40,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40'.split(',')
+    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC5,LB28-1600-I3-FC10,LB28-1600-I3-FC16,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FF40,LB28-1600-I3-FC50,LB28-3200-I3,LB28-3200-I3-FC5,LB28-3200-I3-FC10,LB28-3200-I3-FC16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FC50,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -189,7 +189,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
 
     combo_timing_choices = '15 Seconds,30 Seconds,1 Minute,2 Minutes,4 Minutes'.split(',')
 
-    combo_analysis_chart_options = 'X:BER Y:Eb/N0,X:Eb/N0 Y:BER,X:CPS Y:Eb/No,X:ChunkSize Y:Eb/N0,X:CPS Y:BER,X:CPS Y:Eb/N0+ABS(Eb/N0)*BER,X:AWGN Y:BER,X:Rotation Y:Pulse Train Length,X:Rotation Lo Y:Rotation Hi,X:BER Y:Pulse Train Sigma,X:Pulse Train Sigma Y:Pulse Train Length,X:Eb / N0 (dB) Y:Pulse Train Sigma,X:Pulse Train Length Y:Disposition,X:BER Y:Disposition,X:DC Shift Y:BER'.split(',')
+    combo_analysis_chart_options = 'X:BER Y:Eb/N0,X:BER Y:SNR,X:Eb/N0 Y:BER,X:SNR Y:BER,X:CPS Y:Eb/No,X:ChunkSize Y:Eb/N0,X:CPS Y:BER,X:CPS Y:Eb/N0+ABS(Eb/N0)*BER,X:AWGN Y:BER,X:Rotation Y:Pulse Train Length,X:Rotation Lo Y:Rotation Hi,X:BER Y:Pulse Train Sigma,X:Pulse Train Sigma Y:Pulse Train Length,X:Eb / N0 (dB) Y:Pulse Train Sigma,X:Pulse Train Length Y:Disposition,X:BER Y:Disposition,X:DC Shift Y:BER'.split(',')
 
     combo_simulator_chart_options = 'Intra Triple,Single'.split(',')
 
@@ -248,6 +248,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
     combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
 
     combo_extrapolate  = 'Single,Multi Low,Multi Medium,Multi High'.split(',')
+    self.combo_extrapolate = combo_extrapolate
 
     combo_txrx_choices = 'Tx Only,Tx + Rx'.split(',')
 
@@ -330,7 +331,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.2 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.3 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -779,7 +780,7 @@ SOFTWARE.\n\
                            sg.Text('Code Options: ')  ,
                            sg.Combo(combo_code_options, key='combo_code_options', default_value=combo_code_options[0], enable_events=True),
                            sg.Text('CRC fragment size: ')  ,
-                           sg.InputText('16', key='in_crc_fragment_size', size=(8, 1), enable_events=True, disabled = True)],
+                           sg.InputText('16', key='in_crc_fragment_size', size=(8, 1), enable_events=True, disabled = False)],
 
 
                         [sg.Frame('Generate Test Data', [
@@ -978,7 +979,7 @@ SOFTWARE.\n\
 
                           [
                            sg.Button('Rx - Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
-                           sg.CBox('Continuous', key='cb_continuous_decode', default=True , visible=True, enable_events = True),
+                           sg.CBox('Continuous', key='cb_continuous_decode', default=True , visible=False, enable_events = True),
                            sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
                            #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
                            #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
@@ -987,7 +988,7 @@ SOFTWARE.\n\
 
                            sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
 
-                           sg.CBox('Truncate - pad', key='cb_truncate_to_max_msglength', default=True ),
+                           sg.CBox('Truncate - Pad', key='cb_truncate_to_max_msglength', default=True ),
 
                            sg.Text('Msg Length: ', size=(13, 1) ) ,
                            sg.Combo(combo_modem_message_lengths, key='combo_max_message_length', size=(4, 1), font=("Helvetica", 10), default_value=combo_modem_message_lengths[2], enable_events=True),
@@ -1036,7 +1037,7 @@ SOFTWARE.\n\
                            sg.Frame('Signal - Magnitude & SNR', [
                               [sg.Text('Magnitude: -----', size=(15, 1), key='text_input_signal_magnitude_passband' )],
 
-                              [sg.Text('SNR dB (est.): --------', size=(15, 1), key='text_snr_value_new' )],
+                              [sg.Text('SNR dB (est.): --------', size=(18, 1), key='text_snr_value_new' )],
 
                               #[sg.Text('Avg -----', size=(6, 1), font=("Helvetica", 12), key='text_input_signal_magnitude_passband_smoothed' )],
 
@@ -1224,7 +1225,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.2 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.3 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window

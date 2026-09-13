@@ -629,6 +629,11 @@ DATA_CALC_2                = 23
         y_index = ocn.DATA_BER
         graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
         graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:SNR Y:BER':
+        x_index = ocn.DATA_SNR_EQUIV_DB
+        y_index = ocn.DATA_BER
+        graph.draw_text('SNR (dB)', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Bit Error Rate', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
       elif chart_type == 'X:CPS Y:Eb/No':
         x_index = ocn.DATA_CPS
         y_index = ocn.DATA_EBN0_DB
@@ -649,6 +654,11 @@ DATA_CALC_2                = 23
         y_index = ocn.DATA_EBN0_DB
         graph.draw_text('Bit Error Rate', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
         graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+      elif chart_type == 'X:BER Y:SNR':
+        x_index = ocn.DATA_BER
+        y_index = ocn.DATA_SNR_EQUIV_DB
+        graph.draw_text('Bit Error Rate', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('SNR (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
       elif chart_type == 'X:AWGN Y:BER':
         x_index = ocn.DATA_NOISE_FACTOR
         y_index = ocn.DATA_BER
@@ -872,6 +882,9 @@ DATA_CALC_2                = 23
       graph.draw_text("{:.4f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
       graph.draw_text("{:.4f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
       graph.draw_text("{:.4f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+
+      if data_y_max > 0 and data_y_min < 0: 
+        graph.draw_text("{:.4f}".format(0.0), location = (x_chart_offset -50 , y_chart_offset + (y_max * ((0.0 - data_y_min) / (data_y_max - data_y_min) ))), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
 
 
       self.debug.info_message("data_x_max: " + str(data_x_max))
@@ -1097,24 +1110,26 @@ DATA_CALC_2                = 23
         debug_string = debug_string + ']'
         self.debug.info_message("debug_string: " + str(debug_string))
       elif legend_type == 'Pulse Train Sigma':
-        #filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
-          if True: # occurrences[color_index] > filter_legend:
+          if occurrences[color_index] > filter_legend:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
             #debug_string = debug_string + ',(' + pattern_location_name + ')'
             count = count + 1
       elif legend_type == 'Pulse Start Sigma':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
-          if True:
+          if occurrences[color_index] > filter_legend:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
             count = count + 1
       elif legend_type == 'Pulse Start Envelope Sigma':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
-          if True:
+          if occurrences[color_index] > filter_legend:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)

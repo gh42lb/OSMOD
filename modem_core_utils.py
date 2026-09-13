@@ -17,7 +17,7 @@ import platform
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin, sosfiltfilt, hilbert
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.io.wavfile import write, read
 from datetime import datetime, timedelta
 from scipy.fft import fft
@@ -388,14 +388,16 @@ class ModemCoreUtils(object):
       self.debug.info_message("apply_filter_common")
       filter_type = params[0]
       filter_pass_type = params[1]
-      filter_width = params[2]
-      repeats = params[3]
-      filter_order = params[4]
 
       if filter_type == ocn.FILTER_NONE:
         return signal
       elif filter_type == ocn.FILTER_BUTTERWORTH:
-        if filter_pass_type == ocn.FILTER_BAND_PASS:
+
+        filter_width = params[2]
+        repeats = params[3]
+        filter_order = params[4]
+
+        if filter_pass_type == ocn.FILTER_BANDPASS:
 
           override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
           if override_txrx_filter_width:
@@ -424,7 +426,7 @@ class ModemCoreUtils(object):
             sig2 = self.osmod.modulation_object.filter_sharp_cutoff_notch(signal, center_frequency - filter_width/2, center_frequency + filter_width/2, filter_order, sample_rate)
             signal = sig2
 
-        elif filter_pass_type == ocn.FILTER_BAND_PASS_X2:
+        elif filter_pass_type == ocn.FILTER_BANDPASS_X2:
           """ filter the output signal """
           filter_width_offset = params[2]
           filter_width  = filter_width_offset[0]
@@ -448,6 +450,26 @@ class ModemCoreUtils(object):
           return (signal_a + signal_b) / 2
 
         return signal
+
+      elif filter_type == ocn.FILTER_FFT:
+
+        filter_width_delta = params[2]
+
+        override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
+        if override_txrx_filter_width:
+          filter_width_delta  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
+
+        if filter_pass_type == ocn.FILTER_BANDPASS_X2_SIG:  # use fft_filter and fft_interpolate params to determine width
+          center_frequency_sig_a = center_frequency - (self.osmod.carrier_separation / 2)
+          center_frequency_sig_b = center_frequency + (self.osmod.carrier_separation / 2)
+          sig_a_freq_lo = center_frequency_sig_a - max(abs(self.osmod.fft_filter[0]), abs(self.osmod.fft_interpolate[0])) - filter_width_delta
+          sig_a_freq_hi = center_frequency_sig_a + max(abs(self.osmod.fft_filter[1]), abs(self.osmod.fft_interpolate[1])) + filter_width_delta
+          sig_b_freq_lo = center_frequency_sig_b - max(abs(self.osmod.fft_filter[2]), abs(self.osmod.fft_interpolate[2])) - filter_width_delta
+          sig_b_freq_hi = center_frequency_sig_b + max(abs(self.osmod.fft_filter[3]), abs(self.osmod.fft_interpolate[3])) + filter_width_delta
+          signal_a, _ = self.bandpass_filter_fft(signal, sig_a_freq_lo, sig_a_freq_hi)
+          signal_b, _ = self.bandpass_filter_fft(signal, sig_b_freq_lo, sig_b_freq_hi)
+          return (signal_a + signal_b) / 2
+
 
     except:
       self.debug.error_message("Exception in apply_filter: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -747,6 +769,108 @@ class ModemCoreUtils(object):
       post_binary_string = "".join(binary_array_post_fec.astype(str))
       self.debug.info_message("post_binary_string : " + str(post_binary_string) )
       #decimal_value = int(binary_string, 2)
+
+      padding_count = (6 - (len(post_binary_string) % 6)) % 6
+      self.debug.info_message("padding_count : " + str(padding_count) )
+      post_binary_string = post_binary_string + '0' * padding_count
+
+      for six_bit_seq in range(0, len(post_binary_string), 6):
+        binary = post_binary_string[six_bit_seq:six_bit_seq+6]
+        self.debug.info_message("binary : " + str(binary) )
+
+        for i in range(0, len(binary), 6):
+          triplet1 = binary[i:i + 3]
+          triplet2 = binary[i+3:i + 6]
+          self.debug.info_message("appending triplet1: " + str(triplet1) )
+          sent_triplets_1.append(triplet1)
+          self.debug.info_message("appending triplet2: " + str(triplet2) )
+          sent_triplets_2.append(triplet2)
+          row1 = [int(binary[i]), int(binary[i+1]), int(binary[i+2])]
+          row2 = [int(binary[i+3]), int(binary[i+4]), int(binary[i+5])]
+          self.debug.info_message("row: " + str(row1) )
+          self.debug.info_message("row: " + str(row2) )
+          bit_triplets1.append(row1)
+          bit_triplets2.append(row2)
+          if self.osmod.process_debug == True:
+            self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row1), end="", text_color='green', background_color = 'white')
+            self.osmod.form_gui.window['ml_txrx_sendtext'].print(str(row2), end="", text_color='green', background_color = 'white')
+
+    except:
+      sys.stdout.write("Exception in stringToTripletFEC: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+    return [bit_triplets1, bit_triplets2], [sent_triplets_1, sent_triplets_2], binary_array_pre_fec
+
+
+
+  """ used in conjunction with CRC """
+  def stringToTripletSegmentedFEC(self, string):
+    self.debug.info_message("stringToTripletSegmentedFEC")
+
+    try:
+      bit_triplets1 = []
+      bit_triplets2 = []
+
+      sent_triplets_1 = []
+      sent_triplets_2 = []
+
+
+      """ decimal index of character """
+      separator_index = self.b64_indexfromchar_dict['|']
+      separator_binary_string = format(separator_index, "06b")[0:6]
+      self.debug.info_message("separator_binary_string : " + str(separator_binary_string) )
+      separator_binary = np.fromstring(separator_binary_string, 'u1') - ord('0')
+      self.debug.info_message("separator_binary : " + str(separator_binary) )
+
+      segments = string.split('|')
+      for segment_count in range(0, len(segments)):
+        binary_string = ''
+
+        segment_string = segments[segment_count]
+
+        if segment_string != '':
+          if segment_count > 0:
+            segment_string = segment_string[1:]
+          self.debug.info_message("segment_string: " + str(segment_string) )
+          for char in segment_string:
+            self.debug.info_message("processing char: " + str(char) )
+            self.osmod.form_gui.txwindowQueue.put(str(char))
+
+            """ decimal index of character """
+            index = self.b64_indexfromchar_dict[char]
+
+            """ char to numpy array of binary values. numpy array to binary triplets"""
+            binary = format(index, "06b")[0:6]
+            self.debug.info_message("binary : " + str(binary) )
+
+            binary_string = binary_string + binary
+
+          self.debug.info_message("binary_string : " + str(binary_string) )
+          binary_array_pre_fec = np.fromstring(binary_string, 'u1') - ord('0')
+          self.debug.info_message("binary_array_pre_fec : " + str(binary_array_pre_fec) )
+          self.debug.info_message("len(binary_array_pre_fec) : " + str(len(binary_array_pre_fec)) )
+
+          if segment_count == 0:
+            #binary_array_post_fec = binary_array_pre_fec[:self.osmod.extrapolate_seqlen * 6]
+            binary_array_post_fec = binary_array_pre_fec
+            binary_array_post_fec = np.append(binary_array_post_fec, separator_binary)
+            self.debug.info_message("binary_array_post_fec : " + str(binary_array_post_fec) )
+          else:
+            binary_fec = self.osmod.fec.encodeFEC(binary_array_pre_fec)
+            self.debug.info_message("binary_fec : " + str(binary_fec) )
+            self.debug.info_message("len(binary_fec) : " + str(len(binary_fec)) )
+            binary_array_post_fec = np.append(binary_array_post_fec, binary_fec)
+            binary_array_post_fec = np.append(binary_array_post_fec, separator_binary)
+            self.debug.info_message("binary_array_post_fec : " + str(binary_array_post_fec) )
+
+
+          #binary_array_post_fec = self.osmod.fec.encodeFEC(binary_array_pre_fec[self.osmod.extrapolate_seqlen * 6:])
+          #binary_array_post_fec = np.append(binary_array_pre_fec[:self.osmod.extrapolate_seqlen * 6], binary_array_post_fec)
+
+
+
+      self.debug.info_message("final...binary_array_post_fec : " + str(binary_array_post_fec) )
+      post_binary_string = "".join(binary_array_post_fec.astype(str))
+      self.debug.info_message("post_binary_string : " + str(post_binary_string) )
 
       padding_count = (6 - (len(post_binary_string) % 6)) % 6
       self.debug.info_message("padding_count : " + str(padding_count) )
@@ -1378,7 +1502,10 @@ class ModemCoreUtils(object):
       self.debug.info_message("Eb/N0 (dB): " + "{:.2f}".format(ebn0_db) + " (dB)")
       self.debug.info_message("Equivalent SNR over 2500 Hz standard (dB): " + "{:.2f}".format(SNR_equiv_db) + " (dB)")
 
+      #snr = self.calculateSNR(noisy_signal, signal_frequency)
+
       return float(ebn0_db), float(ebn0), float(SNR_equiv_db)
+      #return float(ebn0_db), float(ebn0), float(snr)
     except:
       self.debug.error_message("Exception in calculateSNR_EbN0: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 

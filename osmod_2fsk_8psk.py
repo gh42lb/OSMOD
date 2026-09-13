@@ -6,7 +6,7 @@ import numpy as np
 import debug as db
 import constant as cn
 import osmod_constant as ocn
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import gc
 
 from numpy import pi
@@ -303,7 +303,6 @@ class demod_2FSK8PSK(DemodulatorPSK):
         self.chart_data_dict['smoothed_b_imag_higher']  = intra_triple_charts[7]
         self.chart_data_dict['smoothed_c_imag_higher']  = intra_triple_charts[8]
 
-        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
 
         #decoded_bitstring_1, decoded_bitstring_2 = self.displayTextResults(decoded_intvalues1[0], decoded_intvalues1[1], decoded_intvalues2[0], decoded_intvalues2[1])
 
@@ -323,7 +322,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
         recovered_signal2b = temp[1]
 
         self.osmod.getDurationAndReset('receive_pre_filters_average_data')
-        self.osmod.getDurationAndReset('detectSampleOffset')
+        #self.osmod.getDurationAndReset('detectSampleOffset')
 
         """ calculate remainder to be tacked on front of next sample"""
         remainder_start = ((len(audio_array) - pulse_start_index) // self.osmod.symbol_block_size) * self.osmod.symbol_block_size
@@ -463,7 +462,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
 
           if self.osmod.getOptionalParam('phase_encoding') == ocn.PHASE_INTRA_TRIPLE:
             decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
-            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+            binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(intlist_lower, intlist_higher)
 
             #decoded_bitstring_1, decoded_bitstring_2 = averageDataSingle([fft_filtered_lower.real, fft_filtered_lower.imag], [fft_filtered_higher.real, fft_filtered_higher.imag])
 
@@ -883,8 +882,6 @@ class demod_2FSK8PSK(DemodulatorPSK):
         self.chart_data_dict['smoothed_b_imag_higher']  = intra_triple_charts[7]
         self.chart_data_dict['smoothed_c_imag_higher']  = intra_triple_charts[8]
 
-        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
-
         return decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher
 
       def decodeChunkCharacters(signal, interpolated, shift):
@@ -899,12 +896,13 @@ class demod_2FSK8PSK(DemodulatorPSK):
 
         self.downconvert_I3_RelExp(pulse_start_index, [fft_filtered_lower, fft_filtered_higher], frequency, interpolated[0], interpolated[1], fine_tune_adjust)
         decoded_bitstring_1, decoded_bitstring_2, binary_array_post_fec, intlist_lower, intlist_higher = averageDataTriple(fft_filtered_lower, fft_filtered_higher)
-        #binary_array_post_fec = self.displayTextFromIntlist(intlist_lower, intlist_higher)
         return decoded_bitstring_1, decoded_bitstring_2, signal, intlist_lower, intlist_higher
 
 
 
       """ demodulation start..."""
+      self.osmod.getDurationAndReset('init')
+
       binary_array_post_fec = []
       pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
       pre_signal = audio_array = np.append(self.remainder, audio_block)
@@ -925,11 +923,16 @@ class demod_2FSK8PSK(DemodulatorPSK):
       #TEST DEBUG CODE
       self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, pulse_start_index, 0, ocn.FIND_TRIPLET_MAX_POINT)
 
+
+      self.osmod.getDurationAndReset('detectStandingWavePulseNew')
+
+
       fft_filtered = [None]*2
       fft_filtered[0], masked_fft_lower  = self.bandpass_filter_fft(audio_array, frequency[0] + self.osmod.fft_interpolate[0], frequency[0] + self.osmod.fft_interpolate[1])
       fft_filtered[1], masked_fft_higher = self.bandpass_filter_fft(audio_array, frequency[1] + self.osmod.fft_interpolate[2], frequency[1] + self.osmod.fft_interpolate[3])
 
 
+      self.osmod.getDurationAndReset('bandpass_filter_fft')
 
       #TEST CODE
       #self.osmod.modulation_object.alignTimePointT0(fft_filtered[0], self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
@@ -940,7 +943,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
       #if self.osmod.pulse_detection == ocn.PULSE_DETECTION_I3:
       persistent_lower, persistent_higher = self.osmod.interpolator.derivePersistentLists(pulse_start_index, fft_filtered, frequency)
 
-      self.osmod.getDurationAndReset('findPulseStartIndex')
+      self.osmod.getDurationAndReset('derivePersistentLists')
 
       self.debug.info_message("finding interpolated pulses")
       """ test routine to detect standing waves"""
@@ -953,6 +956,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
       self.debug.info_message("persistent_higher: " + str(persistent_higher) )
       interpolated_lower, interpolated_higher, shift_amount = self.osmod.interpolator.interpolatePulseTrain([persistent_lower, persistent_higher])
 
+      self.osmod.getDurationAndReset('interpolatePulseTrain')
 
       """ start of disposition loop goes here """
 
@@ -960,7 +964,10 @@ class demod_2FSK8PSK(DemodulatorPSK):
       if self.osmod.extrapolate == 'no':
         self.extrapolate_step = ocn.EXTRAPOLATE_NONE
         decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
-        binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+
+        self.osmod.getDurationAndReset('decodeChunkCharacters')
+
+        binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(intlist_lower, intlist_higher)
       elif self.osmod.extrapolate == 'yes':
 
         half = int(self.osmod.symbol_block_size / self.osmod.pulses_per_block) // 2
@@ -983,7 +990,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
         self.debug.info_message("len(interpolated_lower): " + str(len(interpolated_lower)))
 
         decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
-        binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+        binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(intlist_lower, intlist_higher)
         disposition = self.osmod.detector.findDisposition(interpolated_lower, interpolated_higher)
 
         combo_extrapolate_option = self.osmod.form_gui.window['combo_extrapolate_option'].get()
@@ -1003,6 +1010,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
           if combo_extrapolate_option == 'Multi Low' or combo_extrapolate_option == 'Multi Medium' or combo_extrapolate_option == 'Multi High':
             self.debug.info_message("Extrapolate Multi")
             decoded_message_pre_extrapolate = decoded_message
+            message_struct_pre_extrapolate = message_struct
             self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
             half = int(self.osmod.pulses_per_block // 2)
             self.debug.info_message("half: " + str(half))
@@ -1037,6 +1045,7 @@ class demod_2FSK8PSK(DemodulatorPSK):
             extrapolation_result_list_lower  = []
             extrapolation_result_list_higher = []
             extrapolated_messages = []
+            extrapolated_message_structs = []
             for extrapolation_count in range(extrapolation_num_items):
               interpolated_lower  = interpolated[0][0:extrapolation_end[extrapolation_count]]
               interpolated_higher = interpolated[1][0:extrapolation_end[extrapolation_count]]
@@ -1046,9 +1055,11 @@ class demod_2FSK8PSK(DemodulatorPSK):
               shift_amount = saved_shift_amount + disposition + disposition_items[extrapolation_count]
               audio_array = saved_audio_array
               decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), [interpolated_lower, interpolated_higher], shift_amount)
-              binary_array_post_fec, decoded_message_1 = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+              binary_array_post_fec, decoded_message_1, message_struct = self.osmod.text_decoder(intlist_lower, intlist_higher)
 
               extrapolated_messages.append(decoded_message_1)
+              extrapolated_message_structs.append(message_struct)
+              
               extrapolation_result_list_lower.append(intlist_lower)
               extrapolation_result_list_higher.append(intlist_higher)
 
@@ -1066,25 +1077,64 @@ class demod_2FSK8PSK(DemodulatorPSK):
                 test_value_higher = test_value_higher + extrapolation_result_list_higher[list_count][ext_item_count]
               result_higher.append(int(round(test_value_higher / extrapolation_num_items)))
 
-            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(result_lower, result_higher)
+            binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(result_lower, result_higher)
 
             self.debug.info_message("result_lower: " + str(result_lower))
             self.debug.info_message("result_higher: " + str(result_higher))
 
             decoded_message_post_extrapolate = decoded_message
+            message_struct_post_extrapolate = message_struct
             self.debug.info_message("decoded_message_pre_extrapolate: " + str(decoded_message_pre_extrapolate))
+            self.debug.info_message("message_struct_pre_extrapolate: " + str(message_struct_pre_extrapolate))
 
             for count in range(extrapolation_num_items):
               self.debug.info_message("decoded message[count]: " + str(extrapolated_messages[count]))
+              self.debug.info_message("message_struct[count]: " + str(extrapolated_message_structs[count]))
 
             self.debug.info_message("decoded_message_post_extrapolate: " + str(decoded_message_post_extrapolate))
+            self.debug.info_message("message_struct_post_extrapolate: " + str(message_struct_post_extrapolate))
+
+
+            """ build fragemnt set from correct only"""
+            is_crc_enabled = self.osmod.form_gui.window['cb_enable_crc'].get()
+            if is_crc_enabled:
+              pass_fail = message_struct_pre_extrapolate['pass_fail']
+              fragments = message_struct_pre_extrapolate['fragments']
+              num_fragments = int(message_struct_pre_extrapolate['num_fragments'])
+              for fragment_count in range (0, num_fragments):
+                if pass_fail[fragment_count] == 'f':
+                  for hologram_slice_count in range(extrapolation_num_items):
+                    num_fragments_in_slice = int(extrapolated_message_structs[hologram_slice_count]['num_fragments'])
+                    if num_fragments_in_slice > 1 and extrapolated_message_structs[hologram_slice_count]['pass_fail'][fragment_count] == 'p':
+                      fragments[fragment_count] = extrapolated_message_structs[hologram_slice_count]['fragments'][fragment_count]
+                      pass_fail[fragment_count] = 'p'
+                if pass_fail[fragment_count] == 'f':
+                  if message_struct_post_extrapolate['pass_fail'][fragment_count] == 'p':
+                    fragments[fragment_count] = message_struct_post_extrapolate['fragments'][fragment_count]
+                    pass_fail[fragment_count] = 'p'
+
+              self.debug.info_message("pass_fail: " + str(pass_fail))
+              self.debug.info_message("fragments: " + str(fragments))
+
+              final_message = ''
+              for fragment_count in range (0, num_fragments):
+                final_message = final_message + fragments[fragment_count] 
+              self.debug.info_message("final_message: " + str(final_message))
+              message_struct = self.osmod.displayReceivedMessage(final_message, True, True)
+
+              # for test only to compute revised BER...
+              _, bitstring, _ = self.osmod.text_encoder("        " + final_message)
+              decoded_bitstring_1 = bitstring[0]
+              decoded_bitstring_2 = bitstring[1]
+
+              #decoded_message = final_message
 
           elif combo_extrapolate_option == 'Single':
             self.debug.info_message("Extrapolate Single")
             #self.extrapolate_step = ocn.EXTRAPOLATE_FIXED_ROTATION_DECODE
             self.extrapolate_step = ocn.EXTRAPOLATE_FIND_DISPOSITION_ROTATION
             decoded_bitstring_1, decoded_bitstring_2, audio_array, intlist_lower, intlist_higher = decodeChunkCharacters(audio_array.copy(), interpolated, shift_amount)
-            binary_array_post_fec, decoded_message = self.displayTextFromIntlist(intlist_lower, intlist_higher)
+            binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(intlist_lower, intlist_higher)
             self.osmod.detector.findDisposition(interpolated[0], interpolated[1])
 
           #disposition, match_type, best_ambiguous_match = self.osmod.detector.findDisposition(interpolated[0], interpolated[1])

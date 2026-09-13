@@ -243,6 +243,11 @@ PARAM_COSTAS_LOOP_K2            = 9
 EXTRAPOLATE_NONE                       = 0
 EXTRAPOLATE_FIND_DISPOSITION_ROTATION  = 1
 EXTRAPOLATE_FIXED_ROTATION_DECODE      = 2
+EXTRAPOLATE_SINGLE                     = 3
+EXTRAPOLATE_MULTI_LOW                  = 4
+EXTRAPOLATE_MULTI_MEDIUM               = 5
+EXTRAPOLATE_MULTI_HIGH                 = 6
+
 
 DISPOSITION_NO_MATCH            = 0
 DISPOSITION_MATCH_SINGLE        = 1
@@ -276,10 +281,11 @@ FILTER_CHEBYSHEV_TYPE2          = 5
 FILTER_ELLIPTIC                 = 6
 FILTER_LOW_PASS                 = 7
 FILTER_HIGH_PASS                = 8
-FILTER_BAND_PASS                = 9
-FILTER_BAND_PASS_X2             = 10
-FILTER_NOTCH                    = 11
-FILTER_NOTCH_2                  = 12
+FILTER_BANDPASS                 = 9
+FILTER_BANDPASS_X2              = 10
+FILTER_BANDPASS_X2_SIG          = 11
+FILTER_NOTCH                    = 12
+FILTER_NOTCH_2                  = 13
 
 RESAMPLE_UNAVAILABLE            = 0
 RESAMPLE_AVAILABLE              = 1
@@ -296,3 +302,10 @@ KERNEL_TXRX_NOW                 = 5
 KERNEL_TX_BEACON_GENERAL        = 6
 KERNEL_TX_STOP                  = 7
 KERNEL_RX_STOP                  = 8
+
+RCV_PRE_FILTER_DISABLE          = 0
+RCV_PRE_FILTER_ENABLE           = 1
+
+CRC_DISABLE                     = 0
+CRC_ENABLE                      = 1
+CRC_VFEC                        = 2

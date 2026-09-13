@@ -1002,12 +1002,102 @@ class DemodulatorPSK(ModemCoreUtils):
           bit_triplets1.append(row1)
           bit_triplets2.append(row2)
 
-
   """
+
+
+  def displayTextFromIntlistSegmentedFEC(self, decoded_intlist_1, decoded_intlist_2):
+    self.debug.info_message("displayTextFromIntlistSegmentedFEC" )
+
+    try:
+      separator_index = self.b64_indexfromchar_dict['|']
+      separator_binary_string = format(separator_index, "06b")[0:6]
+      separator_binary = np.fromstring(separator_binary_string, 'u1') - ord('0')
+
+      character_index = 0
+      separator_locations_array = np.array([], dtype = np.int64)
+      match_index = 16 + 0
+
+      message_struct = {}
+      message_text = ""
+      binary_array_post_fec = []
+
+      self.debug.info_message("processing FEC" )
+      binary_string = ''
+      for int_low, int_high in zip(decoded_intlist_1, decoded_intlist_2):
+        index = (int_low*8) + (int_high)
+        binary = format(index, "06b")[0:6]
+        self.debug.info_message("binary : " + str(binary) )
+
+        if index == match_index:
+          self.debug.info_message("match at loc : " + str(character_index) )
+          separator_locations_array = np.append(separator_locations_array, character_index)
+        character_index = character_index + 1
+
+        binary_string = binary_string + binary
+
+      segment_length = 21
+
+      self.debug.info_message("separator_locations_array : " + str(separator_locations_array) )
+      self.debug.info_message("separator_locations_array % segment_length : " + str(separator_locations_array % segment_length) )
+      counts = np.bincount(separator_locations_array % segment_length)
+      self.debug.info_message("counts : " + str(counts) )
+      predominant_value = np.argmax(counts)
+      self.debug.info_message("predominant_value : " + str(predominant_value) )
+
+      num_segments = (character_index - predominant_value) // segment_length
+      self.debug.info_message("num_segments : " + str(num_segments) )
+
+      sub_binary_string_pre_message = binary_string[0:predominant_value*6]
+      sub_binary_array_pre_message = np.fromstring(sub_binary_string_pre_message, 'u1') - ord('0')
+      self.debug.info_message("sub_binary_string_pre_message : " + str(sub_binary_array_pre_message) )
+
+      binary_array_post_fec = sub_binary_array_pre_message
+
+      for segment_count in range(0, num_segments):
+        offset = (predominant_value * 6) + (segment_count * segment_length * 6) + 6 # skip over the separator
+        sub_binary_string_message = binary_string[offset: offset + (segment_length * 6) - 6]
+        self.debug.info_message("sub_binary_string_message : " + str(sub_binary_string_message) )
+        sub_binary_array_pre_fec = np.fromstring(sub_binary_string_message, 'u1') - ord('0')
+        sub_binary_array_post_fec = self.osmod.fec.decodeFEC(sub_binary_array_pre_fec)
+        binary_array_post_fec = np.append(binary_array_post_fec, separator_binary) # add the separator
+
+        segment_number_index = self.b64_indexfromchar_dict[str(segment_count)]
+        segment_number_binary_string = format(segment_number_index, "06b")[0:6]
+        segment_number_binary = np.fromstring(segment_number_binary_string, 'u1') - ord('0')
+        self.debug.info_message("segment_number_binary : " + str(segment_number_binary) )
+        binary_array_post_fec = np.append(binary_array_post_fec, segment_number_binary) # add the segment_number__binary
+
+        binary_array_post_fec = np.append(binary_array_post_fec, sub_binary_array_post_fec)
+
+
+      self.debug.info_message("binary_array_post_fec : " + str(binary_array_post_fec) )
+      post_binary_string = "".join(binary_array_post_fec.astype(str))
+      self.debug.info_message("post_binary_string : " + str(post_binary_string) )
+
+      bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
+      if bypass_display_during_test == False:
+        self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
+      message_text = ""
+      for six_bits_index in range(0, len(post_binary_string), 6):
+        index = int(post_binary_string[six_bits_index:six_bits_index+6], 2)
+        char = self.b64_charfromindex_list[index]
+        message_text = message_text + str(char)
+
+      self.debug.info_message("message_text: " + str(message_text))
+      message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
+
+    except:
+      sys.stdout.write("Exception in displayTextFromIntlistSegmentedFEC: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+    return binary_array_post_fec, message_text, message_struct
+
+
+
   def displayTextFromIntlist(self, decoded_intlist_1, decoded_intlist_2):
     self.debug.info_message("displayTextFromIntlist" )
 
     try:
+      message_struct = {}
       message_text = ""
       binary_array_post_fec = []
 
@@ -1058,7 +1148,7 @@ class DemodulatorPSK(ModemCoreUtils):
         #self.osmod.modulation_object.appendTableRow(original_message)
 
         self.debug.info_message("message_text: " + str(message_text))
-        self.osmod.displayReceivedMessage(message_text, True, True)
+        message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
 
       else:
         bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
@@ -1077,12 +1167,12 @@ class DemodulatorPSK(ModemCoreUtils):
         #self.osmod.modulation_object.appendTableRow(original_message)
 
         self.debug.info_message("message_text: " + str(message_text))
-        self.osmod.displayReceivedMessage(message_text, True, True)
+        message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlist: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-    return binary_array_post_fec, message_text
+    return binary_array_post_fec, message_text, message_struct
 
 
     """
@@ -1386,7 +1476,8 @@ class DemodulatorPSK(ModemCoreUtils):
     pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
 
     """ apply receive side RRC filter"""
-    if True:
+    if self.osmod.receive_pre_filter == ocn.RCV_PRE_FILTER_ENABLE:
+    #if True:
     #if False:
       for block_count in range(0, int(len(audio_block) // self.osmod.symbol_block_size)): 
         offset = (block_count * self.osmod.pulses_per_block) * pulse_length
@@ -2028,6 +2119,8 @@ class DemodulatorPSK(ModemCoreUtils):
 
 
         return self.filter_low_pass(baseband_sig, frequency[low_hi_index] - 115)
+        #return baseband_sig
+
 
         #filtered_signal, _ = self.lowpass_filter_fft(baseband_sig, frequency[low_hi_index] +100)
         #return filtered_signal

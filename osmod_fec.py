@@ -13,7 +13,7 @@ from commpy.channels import awgn
 
 from viterbi import Viterbi
 
-from pyldpc import make_ldpc, decode, get_message, encode
+#from pyldpc import make_ldpc, decode, get_message, encode
 
 
 """
