@@ -1063,8 +1063,8 @@ class OsmodDetector(object):
 
 
           filtered_x, filtered_y = filterData(x, data, outliers[1])
-          self.debug.info_message("filtered_x: " + str(filtered_x))
-          self.debug.info_message("filtered_y: " + str(filtered_y))
+          #self.debug.info_message("filtered_x: " + str(filtered_x))
+          #self.debug.info_message("filtered_y: " + str(filtered_y))
 
           #x_smooth = np.linspace(-1, len(data), (len(data) + 1) * pulses_per_offset)
           #x_smooth = np.linspace(0, len(data)-1, (len(data) * pulses_per_offset) - 1)
@@ -2044,8 +2044,8 @@ class OsmodDetector(object):
           adjustment_phase_lower = 0.0
           adjustment_phase_higher = 0.0
 
-        self.debug.info_message("adjustment_phase_lower: " + str(adjustment_phase_lower))
-        self.debug.info_message("adjustment_phase_higher: " + str(adjustment_phase_higher))
+        #self.debug.info_message("adjustment_phase_lower: " + str(adjustment_phase_lower))
+        #self.debug.info_message("adjustment_phase_higher: " + str(adjustment_phase_higher))
 
         total_block_residual_lower[block_count]  = self.osmod.modulation_object.normalizeAngle(adjustment_phase_lower)
         total_block_residual_higher[block_count] = self.osmod.modulation_object.normalizeAngle(adjustment_phase_higher)

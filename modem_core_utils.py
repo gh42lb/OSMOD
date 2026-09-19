@@ -1404,7 +1404,7 @@ class ModemCoreUtils(object):
 
       freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
       signal_psd = np.abs(fft_signal[freq_indices])**2
-      self.debug.info_message("signal_psd: " + str(signal_psd) )
+      #self.debug.info_message("signal_psd: " + str(signal_psd) )
 
       freq_low_noise = 250
       freq_high_noise = 2750
@@ -1475,7 +1475,7 @@ class ModemCoreUtils(object):
 
       freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
       signal_power_spectrum = np.abs(fft_signal[freq_indices])**2
-      self.debug.info_message("signal_power_spectrum: " + str(signal_power_spectrum) )
+      #self.debug.info_message("signal_power_spectrum: " + str(signal_power_spectrum) )
 
       fft_noise = np.fft.fft(noisy_signal)
       frequencies = np.fft.fftfreq(len(fft_noise), 1/self.osmod.sample_rate)
@@ -1543,7 +1543,7 @@ class ModemCoreUtils(object):
 
       freq_indices = np.where((frequencies >= freq_low_signal) & (frequencies <= freq_high_signal))
       signal_power = np.abs(fft_signal[freq_indices])**2
-      self.debug.info_message("signal_power: " + str(signal_power) )
+      #self.debug.info_message("signal_power: " + str(signal_power) )
 
       fft_noise = np.fft.fft(noisy_signal)
       frequencies = np.fft.fftfreq(len(fft_noise), 1/self.osmod.sample_rate)

@@ -171,6 +171,8 @@ class DemodulatorPSK(ModemCoreUtils):
               use_rotate = True
 
 
+      bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
+
       decoded_bitstring_1 = []
       decoded_bitstring_2 = []
 
@@ -181,7 +183,9 @@ class DemodulatorPSK(ModemCoreUtils):
         if lookup_string1 == '0:0' or lookup_string2 == '0:0':
           self.osmod.has_invalid_decodes = True
           self.debug.error_message("invalid decode: " + lookup_string1)
-          self.osmod.form_gui.window['ml_txrx_recvtext'].print('*', end="", text_color='red', background_color = 'white')
+
+          if bypass_display_during_test == False:
+            self.osmod.form_gui.window['ml_txrx_recvtext'].print('*', end="", text_color='red', background_color = 'white')
         else:
           #if use_rotate == True:
           #  """ rotation is based on 000,000 being the first character i.e. character 'a' """
@@ -225,8 +229,10 @@ class DemodulatorPSK(ModemCoreUtils):
         binary = int(lookup_string, 2)
 
         char = self.b64_charfromindex_list[binary]
-        self.debug.info_message("found char: " + str(char))
-        self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='blue', background_color = 'white')
+
+        if bypass_display_during_test == False:
+          self.debug.info_message("found char: " + str(char))
+          self.osmod.form_gui.window['ml_txrx_recvtext'].print(str(char), end="", text_color='blue', background_color = 'white')
 
       return decoded_bitstring_1, decoded_bitstring_2
     except:
@@ -872,8 +878,8 @@ class DemodulatorPSK(ModemCoreUtils):
               combined_range_values.append(range_values[range_group][range_item])
 
 
-        self.debug.info_message("range_values" + str(range_values))
-        self.debug.info_message("combined_range_values" + str(combined_range_values))
+        #self.debug.info_message("range_values" + str(range_values))
+        #self.debug.info_message("combined_range_values" + str(combined_range_values))
 
         range_len = len(combined_range_values)
         if range_len > 0:
@@ -1035,7 +1041,9 @@ class DemodulatorPSK(ModemCoreUtils):
 
         binary_string = binary_string + binary
 
-      segment_length = 21
+      #segment_length = 21
+      segment_length = int(self.osmod.crc_params[3])
+
 
       self.debug.info_message("separator_locations_array : " + str(separator_locations_array) )
       self.debug.info_message("separator_locations_array % segment_length : " + str(separator_locations_array % segment_length) )

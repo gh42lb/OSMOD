@@ -263,8 +263,8 @@ class OsmodAnalysis(object):
           noise = values['btn_slider_awgn']
           form_gui.window['cb_override_fft_filter'].update(True)
           if count % 3 == 0:
-            random_1 = (float)(random.randint(1,600) / 100 )
-            random_2 = (float)(random.randint(1,600) / 100 ) 
+            random_1 = (float)(random.randint(1,8000) / 1000 )
+            random_2 = (float)(random.randint(1,8000) / 1000 ) 
 
             random_string = '-' + str(random_1) + ',' + str(random_2) + ',-' + str(random_2) + ',' + str(random_1) 
             form_gui.window['in_fft_filter'].update(random_string)

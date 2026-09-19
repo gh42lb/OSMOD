@@ -731,11 +731,11 @@ class OsmodTest(object):
 
         # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
         if self.osmod.symbol_block_size <= 800: 
-          range_fft_filter        = [[6000, 16000, 1000], []] # 800 
-          range_fft_interpolate   = [[6000, 16000, 1000], []]
+          range_fft_filter        = [[4000, 16000, 1000], []] # 800 
+          range_fft_interpolate   = [[4000, 16000, 1000], []]
         elif self.osmod.symbol_block_size == 1600: 
-          range_fft_filter        = [[2000, 6000, 1000], []] # 1600
-          range_fft_interpolate   = [[2000, 6000, 1000], []]
+          range_fft_filter        = [[3000, 6000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 6000, 1000], []]
         elif self.osmod.symbol_block_size == 3200: 
           range_fft_filter        = [[2000, 7000, 1000], []] # 3200
           range_fft_interpolate   = [[2000, 7000, 1000], []]
@@ -803,7 +803,7 @@ class OsmodTest(object):
               new_string_1, new_string_2 = format_string_fft(value_1, value_2)
               self.osmod.form_gui.window['in_fft_interpolate'].update(new_string_1)
 
-          elif chosen_section == 3:
+          elif chosen_section == 3 and "-I3-" in mode:
 
             final_values = downconvert_shift_section()
 
@@ -818,7 +818,7 @@ class OsmodTest(object):
               new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
               self.osmod.form_gui.window['in_downconvertshift'].update(new_string_1)
 
-          elif chosen_section == 4:
+          elif chosen_section == 4  and "-I3-" in mode:
 
             final_values = standing_wave_section()
 

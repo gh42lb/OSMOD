@@ -72,7 +72,8 @@ class osModem(object):
   previousBlocksizeOut = 0
   inStreamRunning      = False
   outStreamRunning     = False
-  signal_squelch_value = 0.0  # 0.25
+  signal_squelch_value = 1.0
+  signal_squelch_reset_value = 1.0
   bias_filter_value    = 1.3
   input_gain = 1.0
   output_gain = 0.1
@@ -1723,6 +1724,14 @@ message formats...
     return len(message_text) + rotation_sequence_length
 
 
+  def setDecoderRunning(self, new_value):
+    self.decoderRunning = new_value
+    self.debug.info_message("decoderRunning: " + str(self.decoderRunning))
+
+  def getDecoderRunning(self):
+    return self.decoderRunning
+
+
   def setSliderAwgn(self, new_value):
     self.slider_awgn = new_value
 
@@ -1833,6 +1842,14 @@ message formats...
 
   def setSignalSquelch(self, newvalue):
     self.signal_squelch_value = newvalue
+
+
+  def getSignalSquelchReset(self):
+    return self.signal_squelch_reset_value
+
+  def setSignalSquelchReset(self, newvalue):
+    self.signal_squelch_reset_value = newvalue
+
 
   def getInitializationBlock(self):
     return self.modulation_initialization_block
@@ -2143,7 +2160,7 @@ message formats...
         elif self.crc_params[1] == ocn.EXTRAPOLATE_MULTI_HIGH:
           self.form_gui.window['combo_extrapolate_option'].update(self.form_gui.combo_extrapolate[3])
       else:
-        self.form_gui.window['cb_enable_crc'].update(False)
+        #self.form_gui.window['cb_enable_crc'].update(False)
         self.form_gui.window['cb_enable_crc'].update(disabled=False)
         self.form_gui.window['combo_extrapolate_option'].update(disabled=False)
         self.form_gui.window['in_crc_fragment_size'].update(disabled=False)
@@ -3327,7 +3344,6 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       else:
         local_sample_rate = 48000
 
-
       #self.initInputStream(self.sample_rate, window, values)
       self.initInputStream(local_sample_rate, window, values)
 
@@ -4097,7 +4113,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         if len(fragments) > 1:
           with_crc = True
           if pass_fail[0] == 'p':
-            sender_callsign = fragments[0][4:].split(' ')[0].split(':')[0]
+            sender_callsign = fragments[0][4:-2].split(' ')[0].split(':')[0]
             sender_callsign = sender_callsign.upper()
             self.debug.info_message("sender_callsign: " + str(sender_callsign))
           else:
@@ -4292,6 +4308,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       offset = align_counter["max_index"]
       num_fragments = (len(message) - num_rotation_chars) // total_crc_fragment_size
+      self.debug.info_message("num_fragments: " + str(num_fragments))
+      self.debug.info_message("message: " + str(message))
 
       #remainder = (len(message) - num_rotation_chars) - (num_fragments * total_crc_fragment_size)
       temp_strings = message[num_rotation_chars + 2 + (num_fragments * total_crc_fragment_size): ].split('|',1)
@@ -4306,11 +4324,18 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         fragment = '|' + sequence_identifier[counter] + message[location + 2:location + total_crc_fragment_size]
         fragments.append(fragment)
 
+        self.debug.info_message("checking CRC for: " + str(fragment[0:total_crc_fragment_size - 2]))
+
         checksum = self.modulation_object.calcFragmentCRC(fragment[0:total_crc_fragment_size - 2])
+        self.debug.info_message("checksum: " + str(checksum))
+        self.debug.info_message("checksum compare: " + str(fragment[total_crc_fragment_size - 2:total_crc_fragment_size]))
+
         if checksum == fragment[total_crc_fragment_size - 2:total_crc_fragment_size]:
           pass_fail.append('p')
+          self.debug.info_message("pass")
         else:
           pass_fail.append('f')
+          self.debug.info_message("fail")
 
         self.debug.info_message("fragment: " + str(fragment))
 

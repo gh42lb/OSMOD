@@ -8,6 +8,7 @@ import constant as cn
 import osmod_constant as ocn
 #import matplotlib.pyplot as plt
 import gc
+import itertools
 
 from numpy import pi
 from scipy.signal import butter, filtfilt, firwin
@@ -1063,27 +1064,55 @@ class demod_2FSK8PSK(DemodulatorPSK):
               extrapolation_result_list_lower.append(intlist_lower)
               extrapolation_result_list_higher.append(intlist_higher)
 
-            result_lower  = []
-            result_higher = []
 
-            for ext_item_count in range(len(extrapolation_result_list_lower[0])):
-              test_value_lower = 0
+            enable_combination_decodes = self.osmod.form_gui.window['cb_enable_combination_decodes'].get()
+            max_combination_decodes = int(self.osmod.form_gui.window['in_decode_max_combinations'].get())
+
+            combination_decode_messages = []
+            combination_decode_message_structs = []
+
+            if enable_combination_decodes:
+
+              all_indices = []
               for list_count in range(extrapolation_num_items):
-                test_value_lower = test_value_lower + extrapolation_result_list_lower[list_count][ext_item_count]
-              result_lower.append(int(round(test_value_lower / extrapolation_num_items)))
+                all_indices.append(list_count)
 
-              test_value_higher = 0
-              for list_count in range(extrapolation_num_items):
-                test_value_higher = test_value_higher + extrapolation_result_list_higher[list_count][ext_item_count]
-              result_higher.append(int(round(test_value_higher / extrapolation_num_items)))
+              for group_of in range(3, extrapolation_num_items+1):
+                if len(combination_decode_message_structs) >= max_combination_decodes:
+                  break
 
-            binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(result_lower, result_higher)
+                combinations = list(itertools.combinations(all_indices, group_of))
+                self.debug.info_message("combinations: " + str(combinations))
 
-            self.debug.info_message("result_lower: " + str(result_lower))
-            self.debug.info_message("result_higher: " + str(result_higher))
+                for combination_count in range(0, min(max_combination_decodes, len(combinations))):
 
-            decoded_message_post_extrapolate = decoded_message
-            message_struct_post_extrapolate = message_struct
+                  if len(combination_decode_message_structs) >= max_combination_decodes:
+                    break
+
+                  result_lower  = []
+                  result_higher = []
+
+                  for ext_item_count in range(len(extrapolation_result_list_lower[0])):
+                    test_value_lower = 0
+                    for combination_iter in range(0, group_of):
+                      test_value_lower = test_value_lower + extrapolation_result_list_lower[combinations[combination_count][combination_iter]][ext_item_count]
+                    result_lower.append(int(round(test_value_lower / group_of)))
+
+                    test_value_higher = 0
+                    for combination_iter in range(0, group_of):
+                      test_value_higher = test_value_higher + extrapolation_result_list_higher[combinations[combination_count][combination_iter]][ext_item_count]
+
+                    result_higher.append(int(round(test_value_higher / group_of)))
+
+                  binary_array_post_fec, decoded_message, message_struct = self.osmod.text_decoder(result_lower, result_higher)
+
+                  self.debug.info_message("result_lower: " + str(result_lower))
+                  self.debug.info_message("result_higher: " + str(result_higher))
+
+                  combination_decode_messages.append(decoded_message)
+                  combination_decode_message_structs.append(message_struct)
+
+
             self.debug.info_message("decoded_message_pre_extrapolate: " + str(decoded_message_pre_extrapolate))
             self.debug.info_message("message_struct_pre_extrapolate: " + str(message_struct_pre_extrapolate))
 
@@ -1091,8 +1120,9 @@ class demod_2FSK8PSK(DemodulatorPSK):
               self.debug.info_message("decoded message[count]: " + str(extrapolated_messages[count]))
               self.debug.info_message("message_struct[count]: " + str(extrapolated_message_structs[count]))
 
-            self.debug.info_message("decoded_message_post_extrapolate: " + str(decoded_message_post_extrapolate))
-            self.debug.info_message("message_struct_post_extrapolate: " + str(message_struct_post_extrapolate))
+            for count in range(len(combination_decode_message_structs)):
+              self.debug.info_message("combination_decode_messages[count]: " + str(combination_decode_messages[count]))
+              self.debug.info_message("combination_decode_message_structs[count]: " + str(combination_decode_message_structs[count]))
 
 
             """ build fragemnt set from correct only"""
@@ -1104,19 +1134,23 @@ class demod_2FSK8PSK(DemodulatorPSK):
               for fragment_count in range (0, num_fragments):
                 if pass_fail[fragment_count] == 'f':
                   for hologram_slice_count in range(extrapolation_num_items):
-                    num_fragments_in_slice = int(extrapolated_message_structs[hologram_slice_count]['num_fragments'])
-                    if num_fragments_in_slice > 1 and extrapolated_message_structs[hologram_slice_count]['pass_fail'][fragment_count] == 'p':
-                      fragments[fragment_count] = extrapolated_message_structs[hologram_slice_count]['fragments'][fragment_count]
-                      pass_fail[fragment_count] = 'p'
+                    if extrapolated_message_structs[hologram_slice_count] != {}:
+                      num_fragments_in_slice = int(extrapolated_message_structs[hologram_slice_count]['num_fragments'])
+                      if num_fragments_in_slice > 1 and extrapolated_message_structs[hologram_slice_count]['pass_fail'][fragment_count] == 'p':
+                        fragments[fragment_count] = extrapolated_message_structs[hologram_slice_count]['fragments'][fragment_count]
+                        pass_fail[fragment_count] = 'p'
                 if pass_fail[fragment_count] == 'f':
-                  if message_struct_post_extrapolate['pass_fail'][fragment_count] == 'p':
-                    fragments[fragment_count] = message_struct_post_extrapolate['fragments'][fragment_count]
-                    pass_fail[fragment_count] = 'p'
+                  for combination_message_count in range(len(combination_decode_message_structs)):
+                    if combination_decode_message_structs[combination_message_count] != {}:
+                      num_fragments_in_slice = int(combination_decode_message_structs[combination_message_count]['num_fragments'])
+                      if num_fragments_in_slice > 1 and combination_decode_message_structs[combination_message_count]['pass_fail'][fragment_count] == 'p':
+                        fragments[fragment_count] = combination_decode_message_structs[combination_message_count]['fragments'][fragment_count]
+                        pass_fail[fragment_count] = 'p'
 
               self.debug.info_message("pass_fail: " + str(pass_fail))
               self.debug.info_message("fragments: " + str(fragments))
 
-              final_message = ''
+              final_message = '        '
               for fragment_count in range (0, num_fragments):
                 final_message = final_message + fragments[fragment_count] 
               self.debug.info_message("final_message: " + str(final_message))

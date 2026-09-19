@@ -69,6 +69,16 @@ class OsmodProdParams(object):
         # LB28-64-2-10-I   
         # LB28-25600-256-2-15-I   
         # LB28-25600-512-2-15-I   
+
+        # LB28-16-2-15-I              0.35
+        # LB28-6400-64-2-15-I        -1.7
+        # LB28-64-2-15-I             -1.7
+        # LB28-64-2-10-I             -1.7
+        # LB28-128-2-10-I            -1.6
+        # LB28-25600-256-2-15-I      -8
+        # LB28-25600-512-2-15-I      -5
+        # LB28-51200-512-2-15-I      -10
+        # LB28-512-2-15-I            -3
         #"""
 
         'LB28-25600-256-2-15-I':  {
@@ -91,11 +101,11 @@ class OsmodProdParams(object):
                     'detector_function'    : 'mode',
                     'baseband_conversion'  : 'costas_loop',
                     'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
-                    'fft_filter'           : (-1, 1, -1, 1),
-                    'fft_interpolate'      : (-1, 1, -1, 1),
+                    'fft_filter'           : (-0.25, 5.08, -5.08, 0.25),
+                    'fft_interpolate'      : (-2.97, 3.22, -3.22, 2.97),
                     'pulses_per_block'     : 256,
                     'process_debug'        : False,
-                    'parameters'           : (1500, 0.986, 0.015, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                    'parameters'           : (1500, 0.742, 0.102, 10000, 2, 98, 0.403, 0.21, 0.828, 0.025),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 17, 5, 50),
                     #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 17, 5, 50),
@@ -126,11 +136,16 @@ class OsmodProdParams(object):
                     'detector_function'    : 'mode',
                     'baseband_conversion'  : 'costas_loop',
                     'phase_extraction'     : ocn.EXTRACT_INTERPOLATE,
-                    'fft_filter'           : (-4, 4, -4, 4),
-                    'fft_interpolate'      : (-3, 2, -2, 3),
+                    #'fft_filter'           : (-4, 4, -4, 4),
+                    #'fft_interpolate'      : (-3, 2, -2, 3),
+                    #'fft_filter'           : (-1.247, 1.988, -1.988, 1.247),
+                    #'fft_interpolate'      : (-0.83, 2.24, -2.24, 0.83),
+                    'fft_filter'           : (-1.16, 0.85, -0.85, 1.16),
+                    'fft_interpolate'      : (-3.66, 2.37, -2.37, 3.66),
                     'pulses_per_block'     : 64,
                     'process_debug'        : False,
-                    'parameters'           : (600, 0.70, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                    #'parameters'           : (600, 0.70, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                    'parameters'           : (600, 0.695, 0.756, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01),   #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
 
                     #Filter carriers
                     #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 5, 50),
@@ -784,24 +799,15 @@ class OsmodProdParams(object):
         }, 
 
 
-        # define parameter group for use with inclue_params
-        'FEC_VITERBI' :{ 
-                    'FEC'                  : ocn.FEC_VITERBI,
-                    'fec_params'           : (13 , 5890 , 6271, []),
-                    'msg_sections'         : (8,0,48), #init sequence length, msg ID length, message length
-                    'msg_type'             : ocn.MSGTYPE_FIXED_LENGTH,
-                    'extrapolate_seqlen'   : 8,
-        }, 
-
         'LB28-6400-I3-FC25-VCE' :{ 
                     'inherit_from'         : 'LB28-6400-I3-FC25',
                     'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
                     'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
                     'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
 
-                    'include_params'       : 'FEC_VITERBI',
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
                     'rotation_table_name'  : 'LB28-6400-I3-FC25',
-                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+                    #'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
                     #'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
 
         }, 
@@ -1178,6 +1184,17 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-3200-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-3200-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-3200-I3-FF40',
+
+        }, 
+
 
         'LB28-3200-I3-FF40' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
@@ -1219,6 +1236,44 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-3200-I3-FF25-VCE' :{ 
+                    'inherit_from'         : 'LB28-3200-I3-FF25',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    #'include_params'       : 'FEC_VITERBI_3_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-3200-I3-FF25',
+                    #'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+        'LB28-3200-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 25,
+
+                    # final (for now)
+                    'fft_filter'            : (-4.107,3.675,-3.675,4.107),
+                    'fft_interpolate'       : (-5.375,4.871,-4.871,5.375),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.656),
+                    'downconvert_shift'     : 0.525, 
+                    'parameters'            : (1500, 0.91, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+
+                    #'dcs_type'              : ocn.DCS_FREQUENCY_SPECIFIC,
+                    #'dcs_by_frequency'      : {'160':0.159, '200':0.601, '320':0.27, '640':0.27, '800':0.922, '960':0.291, '1000':0.622, '1010':0.616, '1040':0.78, '1080':0.707, '1120':0.51, '1160':0.12, '2000':0.76, '2640':0.866, '2720':0.97 },
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.495215152030596,  17.515281914900925, 247.1610],
+                    #'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515653291377703, 247.1610],
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
         'LB28-3200-I3-FC25' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
@@ -1230,6 +1285,13 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.6),
                     'downconvert_shift'     : 0.015, 
                     'parameters'            : (1500, 0.641, 0.536, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+
+                    #'dcs_type'              : ocn.DCS_FREQUENCY_SPECIFIC,
+                    #'dcs_by_frequency'      : {'160':0.159, '200':0.601, '320':0.27, '640':0.27, '800':0.922, '960':0.291, '1000':0.622, '1010':0.616, '1040':0.78, '1080':0.707, '1120':0.51, '1160':0.12, '2000':0.76, '2640':0.866, '2720':0.97 },
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.495215152030596,  17.515281914900925, 247.1610],
+                    #'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515653291377703, 247.1610],
+
 
                     'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
@@ -1468,7 +1530,7 @@ class OsmodProdParams(object):
 
 
         # bypass for now
-        'LB28-1600-I3-FC80' :{ 
+        'LB28-1600-I3-FF80' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : 'Filtered Carriers - 91 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 80,
@@ -1479,12 +1541,47 @@ class OsmodProdParams(object):
                     #'downconvert_shift'     : 0.136, 
                     #'parameters'            : (1500, 0.926, 0.74, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 40), 2, 40), #0.30 to 0.44
-                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 40), 2, 40),
-                    'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
-                    'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
         }, 
+
+
+
+
+
+        'LB28-1600-I3-FF50-VCE' :{ 
+                    'inherit_from'         : 'LB28-1600-I3-FF50',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 61.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1600-I3-FF50',
+
+        }, 
+
+
+
+        'LB28-1600-I3-FF50' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 61.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 50,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.742,5.508,-5.508,5.742),
+                    'fft_interpolate'       : (-3.911,4.778,-4.778,3.911),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.769),
+                    'downconvert_shift'     : 0.014, 
+                    'parameters'            : (1500, 0.68, 0.496, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
 
 
         'LB28-1600-I3-FC50' :{ 
@@ -1508,17 +1605,37 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-1600-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-1600-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 48.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1600-I3-FF40',
+
+        }, 
+
+
         'LB28-1600-I3-FF40' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
-                    'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'info'                  : 'Filtered Carriers - 48.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 40,
 
                     # final (for now)
-                    #'fft_filter'            : (-3.683,6.816,-6.816,3.683),
-                    #'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
-                    #'downconvert_shift'     : 0.083, 
-                    #'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-2.405,2.633,-2.633,2.405),
+                    'fft_interpolate'       : (-4.206,2.006,-2.006,4.206),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.655),
+                    'downconvert_shift'     : 0.841, 
+                    'parameters'            : (1500, 0.324, 0.866, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE5,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    #'pulse_train_sigma'     : 5.0,
+                    #'pulse_start_sigma'     : 6.48,
+                    #'pulse_start_envelope_sigma' : 23.5,
+
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
@@ -1546,6 +1663,37 @@ class OsmodProdParams(object):
         }, 
 
 
+        'LB28-1600-I3-FF25-VCE' :{ 
+                    'inherit_from'         : 'LB28-1600-I3-FF25',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 35.9 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1600-I3-FF25',
+
+        }, 
+
+
+        'LB28-1600-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 35.9 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 25,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.283,5.429,-5.429,5.283),
+                    'fft_interpolate'       : (-3.94,3.282,-3.282,3.94),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.661),
+                    'downconvert_shift'     : 0.457, 
+                    'parameters'            : (1500, 0.714, 0.723, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
         'LB28-1600-I3-FC25' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
@@ -1562,6 +1710,28 @@ class OsmodProdParams(object):
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-15, 12.5), 2, 50),
 
         }, 
+
+
+
+
+        'LB28-1600-I3-FF20' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 31.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 20,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.481,9.931,-9.931,5.481),
+                    'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
+                    'downconvert_shift'     : 0.54, 
+                    'parameters'            : (1500, 0.254, 0.911, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
 
 
         'LB28-1600-I3-FC20' :{ 
@@ -1584,6 +1754,40 @@ class OsmodProdParams(object):
                     'rx_filter2'           : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_NOTCH_2, 40, 2, 30),
 
         }, 
+
+
+
+
+        'LB28-1600-I3-FF16-VCE' :{ 
+                    'inherit_from'         : 'LB28-1600-I3-FF16',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 26.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1600-I3-FF16',
+
+        }, 
+
+
+
+        'LB28-1600-I3-FF16' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'FFT Filtered - 26.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 16,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.04,5.103,-5.103,5.04),
+                    'fft_interpolate'       : (-4.885,5.369,-5.369,4.885),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.537),
+                    'downconvert_shift'     : 0.252, 
+                    'parameters'            : (1500, 0.719, 0.814, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
 
 
         'LB28-1600-I3-FC16' :{ 
@@ -1684,6 +1888,27 @@ class OsmodProdParams(object):
         }, 
 
 
+
+        'LB28-1600-I3-FF10' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 31.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 10,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.481,9.931,-9.931,5.481),
+                    'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
+                    'downconvert_shift'     : 0.54, 
+                    'parameters'            : (1500, 0.254, 0.911, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+
         'LB28-1600-I3-FC10' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : 'Filtered Carriers - 23.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
@@ -1701,6 +1926,28 @@ class OsmodProdParams(object):
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 4, 50),
 
         }, 
+
+
+
+        'LB28-1600-I3-FF5' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 17.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
+                    'carrier_separation'    : 5,
+
+                    # final (for now)
+                    'fft_filter'            : (-5.855,4.149,-4.149,5.855),
+                    'fft_interpolate'       : (-5.42,4.721,-4.721,5.42),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.622),
+                    'downconvert_shift'     : 0.684, 
+                    'parameters'            : (1500, 0.676, 0.759, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
 
 
         'LB28-1600-I3-FC5' :{ 
@@ -1838,6 +2085,31 @@ class OsmodProdParams(object):
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
                     #'downconvert_shift'     : 0.164, 
                     #'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+                    'pulse_train_sigma'     : 12.47,
+                    'pulse_start_sigma'     : 9.66,
+                    'pulse_start_envelope_sigma' : 18.69,
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+        'LB28-800-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-800-I3',
+                    'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
+                    'carrier_separation'    : 25,
+
+                    # final (for now)
+                    'fft_filter'            : (-7.364,8.739,-8.739,7.364),
+                    'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
+                    'downconvert_shift'     : 0.164, 
+                    'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
                     'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
@@ -2010,6 +2282,45 @@ class OsmodProdParams(object):
                     #'I3_combine'           : ocn.INTRA_COMBINE_TYPE6,
 
         }, 
+
+
+        # define parameter group for use with inclue_params
+        'FEC_VITERBI_PARAM_GROUP' :{ 
+                    'FEC'                  : ocn.FEC_VITERBI,
+                    'fec_params'           : (13 , 5890 , 6271, []),
+                    'msg_sections'         : (8,0,48), #init sequence length, msg ID length, message length
+                    'msg_type'             : ocn.MSGTYPE_FIXED_LENGTH,
+                    'extrapolate_seqlen'   : 8,
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+        }, 
+
+        'FEC_VITERBI_2_PARAM_GROUP' :{ 
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'fec_params'           : (11 , 861 , 2 , [0,1,1,1]), # 6 of 20 low distortion
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+        }, 
+
+        'FEC_VITERBI_3_PARAM_GROUP' :{ 
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'fec_params'           : (12 , 1423 , 16 , [1,1,0,1]), # 2 of 20
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+        }, 
+
+        'FEC_VITERBI_4_PARAM_GROUP' :{ 
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'fec_params'           : (11, 861, 2, [0,1,1,1]), # 3 of 10 with low decode distortion
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+        }, 
+
+        'FEC_VITERBI_5_PARAM_GROUP' :{ 
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'fec_params'           : (19, 93986, 444204, [0,1,1,1]), # 6 of 10 but decode distortion
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_MULTI_HIGH, 8, 16),      # enable, encode crc_segment_size, decode crc_segment_size  
+        }, 
+
+
+
+
 
 
 

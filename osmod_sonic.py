@@ -139,10 +139,25 @@ class OsmodSonic(object):
           #self.debug.info_message("kernel_action: " + str(kernel_action))
 
           if kernel_action == ocn.KERNEL_TX_NOW:
+            separation_override = self.osmod.getSliderCarrierSeparation()
+            self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
             num_sd_blocks = self.tx_now(window, values, form_gui)
             self.startOutputStream()
-            time.sleep(num_sd_blocks + 1)
+
+            #time.sleep(num_sd_blocks + 1)
+
+            timer = 0
+            while timer < num_sd_blocks + 1:
+              if self.isKernelQueueEmpty():
+                time.sleep(1)
+                timer = timer + 1
+              else:
+                kernel_action = self.popKernelQueue()
+                if kernel_action == ocn.KERNEL_TX_STOP:
+                  timer = num_sd_blocks + 1
+
+
             self.stopOutputStream()
             gc.enable()
             gc.collect()
@@ -168,17 +183,20 @@ class OsmodSonic(object):
             gc.enable()
             gc.collect()
 
-
           elif kernel_action == ocn.KERNEL_RX_SQUELCH:
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
             bufferStart = self.getRxBufferStart()
-            self.startInputStream()
+
+            if self.continuous == False:
+              self.startInputStream()
             self.rx_squelch(window, values, form_gui, bufferStart, 24)
-            self.stopInputStream()
+            if self.continuous == False:
+              self.stopInputStream()
             gc.enable()
             gc.collect()
+
           elif kernel_action == ocn.KERNEL_TXRX_NOW:
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
@@ -193,6 +211,12 @@ class OsmodSonic(object):
 
             gc.enable()
             gc.collect()
+
+          #elif kernel_action == ocn.KERNEL_TX_STOP:
+          #  if self.continuous: 
+          #    self.stopOutputStream()
+          #  else:
+          #    self.stopStream()
 
 
           elif kernel_action == ocn.KERNEL_TX_TIME_SYNC:
@@ -216,28 +240,16 @@ class OsmodSonic(object):
 
     try:
       self.osmod.useProdMode()
-      #mode = values['combo_main_modem_prod_modes']
       mode = form_gui.window['combo_main_modem_prod_modes'].get()
 
       self.osmod.setInitializationBlock(mode)
       use_existing_txblocks = False
 
-      #self.osmod.set_sd_blocksize_tx()
-      #self.osmod.set_sd_blocksize_rx()
-      #self.osmod.set_symbol_blocksize_tx()
-      #self.osmod.set_symbol_blocksize_rx()
-
       if use_existing_txblocks == False:
-        #noise = values['btn_slider_awgn']
         noise = self.osmod.getSliderAwgn()
 
-        #text_num = values['combo_text_options'].split(':')[0]
         text_num = int(form_gui.window['combo_text_options'].get().split(':')[0])
-
-        #amplitude = values['slider_amplitude']
         amplitude = self.osmod.getSliderAmplitude()
-
-        #carrier_separation_override = values['slider_carrier_separation']
         carrier_separation_override = self.osmod.getSliderCarrierSeparation()
 
         use_preset_message = form_gui.window['cb_use_preset_message'].get()
@@ -256,8 +268,6 @@ class OsmodSonic(object):
       self.debug.info_message("getOutputGain() : " + str(self.osmod.getOutputGain()))
 
       self.sendTxBuffer(txblocks)
-
-      #self.startStream()
 
       return int(math.ceil(len(txblocks) / self.osmod.get_sd_blocksize_tx()))
     except:
@@ -278,7 +288,10 @@ class OsmodSonic(object):
       else:
         self.startStream()
 
-      rxData, fdd = self.rx_squelch(window, values, form_gui, bufferStart, num_sd_blocks)
+      #rxData, fdd = self.rx_squelch(window, values, form_gui, bufferStart, num_sd_blocks)
+      rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, num_sd_blocks)
+
+
 
       form_gui.TxStatusInactive()
 
@@ -292,49 +305,90 @@ class OsmodSonic(object):
     self.debug.info_message("rx_squelch()")
 
     try:
-      #num_chars = 58
-      #max_sd_blocks = int(num_chars * (self.osmod.get_symbol_blocksize_rx() / self.osmod.get_sd_blocksize_rx()))
-      #for loop_count in range(max_sd_blocks):
-      #  self.debug.info_message("loop_count: " + str(loop_count) )
+      squelch_activate   = self.osmod.getSignalSquelch()
+      squelch_deactivate = self.osmod.getSignalSquelchReset()
+      sd_blocks_min = 6 # message must be a minimum of 6 seconds (blocks) long
+
+      self.osmod.setDecoderRunning(True)
+      form_gui.RxStatusActive()
+
+      while self.osmod.getDecoderRunning() == True:
+        self.debug.info_message("waiting for message to decode...")
+
+        detected_message = False
+        rx_message_complete = False
+
+        while self.osmod.getDecoderRunning() == True and rx_message_complete == False:
+          block = self.getLastSdBlock()
+          present_freq, present_mag, fft_output, data_len, fdd = self.osmod.modulation_object.getIsSignalPresent(block, self.watch_frequency + 0.5)
+
+          if detected_message == False:
+            if present_mag > squelch_activate:
+              self.debug.info_message("possible message...")
+              bufferStart = self.getRxBufferStart()
+              num_sd_blocks = 0
+              self.debug.info_message("bufferStart: " + str(bufferStart) )
+              detected_message = True
+          else: #if detected_message == True
+            if present_mag < squelch_deactivate:
+              if num_sd_blocks < sd_blocks_min:
+                self.debug.info_message("signal too short...cancel")
+                detected_message = False
+              else:
+                self.debug.info_message("have message to decode")
+                rx_message_complete = True
+
+          self.osmod.form_gui.spectralDensityQueue.put(fdd)
+          time.sleep(1)
+          num_sd_blocks = num_sd_blocks + 1
+
+        if self.osmod.getDecoderRunning() == True:
+          self.debug.info_message("decoding message...")
+
+          rxData = self.getRxBuffer(bufferStart, num_sd_blocks)
+
+          form_gui.DecodeStatusActive()
+          self.processRxData(values, rxData, fdd)
+          form_gui.DecodeStatusInactive()
+
+      form_gui.RxStatusInactive()
+
+      return rxData, fdd
+
+    except:
+      sys.stdout.write("Exception in send: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+  def rx_fixed_block_count(self, window, values, form_gui, bufferStart, num_sd_blocks):
+    self.debug.info_message("rx_fixed_block_count()")
+
+    try:
 
       form_gui.RxStatusActive()
 
       for _ in range(num_sd_blocks):
-        #if self.osmod.form_gui.window['cb_continuous_decode'].get() == False:
         block = self.getLastSdBlock()
         present_freq, present_mag, fft_output, data_len, fdd = self.osmod.modulation_object.getIsSignalPresent(block, self.watch_frequency + 0.5)
         self.osmod.form_gui.window['text_input_signal_magnitude_passband'].update(f"Magnitude: {present_mag:.3f}")
 
-        #self.osmod.form_gui.window['text_input_signal_magnitude_passband'].update(f"{present_mag:.3f}")
-        #self.form_gui.window['text_input_signal_magnitude_passband_smoothed'].update(str(self.previous_mag))
-        #self.previous_mag = (present_mag/5) + (self.previous_mag * (4/5))
-
-        #if present_mag < self.osmod.signal_squelch_value: # self.getSignalSquelch():
-        #  break 
-
         self.osmod.form_gui.spectralDensityQueue.put(fdd)
-
         time.sleep(1)
 
       form_gui.RxStatusInactive()
 
-      #time.sleep(num_sd_blocks + 1)
-
       self.debug.info_message("count complete" )
-
       self.debug.info_message("bufferStart: " + str(bufferStart) )
 
       rxData = self.getRxBuffer(bufferStart, num_sd_blocks)
 
       self.debug.info_message("getRxBuffer complete" )
 
-      #self.stopStream()
-
-      #self.processRxData(values, rxData, fdd)
       return rxData, fdd
 
     except:
       sys.stdout.write("Exception in send: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
 
 
   def decodeData(self, form_gui, values, rxData, fdd):

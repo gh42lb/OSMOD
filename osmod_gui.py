@@ -173,7 +173,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC5,LB28-1600-I3-FC10,LB28-1600-I3-FC16,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FF40,LB28-1600-I3-FC50,LB28-3200-I3,LB28-3200-I3-FC5,LB28-3200-I3-FC10,LB28-3200-I3-FC16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FC50,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC5,LB28-1600-I3-FC10,LB28-1600-I3-FF16,LB28-1600-I3-FF16-VCE,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-3200-I3-FC5,LB28-3200-I3-FC10,LB28-3200-I3-FC16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -331,7 +331,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.3 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.4 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -924,12 +924,12 @@ SOFTWARE.\n\
 
                            sg.Frame('Freestyle Messages', [
                                [sg.CBox('Squelch', key='cb_enable_squelch_rx_processing', font=("Helvetica", 12), default=True, enable_events=True ),
-                                sg.Slider(range=(0, 20),size=(20, 25),  default_value = 0.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
+                                sg.Slider(range=(0, 20),size=(20, 25),  default_value = 1.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
 
                            ], size=(180, 60)),
 
                            sg.Frame('Squelch Reset', [
-                              [sg.Slider(range=(-20, 0),size=(20, 25),  default_value = -3, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch_reset')],
+                              [sg.Slider(range=(0, 20),size=(20, 25),  default_value = 1.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch_reset')],
 
                            ], size=(140, 60)),
 
@@ -974,8 +974,9 @@ SOFTWARE.\n\
                             #sg.InputText('', key='ml_txrx_sendtext', size=(150, 1), font=("Courier New", 9), text_color='black', background_color='white', enable_events=True),
 
                             #sg.Button('Queue / Send', size=(11, 1), key='btn_another_button', visible=True)],
-                            sg.Button('Queue - Tx Send', size=(15, 1), key='btn_init_test', visible=True),
-                            sg.Button('Stop Tx', size=(8, 1), key='btn_stop_tx', visible=True)],
+                            #sg.Button('Tx Send', size=(15, 1), key='btn_init_test', visible=True),
+                            sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False )],
+
 
                           [
                            sg.Button('Rx - Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
@@ -983,10 +984,14 @@ SOFTWARE.\n\
                            sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
                            #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
                            #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
-                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
+                           #sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
                            sg.Button('TxRx 1', size=(6, 1), key='btn_txrx_c_code', visible=False),
 
                            sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
+
+                           sg.Button('Tx Send', size=(11, 1), key='btn_init_test', visible=True),
+
+                           sg.Button('Stop Tx', size=(8, 1), key='btn_stop_tx', visible=True),
 
                            sg.CBox('Truncate - Pad', key='cb_truncate_to_max_msglength', default=True ),
 
@@ -995,11 +1000,7 @@ SOFTWARE.\n\
 
                            sg.CBox('Preset', key='cb_use_preset_message', default=True ),
 
-
-
                            sg.CBox('CRC', key='cb_enable_crc', default=False ),
-
-                           sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
 
                            sg.CBox('Mode Detect', key='cb_enable_automatic_mode_detection', default=False ),
 
@@ -1117,9 +1118,16 @@ SOFTWARE.\n\
 
                           [sg.Text('Extrapolate: ', size=(9, 1) ) ,
                            sg.Combo(combo_extrapolate, key='combo_extrapolate_option', size=(30, 1), font=("Helvetica", 10), default_value=combo_extrapolate[0], enable_events=True)],
-                          [sg.Text('Tx: ', size=(9, 1) ) ,
-                           sg.Combo(combo_txrx_choices, key='combo_txrx_option', size=(30, 1), font=("Helvetica", 10), default_value=combo_txrx_choices[0], enable_events=True)],
-                           ], size=(350, 70))],
+
+                          [sg.CBox('Enable Combination Decodes', key='cb_enable_combination_decodes', font=("Helvetica", 12), default=True, enable_events=True, visible=True )],
+
+                          [sg.Text('Max Combinations: ', size=(9, 1) ) ,
+                           sg.InputText('10', key='in_decode_max_combinations', size=(24, 1), enable_events=True)],
+
+                          #[sg.Text('Tx: ', size=(9, 1) ) ,
+                          # sg.Combo(combo_txrx_choices, key='combo_txrx_option', size=(30, 1), font=("Helvetica", 10), default_value=combo_txrx_choices[0], enable_events=True)],
+                           ], size=(350, 100))],
+
 
 
 
@@ -1225,7 +1233,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.3 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.4 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
@@ -1573,9 +1581,12 @@ class ReceiveControlsProc(object):
   def event_stop8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_stop8pskdecoder\n")
     try:
+      form_gui.osmod.setDecoderRunning(False)
+
       kernel_action = ocn.KERNEL_RX_STOP
       form_gui.osmod.sonic.pushKernelQueue(kernel_action)
       form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
       #form_gui.osmod.stopEncoder()
       #form_gui.osmod.stopDecoder()
       #form_gui.osmod.resetAll()
@@ -2482,6 +2493,11 @@ class ReceiveControlsProc(object):
     new_squelch = values['slider_signal_squelch']
     form_gui.osmod.setSignalSquelch(new_squelch)
 
+  def event_slidersignalsquelchreset(self, window, values, form_gui):
+    sys.stdout.write("event_slidersignalsquelchreset\n")
+    new_squelch = values['slider_signal_squelch_reset']
+    form_gui.osmod.setSignalSquelchReset(new_squelch)
+
 
   def event_frequencysliderresolution_10hz(self, window, values, form_gui):
     sys.stdout.write("event_frequencysliderresolution_10hz\n")
@@ -2556,6 +2572,9 @@ class ReceiveControlsProc(object):
       send_text = form_gui.window['ml_txrx_sendtext'].get()
     return send_text
 
+
+
+  """
   def event_txrx(self, window, values, form_gui):
     sys.stdout.write("event_txrx\n")
 
@@ -2583,7 +2602,7 @@ class ReceiveControlsProc(object):
     sample_rate = form_gui.osmod.getParam(mode, 'sample_rate')
     block_size  = form_gui.osmod.getParam(mode, 'symbol_block_size')
 
-    """ switch to hi-fi / 48khZ for tx block creation only """
+    #switch to hi-fi / 48khZ for tx block creation only
     if use_hifi_tx:
       form_gui.window['cb_enable_sample_rate_override'].update(True)
       form_gui.window['cb_override_blocksize'].update(True)
@@ -2597,7 +2616,7 @@ class ReceiveControlsProc(object):
 
     txblocks = form_gui.osmod.createTxBlocks(mode, values, noise, text_num, carrier_separation_override, amplitude, False, send_text)
 
-    """ switch back to low-fi """
+    # switch back to low-fi
 
     form_gui.window['cb_enable_sample_rate_override'].update(False)
     form_gui.window['cb_override_blocksize'].update(False)
@@ -2614,7 +2633,7 @@ class ReceiveControlsProc(object):
 
     form_gui.osmod.startEncoder(values, "HELLO!", "8psk", True, txblocks)
 
-
+  """
 
 
 
@@ -2648,7 +2667,7 @@ class ReceiveControlsProc(object):
   dispatch = {
       'btn_init_ostream' : event_initostream,
       'btn_init_test'    : event_inittest,
-      'btn_txrx'         : event_txrx,
+      #'btn_txrx'         : event_txrx,
       'btn_canvasdrawplotwaveform' : event_canvasdrawplotwaveform,
       'btn_8pskdecoder'  : event_8pskdecoder,
       'btn_stop8pskdecoder'  : event_stop8pskdecoder,
@@ -2685,6 +2704,7 @@ class ReceiveControlsProc(object):
       'cb_frequency_slider_resolution': event_frequencysliderresolution,
       'cb_frequency_slider_resolution_10hz' : event_frequencysliderresolution_10hz,
       'slider_signal_squelch'     : event_slidersignalsquelch,
+      'slider_signal_squelch_reset'     : event_slidersignalsquelchreset,
       'btn_stop_tx'               : event_stoptx,
       'slider_waterfall_hue'      : event_slider_waterfall,
       'slider_waterfall_saturation'      : event_slider_waterfall,
