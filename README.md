@@ -1,4 +1,4 @@
-# OSMOD v0.3.4 alpha
+# OSMOD v0.3.5 alpha
 
 PSK/FSK modulation and phase extraction using Quantized Time-Scale Holograms
 
@@ -9,12 +9,13 @@ PSK/FSK modulation and phase extraction using Quantized Time-Scale Holograms
 * ability to take multiple samples from the hologram to further enhance noise resilience by averaging out the noise. 
 "
 
-v0.3.4 includes:-
+v0.3.5 includes:-
 
 * live modem for sending and receiving audio via speaker and mic (entangled phonons) and ham radio (entangled photons) via VOX
 * Iterative Convergence Engine to solve for the main five non-linear parameter variables of LB28 modes
 * Multi-Slice hologram decodes
 * Segmented Viterbi FEC: segmented messages with Viterbi, CRC, Extrapolation and Multi-Slice Hologram Decodes + Combination Decodes.
+* 80 bit per second narrow mode (68Hz wide)
 
 please note...audio testing is more effective at minimal magnitues i.e. barely audible. latency in the audio processing callbacks (instream and ostream) can significantly impact signal and decodes. modem tested successfully on Apple M4 laptop using lowest audio speaker setting; input magnitudes in the range 2 to 4
 
@@ -37,4 +38,5 @@ testing confirms successful run on Apple Mac Book.
 
 <img width="2306" height="1320" alt="performance_data_6" src="https://github.com/user-attachments/assets/20bb1c86-ac5b-4566-8c7f-0cee78e0eb2f" />
 
+<img width="2310" height="1314" alt="performance_data_9" src="https://github.com/user-attachments/assets/b88c3db7-aeeb-4119-8b0b-e154f462e348" />
 
