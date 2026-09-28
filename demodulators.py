@@ -2093,15 +2093,56 @@ class DemodulatorPSK(ModemCoreUtils):
   def downconvert_I3_RelExp(self, pulse_start_index, audio_block, frequency, interpolated_lower, interpolated_higher, fine_tune_adjust):
     self.debug.info_message("downconvert_I3_RelExp")
     try:
+      dcs_lpf_order  = self.osmod.dcs_lpf[0] # 2
+      dcs_lpf_fdelta = self.osmod.dcs_lpf[1] # 115
+
       pulse_length      = int((self.osmod.symbol_block_size / self.osmod.pulses_per_block))
       half = int(pulse_length / 2)
       time = np.arange(pulse_length) / self.osmod.sample_rate
 
-      #downconvert_shift = 0.5
-      #downconvert_shift = self.osmod.downconvert_shift
+      dws_skew = self.osmod.dws_skew
+      dws = float(dws_skew[0])
+      skew_factor_1 = float(dws_skew[1])
+      num_skew = 1
+      if len(dws_skew) > 2:
+        skew_factor_2 = float(dws_skew[2])
+        num_skew = 2
+      if len(dws_skew) == 4:
+        skew_factor_3 = float(dws_skew[3])
+        num_skew = 3
+
+
+      override_dws_skew = self.osmod.form_gui.window['cb_override_dws_skew'].get()
+      if override_dws_skew:
+        dws_skew = self.osmod.form_gui.window['in_dws_skew'].get()
+        split_it = dws_skew.split(',')
+        dws = float(split_it[0].strip())
+        dws = 0.22
+        skew_factor_1 = -0.24 #float(split_it[1].strip())
+        skew_factor_2 = -0.07 #float(split_it[1].strip())
+        skew_factor_3 = 0.85 #float(split_it[1].strip())
+        num_skew = 3
+
+      half_pulse = int(pulse_length * 0.5)
+      half_pulse_size_dws = int(dws * half_pulse)
+      half_no_signal = int(half_pulse - half_pulse_size_dws)
+      #skew = int(skew_factor_1 * half_no_signal)
+
+      skew_1 = int(skew_factor_1 * half_no_signal)
+      self.debug.info_message("skew_1: " + str(skew_1))
+      if num_skew > 1:
+        skew_2 = int(skew_factor_2 * half_no_signal)
+        self.debug.info_message("skew_2: " + str(skew_2))
+      if num_skew > 2:
+        skew_3 = int(skew_factor_3  * half_no_signal)
+        self.debug.info_message("skew_3: " + str(skew_3))
+
+      self.debug.info_message("pulse_length: " + str(pulse_length))
+      self.debug.info_message("half_no_signal: " + str(half_no_signal))
+      self.debug.info_message("num_skew: " + str(num_skew))
+
+
       downconvert_shift = self.osmod.getDownconvertShift()
-
-
 
       override_downconvert_shift = self.osmod.form_gui.window['cb_overridedownconvertshift'].get()
       if override_downconvert_shift:
@@ -2116,33 +2157,43 @@ class DemodulatorPSK(ModemCoreUtils):
         return [cmath.rect(abs(c1) * abs(c2), cmath.phase(c1) + cmath.phase(c2)) for c1, c2 in zip(sig1, sig2)]
 
       def deriveProduct(low_hi_index, sig1, sig2):
-        baseband_sig = complex_exponential[low_hi_index] * (sig1 + sig2)
 
-        #baseband_sig = complex_exponential[low_hi_index] * sig1 + complex_exponential[low_hi_index] * sig2
-        #baseband_sig = complex_exponential[low_hi_index] * sig2
+        if dws == 1.0:
+          baseband_sig = complex_exponential[low_hi_index] * (sig1 + sig2)
+          return self.filter_sharp_cutoff_common(baseband_sig, frequency[low_hi_index] - dcs_lpf_fdelta, "low", dcs_lpf_order, self.osmod.sample_rate)
 
+        sig1_modified = sig1.copy()
+        sig1_modified[0:half_no_signal + skew_1]  = np.zeros((int(half_no_signal + skew_1),), dtype = sig1.dtype)
+        sig1_modified[pulse_length - half_no_signal + skew_1:] = np.zeros((int(half_no_signal - skew_1),), dtype = sig1.dtype)
+        sig2_modified = sig2.copy()
+        sig2_modified[0:half_no_signal + skew_1]  = np.zeros((int(half_no_signal + skew_1),), dtype = sig2.dtype)
+        sig2_modified[pulse_length - half_no_signal + skew_1:] = np.zeros((int(half_no_signal - skew_1),), dtype = sig2.dtype)
 
-        #baseband_sig = complex_exponential[low_hi_index] * sig2
-        #return self.filter_low_pass(baseband_sig, 1200)
+        if num_skew > 1:
+          sig3_part = sig1[half_no_signal + skew_2 : pulse_length - half_no_signal + skew_2]
+          sig3_modified = np.zeros((pulse_length,), dtype = sig1.dtype)
+          sig3_modified[half_no_signal + skew_1 : pulse_length - half_no_signal + skew_1] = sig3_part
+          sig4_part = sig2[half_no_signal + skew_2 : pulse_length - half_no_signal + skew_2]
+          sig4_modified = np.zeros((pulse_length,), dtype = sig2.dtype)
+          sig4_modified[half_no_signal + skew_1 : pulse_length - half_no_signal + skew_1] = sig4_part
 
+        if num_skew > 2:
+          sig5_part = sig1[half_no_signal + skew_3 : pulse_length - half_no_signal + skew_3]
+          sig5_modified = np.zeros((pulse_length,), dtype = sig1.dtype)
+          sig5_modified[half_no_signal + skew_1 : pulse_length - half_no_signal + skew_1] = sig5_part
+          sig6_part = sig2[half_no_signal + skew_3 : pulse_length - half_no_signal + skew_3]
+          sig6_modified = np.zeros((pulse_length,), dtype = sig2.dtype)
+          sig6_modified[half_no_signal + skew_1 : pulse_length - half_no_signal + skew_1] = sig6_part
 
-        return self.filter_low_pass(baseband_sig, frequency[low_hi_index] - 115)
-        #return baseband_sig
+        if num_skew == 1:
+          baseband_sig = complex_exponential[low_hi_index] * (sig1_modified + sig2_modified)
+        elif num_skew == 2:
+          baseband_sig = complex_exponential[low_hi_index] * (sig1_modified + sig2_modified + sig3_modified + sig4_modified )
+        elif num_skew == 3:
+          baseband_sig = complex_exponential[low_hi_index] * (sig1_modified + sig2_modified + sig3_modified + sig4_modified + sig5_modified + sig6_modified)
 
+        return self.filter_sharp_cutoff_common(baseband_sig, frequency[low_hi_index] - dcs_lpf_fdelta, "low", dcs_lpf_order, self.osmod.sample_rate)
 
-        #filtered_signal, _ = self.lowpass_filter_fft(baseband_sig, frequency[low_hi_index] +100)
-        #return filtered_signal
-
-
-
-        #return self.filter_low_pass(baseband_sig, frequency[low_hi_index] - 110)
-        #return baseband_sig
-
-
-
-        #return baseband_sig
-        #filtered_signal = self.lowpass_filter_fft(baseband_sig, 10000)
-        #return ((filtered_signal.real + filtered_signal.imag ) / 2)
 
       def extract_process_writeback(audio_block_index):
         nonlocal has_last_pulse_a
@@ -2452,6 +2503,7 @@ class DemodulatorPSK(ModemCoreUtils):
       self.debug.error_message("Exception in downconvert_I3_RelExp: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
       self.debug.info_message("block_count: " + str(block_count))
       self.debug.info_message("index: " + str(index))
+      #self.osmod.has_invalid_decodes = True
 
 
   """
@@ -3345,6 +3397,7 @@ class DemodulatorPSK(ModemCoreUtils):
 
     except:
       self.debug.error_message("Exception in receive_pre_filters_average_data_intra_triple: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.osmod.has_invalid_decodes = True
 
     return [audio_block1, audio_block2], pulse_start_index 
 

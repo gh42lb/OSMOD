@@ -259,6 +259,18 @@ class OsmodAnalysis(object):
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
 
+        elif test_type == 'DWS & Skew':
+          noise = values['btn_slider_awgn']
+          form_gui.window['cb_override_dws_skew'].update(True)
+          if count % 10 == 0:
+            random_1 = 0.22 #(float)(random.randint(0,100) / 100 )
+            random_2 = (float)(random.randint(-100,100) / 100 ) 
+
+            random_string = str(random_1) + ',' + str(random_2)
+            form_gui.window['in_dws_skew'].update(random_string)
+          test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
+
+
         elif test_type == 'FFT Filter':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_override_fft_filter'].update(True)
@@ -576,7 +588,8 @@ DATA_CALC_2                = 23
           color = '#%02x%02x%02x' % hsb_to_rgb(hue, saturation, (count/num_range_increments))
           colors.append(color)
       else:
-        for count in range(0,300):
+        #for count in range(0,301):
+        for count in range(0,1000):
           rand_rgb_color = [random.randint(0,255) for _ in range(3)]
           rand_color_hex = "#{:02x}{:02x}{:02x}".format(*rand_rgb_color)
           colors.append(rand_color_hex)
@@ -653,7 +666,8 @@ DATA_CALC_2                = 23
         x_index = ocn.DATA_BER
         y_index = ocn.DATA_EBN0_DB
         graph.draw_text('Bit Error Rate', location = (x_chart_offset + (x_max/2), y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+        #graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 50,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text('Eb / N0 (dB)', location = (x_chart_offset - 100,y_chart_offset + (y_max/2)), angle = 90, font = '_ 12', color = 'black', text_location = 'center')
       elif chart_type == 'X:BER Y:SNR':
         x_index = ocn.DATA_BER
         y_index = ocn.DATA_SNR_EQUIV_DB
@@ -817,6 +831,9 @@ DATA_CALC_2                = 23
           elif legend_type == 'Padding Character' and str(data[point][ocn.DATA_PADDING_CHARACTER]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER])] = color_count
             color_count = color_count + 1
+          elif legend_type == 'DWS & Skew' and str(data[point][ocn.DATA_DWS_SKEW]) not in dict_preset_pattern:
+            dict_preset_pattern[str(data[point][ocn.DATA_DWS_SKEW])] = color_count
+            color_count = color_count + 1
           elif legend_type == 'FFT Filter' and str(data[point][ocn.DATA_FFT_FILTER]) not in dict_preset_pattern:
             dict_preset_pattern[str(data[point][ocn.DATA_FFT_FILTER])] = color_count
             color_count = color_count + 1
@@ -878,13 +895,36 @@ DATA_CALC_2                = 23
             data_y_min = min(data_y_min, float(data[point-2][y_index]))
 
 
-      graph.draw_text("{:.4f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.4f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.4f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
-      graph.draw_text("{:.4f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
 
-      if data_y_max > 0 and data_y_min < 0: 
-        graph.draw_text("{:.4f}".format(0.0), location = (x_chart_offset -50 , y_chart_offset + (y_max * ((0.0 - data_y_min) / (data_y_max - data_y_min) ))), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+
+      analysis_show_grid = self.osmod.form_gui.window['cb_analysis_show_grid'].get()
+      if analysis_show_grid:
+        grid_color = 'gray'
+        grid_y_inc = 5
+        grid_x_inc = 0.1
+        grid_x_div = 10
+        grid_y_div = 1
+        if data_y_max > 0 and data_y_min < 0: 
+          for grid_y in range(0, int(data_y_max * grid_y_div), int(grid_y_inc * grid_y_div)):
+            y_value = y_chart_offset + (y_max * (((grid_y / grid_y_div) - data_y_min) / (data_y_max - data_y_min) ))
+            graph.draw_text("{:.2f}".format(grid_y / grid_y_div), location = (x_chart_offset -50 , y_value), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+            graph.draw_line(point_from=(x_chart_offset, y_value), point_to=(x_chart_offset + x_max, y_value ), width=2, color=grid_color)
+        if data_x_max > 0 and data_x_min <= 0: 
+          for grid_x in range(0, int(data_x_max * grid_x_div)+1, int(grid_x_inc * grid_x_div)):
+            x_value = x_chart_offset + (x_max * (((grid_x / grid_x_div) - data_x_min) / (data_x_max - data_x_min) ))
+            graph.draw_text("{:.2f}".format((grid_x / grid_x_div)), location = (x_value , y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+            graph.draw_line(point_from=(x_value, y_chart_offset), point_to=(x_value, y_chart_offset + y_max ), width=2, color=grid_color)
+      else:
+        graph.draw_text("{:.4f}".format(data_x_min), location = (x_chart_offset, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text("{:.4f}".format(data_x_max), location = (x_chart_offset + x_max, y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text("{:.4f}".format(data_y_min), location = (x_chart_offset -50 , y_chart_offset), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+        graph.draw_text("{:.4f}".format(data_y_max), location = (x_chart_offset -50 , y_chart_offset + y_max), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
+
+
+      #graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      #graph.draw_line(point_from=(x_chart_offset - twiddle,y_chart_offset + y_max + twiddle), point_to=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), width=2, color=box_color)
+      #graph.draw_line(point_from=(x_chart_offset + x_max + twiddle, y_chart_offset + y_max + twiddle), point_to=(x_chart_offset  + x_max + twiddle,y_chart_offset - twiddle), width=2, color=box_color)
+      #graph.draw_line(point_from=(x_chart_offset + x_max + twiddle ,y_chart_offset - twiddle), point_to=(x_chart_offset - twiddle,y_chart_offset - twiddle), width=2, color=box_color)
 
 
       self.debug.info_message("data_x_max: " + str(data_x_max))
@@ -1001,6 +1041,9 @@ DATA_CALC_2                = 23
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'Padding Character':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_PADDING_CHARACTER]) ]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+          elif legend_type == 'DWS & Skew':
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_DWS_SKEW]) ]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'FFT Filter':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_FFT_FILTER]) ]
@@ -1173,6 +1216,14 @@ DATA_CALC_2                = 23
       elif legend_type == 'Padding Character':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           if True: #occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
+      elif legend_type == 'DWS & Skew':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
+        for pattern_location_name, color_index in dict_preset_pattern.items():
+          if occurrences[color_index] > filter_legend:
             plot_color = colors[color_index]
             graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)

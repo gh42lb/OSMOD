@@ -538,6 +538,14 @@ class OsmodTest(object):
         self.testCalcPhaseAngles(mode)
       elif routine_type == 'Compare Modes':
         self.testCompareModes(mode)
+
+      elif routine_type == 'Calculate RTab All Freq':
+        for frequency in range(240, 2961, 40):
+          self.osmod.form_gui.window['slider_frequency'].update(value=frequency)
+          self.osmod.center_frequency = frequency
+
+          self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
+
       elif routine_type == 'Calculate Rotation Tables':
         self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
         #self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "partial")
@@ -730,9 +738,21 @@ class OsmodTest(object):
         #solve_params = [300, 6, 12, 3, 11, 10] 
 
         # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
-        if self.osmod.symbol_block_size <= 800: 
+        if self.osmod.symbol_block_size <= 700: 
+          range_fft_filter        = [[3000, 16000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 16000, 1000], []]
+        elif self.osmod.symbol_block_size == 800: 
           range_fft_filter        = [[4000, 16000, 1000], []] # 800 
           range_fft_interpolate   = [[4000, 16000, 1000], []]
+        elif self.osmod.symbol_block_size == 900: 
+          range_fft_filter        = [[3000, 16000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 16000, 1000], []]
+        elif self.osmod.symbol_block_size == 1000: 
+          range_fft_filter        = [[3000, 15000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 15000, 1000], []]
+        elif self.osmod.symbol_block_size == 1200: 
+          range_fft_filter        = [[3000, 10000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 10000, 1000], []]
         elif self.osmod.symbol_block_size == 1600: 
           range_fft_filter        = [[3000, 6000, 1000], []] # 1600
           range_fft_interpolate   = [[3000, 6000, 1000], []]
@@ -2100,6 +2120,16 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       else:
         ldpc_snr = 0.0
 
+      override_dws_skew = self.osmod.form_gui.window['cb_override_dws_skew'].get()
+      if override_dws_skew:
+        dws_skew = self.osmod.form_gui.window['in_dws_skew'].get()
+        split_it = dws_skew.split(',')
+        dws = float(split_it[0].strip())
+        skew_factor = float(split_it[1].strip())
+        dws_skew = str(dws) + "_" + str(skew_factor)
+      else:
+        dws_skew = "1.0_0.0"
+
       detector_threshold_1 = 1
       detector_threshold_2 = 1
       basebandconv_freq_delta = 1
@@ -2112,7 +2142,7 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       pulse_train_length = self.osmod.detector.pulse_train_length
 
-      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'", fft_filter_string, fft_interpolate_string, puncture_code, ldpc_snr]
+      csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location, preset_sw_pattern, chunk_size, rrc_alpha, rrc_t, extract_type, pulse_train_sigma, detector_threshold_1, detector_threshold_2, basebandconv_freq_delta, costas_damping, costas_loop_bandwidth, costas_k1, costas_k2, rotation_lo, rotation_hi, pulse_train_length, disposition, downconvert_shift,gp1,gp2, gpdepth, fdmsep, pulse_start_sigma, pulse_start_envelope_sigma,"'" + padding_character + "'", fft_filter_string, fft_interpolate_string, puncture_code, ldpc_snr, dws_skew]
       #csv_data = [mode, ebn0_db, SNR_equiv_db, ber, characters_per_second, bits_per_second, noise_factor, standingwave_pattern, standingwave_location]
       self.osmod.analysis.writeDataToFile(csv_data, file_append)
 

@@ -101,8 +101,10 @@ DATA_FFT_FILTER             = 34
 DATA_FFT_INTERPOLATE        = 35
 DATA_FEC_PUNCTURE_CODE      = 36
 DATA_LDPC_SNR               = 37
-DATA_CALC_1                 = 38
-DATA_CALC_2                 = 39
+DATA_DWS_SKEW               = 38
+DATA_CALC_1                 = 39
+DATA_CALC_2                 = 40
+
 
 
 """ used for intra block phase encoding """

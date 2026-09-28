@@ -1715,6 +1715,9 @@ message formats...
                                     'crc_params'           : (ocn.CRC_DISABLE, ocn.EXTRAPOLATE_NONE, 0, 0),
                                     'rotation_table_name'  : '',
                                     'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
+                                    'dcs_lpf'              : (2,115),
+                                    'dws_skew'             : (1.0,0.0),
+                                    #'skew'                 : 0.0,
 
                                    }
 
@@ -2067,7 +2070,30 @@ message formats...
       self.receive_pre_filter  = self.getParam(mode, 'receive_pre_filter')
       self.crc_params          = self.getParam(mode, 'crc_params')
       self.rotation_table_name = self.getParam(mode, 'rotation_table_name')
+      self.dcs_lpf             = self.getParam(mode, 'dcs_lpf')
+      self.dws_skew            = self.getParam(mode, 'dws_skew')
+      #self.skew                = self.getParam(mode, 'skew')
 
+
+      
+      override_carrier_separation = self.form_gui.window['cb_enable_separation_override'].get()
+      if override_carrier_separation:
+        self.carrier_separation = self.getSliderCarrierSeparation()
+      else:
+        #self.setSliderCarrierSeparation(self.carrier_separation)
+        self.form_gui.window['slider_carrier_separation'].update(self.carrier_separation)
+
+      override_fft_filter = self.form_gui.window['cb_override_fft_filter'].get()
+      fft_filter_values = self.form_gui.window['in_fft_filter'].get()
+      if override_fft_filter:
+        split_values = fft_filter_values.split(',')
+        self.fft_filter = ((float)(split_values[0]), (float)(split_values[1]), (float)(split_values[2]), (float)(split_values[3]))
+
+      override_fft_interpolate = self.form_gui.window['cb_override_fft_interpolate'].get()
+      fft_interpolate_values = self.form_gui.window['in_fft_interpolate'].get()
+      if override_fft_interpolate:
+        split_values = fft_interpolate_values.split(',')
+        self.fft_interpolate = ((float)(split_values[0]), (float)(split_values[1]), (float)(split_values[2]), (float)(split_values[3]))
 
 
 

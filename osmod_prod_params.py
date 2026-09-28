@@ -767,7 +767,7 @@ class OsmodProdParams(object):
                     'info'                  : 'FFT Filtered - 45 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second).',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-1.953,1.984,-1.984,1.953),
                     'fft_interpolate'       : (-0.763,2.357,-2.357,0.763),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.854),
@@ -786,7 +786,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second).',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-1.953,1.984,-1.984,1.953),
                     'fft_interpolate'       : (-0.763,2.357,-2.357,0.763),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.854),
@@ -829,7 +829,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-1.859,2.158,-2.158,1.859),
                     'fft_interpolate'       : (-1.378,1.472,-1.472,1.378),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.251),
@@ -850,7 +850,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
                     'carrier_separation'    : 20,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-1.432,1.947,-1.947,1.432),
                     'fft_interpolate'       : (-2.252,2.438,-2.438,2.252),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.251),
@@ -870,7 +870,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 30 Hz Wide - 1.25 characters per second, 7.5 baud (bits per second). ',
                     'carrier_separation'    : 16,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-1.255,2.259,-2.259,1.255),
                     'fft_interpolate'       : (-1.585,0.646,-0.646,1.585),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.58),
@@ -1201,7 +1201,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     #'fft_filter'            : (-3.08,2.6,-2.6,3.08),
                     #'fft_interpolate'       : (-6.22,6.05,-6.05,6.22),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.626),
@@ -1220,7 +1220,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-3.08,2.6,-2.6,3.08),
                     'fft_interpolate'       : (-6.22,6.05,-6.05,6.22),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.626),
@@ -1254,7 +1254,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-4.107,3.675,-3.675,4.107),
                     'fft_interpolate'       : (-5.375,4.871,-4.871,5.375),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.656),
@@ -1279,7 +1279,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-3.855,3.686,-3.686,3.855),
                     'fft_interpolate'       : (-1.369,4.133,-4.133,1.369),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.6),
@@ -1305,7 +1305,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 20,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-3.855,3.686,-3.686,3.855),
                     'fft_interpolate'       : (-1.369,4.133,-4.133,1.369),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.6),
@@ -1319,13 +1319,30 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-3200-I3-FF16' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 16,
+
+                    
+                    'fft_filter'            : (-4.107,3.675,-3.675,4.107),
+                    'fft_interpolate'       : (-5.375,4.871,-4.871,5.375),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.656),
+                    'downconvert_shift'     : 0.525, 
+                    'parameters'            : (1500, 0.91, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
 
         'LB28-3200-I3-FC16' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
                     'info'                  : 'Filtered Carriers - 30 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
                     'carrier_separation'    : 16,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-2.736,4.269,-4.269,2.736),
                     'fft_interpolate'       : (-3.996,2.898,-2.898,3.996),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.75),
@@ -1384,6 +1401,24 @@ class OsmodProdParams(object):
 
         }, 
 
+
+
+        'LB28-3200-I3-FF10' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 10,
+
+                    
+                    'fft_filter'            : (-4.107,3.675,-3.675,4.107),
+                    'fft_interpolate'       : (-5.375,4.871,-4.871,5.375),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.656),
+                    'downconvert_shift'     : 0.525, 
+                    'parameters'            : (1500, 0.91, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
 
 
 
@@ -1458,6 +1493,7 @@ class OsmodProdParams(object):
         }, 
 
 
+
         """
         'LB28-SPECIAL' :{  # to be used for mode selector. this uses 125 * 64 as block size
                     'inherit_from'          : 'LB28-I3-BASE',
@@ -1513,7 +1549,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 110.5 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 100,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.24,1.96,-1.96,5.24),
                     'fft_interpolate'       : (-6.95,5.35,-5.35,6.95),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.727),
@@ -1568,7 +1604,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 61.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 50,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.742,5.508,-5.508,5.742),
                     'fft_interpolate'       : (-3.911,4.778,-4.778,3.911),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.769),
@@ -1589,7 +1625,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 59.2 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 50,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-6.599,7.551,-7.551,6.599),
                     'fft_interpolate'       : (-2.21,5.812,-5.812,2.21),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.123),
@@ -1622,7 +1658,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 48.4 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-2.405,2.633,-2.633,2.405),
                     'fft_interpolate'       : (-4.206,2.006,-2.006,4.206),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.655),
@@ -1643,12 +1679,13 @@ class OsmodProdParams(object):
         }, 
 
 
+
         'LB28-1600-I3-FC40' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-3.683,6.816,-6.816,3.683),
                     'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
@@ -1680,7 +1717,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 35.9 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.283,5.429,-5.429,5.283),
                     'fft_interpolate'       : (-3.94,3.282,-3.282,3.94),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.661),
@@ -1699,7 +1736,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 36 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.5,6.64,-6.64,5.5),
                     'fft_interpolate'       : (-3.86,1.05,-1.05,3.86),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.769),
@@ -1719,7 +1756,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 31.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 20,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.481,9.931,-9.931,5.481),
                     'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
@@ -1739,7 +1776,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 31.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 20,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.481,9.931,-9.931,5.481),
                     'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
@@ -1776,7 +1813,7 @@ class OsmodProdParams(object):
                     'info'                  : 'FFT Filtered - 26.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 16,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.04,5.103,-5.103,5.04),
                     'fft_interpolate'       : (-4.885,5.369,-5.369,4.885),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.537),
@@ -1795,7 +1832,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 30 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 16,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-6.299,6.941,-6.941,6.299),
                     'fft_interpolate'       : (-3.219,3.708,-3.708,3.219),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.113),
@@ -1894,7 +1931,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 31.7 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 10,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.481,9.931,-9.931,5.481),
                     'fft_interpolate'       : (-3.305,5.817,-5.817,3.305),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.627),
@@ -1914,7 +1951,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 23.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 10,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-9.002,5.313,-5.313,9.002),
                     'fft_interpolate'       : (-9.158,2.2,-2.2,9.158),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.428),
@@ -1934,7 +1971,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 17.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 5,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.855,4.149,-4.149,5.855),
                     'fft_interpolate'       : (-5.42,4.721,-4.721,5.42),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.622),
@@ -1955,7 +1992,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 17.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
                     'carrier_separation'    : 5,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-5.855,4.149,-4.149,5.855),
                     'fft_interpolate'       : (-5.42,4.721,-4.721,5.42),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-D', 0.622),
@@ -1997,6 +2034,100 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+
+        }, 
+
+
+
+        'LB28-1200-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'symbol_block_size'     : 1200,
+                    'pulses_per_block'      : 12,
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-3.683,6.816,-6.816,3.683),
+                    'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
+                    'downconvert_shift'     : 0.083, 
+                    'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+        'LB28-1000-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FF40',
+                    'info'                  : '???  10.0 characters per second, 60.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 1000,
+                    'pulses_per_block'      : 10,
+
+                    'fft_filter'            : (-14.053,14.695,-14.695,14.053),
+                    'fft_interpolate'       : (-3.317,11.968,-11.968,3.317),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.575),
+                    'downconvert_shift'     : 0.904, 
+                    'parameters'            : (1500, 0.206, 0.998, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt).
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+        }, 
+
+
+        'LB28-900-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'symbol_block_size'     : 900,
+                    'pulses_per_block'      : 9,
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-3.683,6.816,-6.816,3.683),
+                    'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
+                    'downconvert_shift'     : 0.083, 
+                    'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+
+        'LB28-900-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FF40',
+                    'info'                  : '???  10.0 characters per second, 60.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 900,
+                    'pulses_per_block'      : 9,
+
+                    'fft_filter'            : (-9.289,9.78,-9.78,9.289),
+                    'fft_interpolate'       : (-6.684,4.073,-4.073,6.684),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.816),
+                    'downconvert_shift'     : 0.335, 
+                    'parameters'            : (1500, 0.373, 0.899, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.15, -0.45, -0.09, 0.98), # downconvert_window_size, skew_1, skew_2 (opt)
+                    #'dws_skew'              : (0.24, -0.38, -0.56, -0.47), # downconvert_window_size, skew_1, skew_2 (opt).
+                    'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt).
+                    #'dws_skew'              : (0.25, 0.4), 
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
 
         }, 
 
@@ -2079,7 +2210,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
                     'carrier_separation'    : 40,
 
-                    # final (for now)
+                    
                     #'fft_filter'            : (-7.364,8.739,-8.739,7.364),
                     #'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
                     #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
@@ -2099,12 +2230,54 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-800-I3-FF38-VC' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF38',
+                    'info'                 : 'VFEC with CRC - 60 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+
+        'LB28-800-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FF40',
+                    'info'                  : '10.0 characters per second, 60.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 800,
+                    'pulses_per_block'      : 8,
+
+                    'fft_filter'            : (-12.114,11.057,-11.057,12.114),
+                    'fft_interpolate'       : (-5.928,7.615,-7.615,5.928),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.119),
+                    'downconvert_shift'     : 0.209, 
+                    'parameters'            : (1500, 0.328, 0.995, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.15, -0.45, -0.09, 0.98), # downconvert_window_size, skew_1, skew_2 (opt)
+                    #'dws_skew'              : (0.24, -0.38, -0.56, -0.47), # downconvert_window_size, skew_1, skew_2 (opt). # 14/100 vs 10/100
+                    'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+        }, 
+
+
+
         'LB28-800-I3-FF25' :{ 
                     'inherit_from'          : 'LB28-800-I3',
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
                     'carrier_separation'    : 25,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-7.364,8.739,-8.739,7.364),
                     'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
@@ -2130,7 +2303,7 @@ class OsmodProdParams(object):
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
                     'carrier_separation'    : 16,
 
-                    # final (for now)
+                    
                     'fft_filter'            : (-7.364,8.739,-8.739,7.364),
                     'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
@@ -2219,7 +2392,143 @@ class OsmodProdParams(object):
         }, 
 
 
+        'LB28-700-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-700-I3-FF38',
+                    'carrier_separation'    : 25,
 
+        }, 
+
+
+        'LB28-700-I3-FF38-VC' :{ 
+                    'inherit_from'         : 'LB28-700-I3-FF38',
+                    'info'                 : 'VFEC with CRC - 61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second) ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-700-I3-FF38',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+        'LB28-700-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FF40',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 700,
+                    'pulses_per_block'      : 7,
+
+                    #'fft_filter'            : (-14.053,14.695,-14.695,14.053),
+                    #'fft_interpolate'       : (-3.317,11.968,-11.968,3.317),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.575),
+                    #'downconvert_shift'     : 0.904, 
+                    #'parameters'            : (1500, 0.206, 0.998, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #'fft_filter'            : (-14.387,11.128,-11.128,14.387),
+                    #'fft_interpolate'       : (-8.227,13.549,-13.549,8.227),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.565),
+                    #'downconvert_shift'     : 0.743, 
+                    #'parameters'            : (1500, 0.348, 0.737, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'fft_filter'            : (-11.88,9.873,-9.873,11.88),
+                    'fft_interpolate'       : (-6.667,6.271,-6.271,6.667),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.602),
+                    'downconvert_shift'     : 0.755, 
+                    'parameters'            : (1500, 0.001, 0.619, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    'dws_skew'              : (0.22, -0.24, -0.07, 0.85), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+        }, 
+
+
+        'LB28-700-I3-FF16' :{ 
+                    'inherit_from'          : 'LB28-700-I3-FF38',
+                    'carrier_separation'    : 16,
+
+        }, 
+
+
+        'LB28-600-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'symbol_block_size'     : 600,
+                    'pulses_per_block'      : 6,
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-3.683,6.816,-6.816,3.683),
+                    'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
+                    'downconvert_shift'     : 0.083, 
+                    'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'pulse_train_sigma'     : 14.9,
+                    'pulse_start_sigma'     : 21.8,
+                    'pulse_start_envelope_sigma' : 17.54,
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+
+                    #'receive_pre_filter'    : ocn.RCV_PRE_FILTER_DISABLE,
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+        'LB28-600-I3-FF38-VC' :{ 
+                    'inherit_from'         : 'LB28-600-I3-FF38',
+                    'info'                 : 'VFEC with CRC - 60 Hz Wide - 8.5 characters per second, 51.2 baud (bits per second) ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+
+        'LB28-600-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : '13.33 characters per second, 80.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 600,
+                    'pulses_per_block'      : 6,
+
+                    #'fft_filter'            : (-8.874,15.882,-15.882,8.874),
+                    #'fft_interpolate'       : (-7.208,8.329,-8.329,7.208),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.962),
+                    #'downconvert_shift'     : 0.605, 
+                    #'parameters'            : (1500, 0.259, 0.764, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'fft_filter'            : (-15.002,15.052,-15.052,15.002),
+                    'fft_interpolate'       : (-9.962,4.368,-4.368,9.962),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.542),
+                    'downconvert_shift'     : 0.123, 
+                    'parameters'            : (1500, 0.363, 0.798, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+        }, 
 
 
         'LB28-400-I3-FC10' :{ 

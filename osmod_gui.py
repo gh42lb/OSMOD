@@ -173,7 +173,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-1600-I3,LB28-1600-I3-FC5,LB28-1600-I3-FC10,LB28-1600-I3-FF16,LB28-1600-I3-FF16-VCE,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-3200-I3-FC5,LB28-3200-I3-FC10,LB28-3200-I3-FC16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+    combo_modem_prod_modes  = 'LB28-600-I3-FF38,LB28-600-I3-FF38-VC,LB28-700-I3-FF16,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF38,LB28-800-I3-FF38-VC,LB28-900-I3-FF38,LB28-1000-I3-FF38,LB28-1600-I3,LB28-1600-I3-FC5,LB28-1600-I3-FC10,LB28-1600-I3-FF16,LB28-1600-I3-FF16-VCE,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-3200-I3-FC5,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-6400-I3,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -206,14 +206,14 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     self.combo_standingwave_patterns = combo_standingwave_patterns
 
-    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,LDPC SNR,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character,FFT Filter,FFT Interpolate'.split(',')
+    combo_legend_options = 'Mode,Pattern Type,SW Location,Preset Pattern,RRC Alpha & T,AWGN Range,Rotation Lo Hi,Pulse Train Length,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,BER Range,BER Range All,DC Shift,Generator Polynomials,LDPC SNR,FDM Separator,Costas K1 & K2,Costas Damping & Loop BW,Padding Character,FFT Filter,FFT Interpolate,DWS & Skew'.split(',')
 
     combo_filter1_matchtypes = 'Mode Name ==,Pattern Type ==,Preset Pattern ==,AWGN ==,Pulse Shape ==,Pulse Train Length ==,Disposition =='.split(',')
 
     #combo_plotpulsetraintypes = 'Test,Smoothed Signal,Block Offsets,Block Offsets Half,Block Offsets Fourth,Block Offsets Fourth b,Interpolated Pulse Offsets,Dominant Series 1'.split(',')
     combo_plotpulsetraintypes = 'Refresh'.split(',')
 
-    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes,Translate Outbound,Translate Inbound,Solve FFT Filter,Solve FFT Interpolate,Solve Standing Wave,Solve RRC Alpha T,Solve DCS,Solve All'.split(',')
+    combo_test_routines = 'Calculate Phase Angles,Interpolation,Calculate Rotation Tables,Calculate RTab All Freq,Calculate Normalized Rotation Tables,Calculate Constellation Shift Tables,Compare Modes,Translate Outbound,Translate Inbound,Solve FFT Filter,Solve FFT Interpolate,Solve Standing Wave,Solve RRC Alpha T,Solve DCS,Solve All'.split(',')
 
     combo_analysis_compare_operator = '=,>,<'.split(',')
 
@@ -241,7 +241,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_text_options  = '0:cq,1:cqcq,2:cqcqcq,3:peter piper,4:jack be nimble,5:row row row,6:hickory dickory,7:its raining,8:jack and jill,9:humpty dumpty,10:wise old owl,11:hey diddle diddle,12:baa baa,13:twinkle twinkle,14:on a boat,15:queen of hearts,16:QUEEN OF HEARTS'.split(',')
 
-    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,LDPC SNR,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW'.split(',')
+    combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,LDPC SNR,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW,DWS & Skew'.split(',')
 
     combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
 
@@ -331,7 +331,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.4 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.5 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -482,6 +482,7 @@ SOFTWARE.\n\
                            sg.InputText('0.05', key='in_analysis_comparewithvalue', size=(20, 1), enable_events=True)],
                            ], size=(380, 50) ),
                            sg.InputText('0', key='in_analysislegendoccurences', size=(10, 1), enable_events=True),
+                           sg.CBox('Display Grid', key='cb_analysis_show_grid', default=False ),
                            sg.Text('Filter 1 Values: ', key='text_analysisfilter1values')],
 
 
@@ -744,8 +745,10 @@ SOFTWARE.\n\
                            sg.Text('HiRes Upconvert: ')  ,
                            sg.InputText('10', key='in_doppler_hires_upconvert', size=(4, 1), enable_events=True),
                            sg.Text('Upconvert: ')  ,
-                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True)],
+                           sg.InputText('1', key='in_doppler_upconvert', size=(4, 1), enable_events=True),
 
+                           sg.CBox('Override dws & skew', key='cb_override_dws_skew', default=False ),
+                           sg.InputText('1.0,0.0', key='in_dws_skew', size=(8, 1), enable_events=True)],
 
 
 
@@ -1233,7 +1236,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.4 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.5 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
