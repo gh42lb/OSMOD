@@ -34,8 +34,6 @@ testing confirms successful run on Apple Mac Book.
 
 <img width="2536" height="2122" alt="image" src="https://github.com/user-attachments/assets/f32e4e6e-c852-4af7-b417-1170dc5a0856" />
 
-<img width="2012" height="1316" alt="performance_data" src="https://github.com/user-attachments/assets/e45081fb-5ce0-48d3-a0fb-f7927d4b61f3" />
-
 <img width="2306" height="1320" alt="performance_data_6" src="https://github.com/user-attachments/assets/20bb1c86-ac5b-4566-8c7f-0cee78e0eb2f" />
 
 <img width="2310" height="1314" alt="performance_data_9" src="https://github.com/user-attachments/assets/b88c3db7-aeeb-4119-8b0b-e154f462e348" />
