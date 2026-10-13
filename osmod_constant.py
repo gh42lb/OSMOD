@@ -288,6 +288,7 @@ FILTER_BANDPASS_X2              = 10
 FILTER_BANDPASS_X2_SIG          = 11
 FILTER_NOTCH                    = 12
 FILTER_NOTCH_2                  = 13
+FILTER_FFT_SUBSET               = 14
 
 RESAMPLE_UNAVAILABLE            = 0
 RESAMPLE_AVAILABLE              = 1

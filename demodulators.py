@@ -1011,7 +1011,7 @@ class DemodulatorPSK(ModemCoreUtils):
   """
 
 
-  def displayTextFromIntlistSegmentedFEC(self, decoded_intlist_1, decoded_intlist_2):
+  def displayTextFromIntlistSegmentedFEC(self, decoded_intlist_1, decoded_intlist_2, save_and_display):
     self.debug.info_message("displayTextFromIntlistSegmentedFEC" )
 
     try:
@@ -1083,8 +1083,8 @@ class DemodulatorPSK(ModemCoreUtils):
       self.debug.info_message("post_binary_string : " + str(post_binary_string) )
 
       bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
-      if bypass_display_during_test == False:
-        self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
+      #if bypass_display_during_test == False:
+      #  self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
       message_text = ""
       for six_bits_index in range(0, len(post_binary_string), 6):
         index = int(post_binary_string[six_bits_index:six_bits_index+6], 2)
@@ -1092,7 +1092,7 @@ class DemodulatorPSK(ModemCoreUtils):
         message_text = message_text + str(char)
 
       self.debug.info_message("message_text: " + str(message_text))
-      message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
+      message_struct = self.osmod.displayReceivedMessage(message_text, True, True, save_and_display)
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlistSegmentedFEC: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
@@ -1101,7 +1101,7 @@ class DemodulatorPSK(ModemCoreUtils):
 
 
 
-  def displayTextFromIntlist(self, decoded_intlist_1, decoded_intlist_2):
+  def displayTextFromIntlist(self, decoded_intlist_1, decoded_intlist_2, save_and_display):
     self.debug.info_message("displayTextFromIntlist" )
 
     try:
@@ -1138,8 +1138,8 @@ class DemodulatorPSK(ModemCoreUtils):
         self.debug.info_message("post_binary_string : " + str(post_binary_string) )
 
         bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
-        if bypass_display_during_test == False:
-          self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
+        #if bypass_display_during_test == False:
+        #  self.osmod.form_gui.window['ml_txrx_recvtext'].print("  decoded FEC: ", end="", text_color='black', background_color = 'white')
         message_text = ""
         for six_bits_index in range(0, len(post_binary_string), 6):
           index = int(post_binary_string[six_bits_index:six_bits_index+6], 2)
@@ -1156,7 +1156,7 @@ class DemodulatorPSK(ModemCoreUtils):
         #self.osmod.modulation_object.appendTableRow(original_message)
 
         self.debug.info_message("message_text: " + str(message_text))
-        message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
+        message_struct = self.osmod.displayReceivedMessage(message_text, True, True, save_and_display)
 
       else:
         bypass_display_during_test = self.osmod.form_gui.window['cb_bypass_display_during_test'].get()
@@ -1175,7 +1175,7 @@ class DemodulatorPSK(ModemCoreUtils):
         #self.osmod.modulation_object.appendTableRow(original_message)
 
         self.debug.info_message("message_text: " + str(message_text))
-        message_struct = self.osmod.displayReceivedMessage(message_text, True, True)
+        message_struct = self.osmod.displayReceivedMessage(message_text, True, True, save_and_display)
 
     except:
       sys.stdout.write("Exception in displayTextFromIntlist: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
@@ -1731,8 +1731,8 @@ class DemodulatorPSK(ModemCoreUtils):
 
       index_max = np.where(sum_points == np.max(sum_points))[0]
       index_min = np.where(sum_points == np.min(sum_points))[0]
-      self.debug.info_message("index_max: " + str(index_max))
-      self.debug.info_message("index_min: " + str(index_min))
+      #self.debug.info_message("index_max: " + str(index_max))
+      #self.debug.info_message("index_min: " + str(index_min))
 
       self.debug.info_message("diff: " + str(index_max - index_min))
 
@@ -2118,9 +2118,9 @@ class DemodulatorPSK(ModemCoreUtils):
         split_it = dws_skew.split(',')
         dws = float(split_it[0].strip())
         dws = 0.22
-        skew_factor_1 = -0.24 #float(split_it[1].strip())
-        skew_factor_2 = -0.07 #float(split_it[1].strip())
-        skew_factor_3 = 0.85 #float(split_it[1].strip())
+        skew_factor_1 = float(split_it[1].strip())
+        skew_factor_2 = float(split_it[2].strip())
+        skew_factor_3 = float(split_it[3].strip())
         num_skew = 3
 
       half_pulse = int(pulse_length * 0.5)

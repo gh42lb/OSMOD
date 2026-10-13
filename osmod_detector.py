@@ -506,9 +506,10 @@ class OsmodDetector(object):
           #self.debug.info_message("index_max: " + str(np.where(sum_points >= 0.999*np.max(sum_points))))
 
           #FIXME_INDEX_MAX
-          self.debug.info_message("index_max: " + str(index_max))
+          #self.debug.info_message("index_max: " + str(index_max))
           if self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_ALL and self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_BLOCKS:
-            index_max = [50]
+            #index_max = [50]
+            index_max = [int((self.osmod.symbol_block_size / self.osmod.pulses_per_block) / 2.0)]
 
           block_offsets.append(index_max[0] - half)
 
@@ -555,8 +556,8 @@ class OsmodDetector(object):
         index_max = np.where(sum_points == np.max(sum_points))[0]
         index_min = np.where(sum_points == np.min(sum_points))[0]
 
-        self.debug.info_message("index_max: " + str(index_max))
-        self.debug.info_message("index_min: " + str(index_min))
+        #self.debug.info_message("index_max: " + str(index_max))
+        #self.debug.info_message("index_min: " + str(index_min))
         self.debug.info_message("diff: " + str(index_max - index_min))
 
         #signal_start = (start_pulse * pulse_length) + ((start_index_2 + half) % pulse_length)
@@ -678,7 +679,8 @@ class OsmodDetector(object):
             #self.debug.info_message("index_max: " + str(index_max) )
             #self.debug.info_message("index_min: " + str(index_min) )
             if self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_ALL and self.osmod.doppler_adjust != ocn.DOPPLER_ADJUST_PULSES:
-              index_max = [50]
+              #index_max = [50]
+              index_max = [int((self.osmod.symbol_block_size / self.osmod.pulses_per_block) / 2.0)]
 
             block_offsets.append(index_max[0] - half)
           if search_range != 0:
@@ -1055,11 +1057,11 @@ class OsmodDetector(object):
           #x = np.linspace(0, len(data), len(data))
 
           x = np.linspace(0, len(data)-1, len(data))
-          self.debug.info_message("x values: " + str(x))
+          #self.debug.info_message("x values: " + str(x))
 
           #x_test = np.linspace(0, len(data)-1, (len(data)*2)-1)
           x_test = np.linspace(-1/2, len(data)-1 + (1/2), ((len(data))*2) + 1)
-          self.debug.info_message("test x values: " + str(x_test))
+          #self.debug.info_message("test x values: " + str(x_test))
 
 
           filtered_x, filtered_y = filterData(x, data, outliers[1])
@@ -1070,7 +1072,7 @@ class OsmodDetector(object):
           #x_smooth = np.linspace(0, len(data)-1, (len(data) * pulses_per_offset) - 1)
           x_smooth = np.linspace(-1/2, len(data) - (1/2), (len(data) * pulses_per_offset) + 1 )
 
-          self.debug.info_message("smoothed x values: " + str(x_smooth))
+          #self.debug.info_message("smoothed x values: " + str(x_smooth))
 
           doppler_curvefit_checked = self.osmod.form_gui.window['cb_overridedopplercurvefit'].get()
           if doppler_curvefit_checked:
@@ -1139,8 +1141,8 @@ class OsmodDetector(object):
         index_max = np.where(sum_points == np.max(sum_points))[0]
         index_min = np.where(sum_points == np.min(sum_points))[0]
 
-        self.debug.info_message("index_max: " + str(index_max))
-        self.debug.info_message("index_min: " + str(index_min))
+        #self.debug.info_message("index_max: " + str(index_max))
+        #self.debug.info_message("index_min: " + str(index_min))
         self.debug.info_message("diff: " + str(index_max - index_min))
 
         #FIXME_INDEX_MAX
@@ -1208,7 +1210,7 @@ class OsmodDetector(object):
         at_max = list_factor * np.max(sum_points)
 
         index_max = np.where(sum_points >= at_max)[0]
-        self.debug.info_message("index_max: " + str(index_max))
+        #self.debug.info_message("index_max: " + str(index_max))
         #self.debug.info_message("sum_points: " + str(sum_points) )
 
         return_list = index_max

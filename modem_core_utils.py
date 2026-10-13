@@ -390,14 +390,17 @@ class ModemCoreUtils(object):
       filter_pass_type = params[1]
 
       if filter_type == ocn.FILTER_NONE:
+        self.debug.info_message("FILTER_NONE")
         return signal
       elif filter_type == ocn.FILTER_BUTTERWORTH:
+        self.debug.info_message("FILTER_BUTTERWORTH")
 
         filter_width = params[2]
         repeats = params[3]
         filter_order = params[4]
 
         if filter_pass_type == ocn.FILTER_BANDPASS:
+          self.debug.info_message("FILTER_BANDPASS")
 
           override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
           if override_txrx_filter_width:
@@ -414,6 +417,7 @@ class ModemCoreUtils(object):
             signal = sig2
 
         elif filter_pass_type == ocn.FILTER_NOTCH:
+          self.debug.info_message("FILTER_NOTCH")
           override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
           if override_txrx_filter_width:
             filter_width  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
@@ -422,11 +426,13 @@ class ModemCoreUtils(object):
             signal = self.osmod.modulation_object.filter_sharp_cutoff_high_pass(signal, center_frequency + filter_width/2, filter_order, sample_rate)
 
         elif filter_pass_type == ocn.FILTER_NOTCH_2:
+          self.debug.info_message("FILTER_NOTCH_2")
           for _ in range(repeats):
             sig2 = self.osmod.modulation_object.filter_sharp_cutoff_notch(signal, center_frequency - filter_width/2, center_frequency + filter_width/2, filter_order, sample_rate)
             signal = sig2
 
         elif filter_pass_type == ocn.FILTER_BANDPASS_X2:
+          self.debug.info_message("FILTER_BANDPASS_X2")
           """ filter the output signal """
           filter_width_offset = params[2]
           filter_width  = filter_width_offset[0]
@@ -452,7 +458,7 @@ class ModemCoreUtils(object):
         return signal
 
       elif filter_type == ocn.FILTER_FFT:
-
+        self.debug.info_message("FILTER_FFT")
         filter_width_delta = params[2]
 
         override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
@@ -460,14 +466,62 @@ class ModemCoreUtils(object):
           filter_width_delta  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
 
         if filter_pass_type == ocn.FILTER_BANDPASS_X2_SIG:  # use fft_filter and fft_interpolate params to determine width
+          self.debug.info_message("FILTER_BANDPASS_X2_SIG")
+
+          if self.osmod.FDM == "yes":
+            self.debug.info_message("FDM")
+            loop_times = 2
+            #center_frequency_sig_a = center_frequency - (self.osmod.carrier_separation / 2)
+            #center_frequency_sig_b = center_frequency + self.osmod.FDM_parameters[1] + (self.osmod.carrier_separation / 2)
+          else:
+            self.debug.info_message("Non-FDM")
+            loop_times = 1
+
+          center_frequency_sig_a = center_frequency - (self.osmod.carrier_separation / 2)
+          center_frequency_sig_b = center_frequency + (self.osmod.carrier_separation / 2)
+
+          for loop_counter in range(0, loop_times):
+            sig_a_freq_lo = center_frequency_sig_a - max(abs(self.osmod.fft_filter[0]), abs(self.osmod.fft_interpolate[0])) - filter_width_delta
+            sig_a_freq_hi = center_frequency_sig_a + max(abs(self.osmod.fft_filter[1]), abs(self.osmod.fft_interpolate[1])) + filter_width_delta
+            sig_b_freq_lo = center_frequency_sig_b - max(abs(self.osmod.fft_filter[2]), abs(self.osmod.fft_interpolate[2])) - filter_width_delta
+            sig_b_freq_hi = center_frequency_sig_b + max(abs(self.osmod.fft_filter[3]), abs(self.osmod.fft_interpolate[3])) + filter_width_delta
+            signal_a, _ = self.bandpass_filter_fft(signal, sig_a_freq_lo, sig_a_freq_hi)
+            signal_b, _ = self.bandpass_filter_fft(signal, sig_b_freq_lo, sig_b_freq_hi)
+
+            center_frequency_sig_a = center_frequency_sig_a + self.osmod.FDM_parameters[1]
+            center_frequency_sig_b = center_frequency_sig_b + self.osmod.FDM_parameters[1]
+            if loop_counter == 0:
+              first_hologram = (signal_a + signal_b) / 2
+            elif loop_counter == 1:
+              second_hologram = (signal_a + signal_b) / 2
+
+          if loop_times == 1:
+            return (signal_a + signal_b) / 2
+          elif loop_times == 2:
+            return (first_hologram + second_hologram) / 2
+
+
+      elif filter_type == ocn.FILTER_FFT_SUBSET:
+        self.debug.info_message("FILTER_FFT_SUBSET")
+        filter_width_delta = params[2]
+
+        override_txrx_filter_width = self.osmod.form_gui.window['cb_override_txrx_filter_width'].get()
+        if override_txrx_filter_width:
+          filter_width_delta  = int(self.osmod.form_gui.window['in_txrx_filter_width'].get())
+
+        if filter_pass_type == ocn.FILTER_BANDPASS_X2_SIG:  # use fft_filter and fft_interpolate params to determine width
+          self.debug.info_message("FILTER_BANDPASS_X2_SIG")
           center_frequency_sig_a = center_frequency - (self.osmod.carrier_separation / 2)
           center_frequency_sig_b = center_frequency + (self.osmod.carrier_separation / 2)
           sig_a_freq_lo = center_frequency_sig_a - max(abs(self.osmod.fft_filter[0]), abs(self.osmod.fft_interpolate[0])) - filter_width_delta
           sig_a_freq_hi = center_frequency_sig_a + max(abs(self.osmod.fft_filter[1]), abs(self.osmod.fft_interpolate[1])) + filter_width_delta
           sig_b_freq_lo = center_frequency_sig_b - max(abs(self.osmod.fft_filter[2]), abs(self.osmod.fft_interpolate[2])) - filter_width_delta
           sig_b_freq_hi = center_frequency_sig_b + max(abs(self.osmod.fft_filter[3]), abs(self.osmod.fft_interpolate[3])) + filter_width_delta
-          signal_a, _ = self.bandpass_filter_fft(signal, sig_a_freq_lo, sig_a_freq_hi)
-          signal_b, _ = self.bandpass_filter_fft(signal, sig_b_freq_lo, sig_b_freq_hi)
+
+          signal_a = self.bandpass_filter_fft_subset(signal, sig_a_freq_lo, sig_a_freq_hi)
+          signal_b = self.bandpass_filter_fft_subset(signal, sig_b_freq_lo, sig_b_freq_hi)
+
+
           return (signal_a + signal_b) / 2
 
 
@@ -970,8 +1024,8 @@ class ModemCoreUtils(object):
   def chebyshevCurveInterpolation(self, x_points, x_smooth, y_points, smoothing):
     self.debug.info_message("chebyshevCurveInterpolation")
     try:
-      self.debug.info_message("x_points: " + str(x_points))
-      self.debug.info_message("y_points: " + str(y_points))
+      #self.debug.info_message("x_points: " + str(x_points))
+      #self.debug.info_message("y_points: " + str(y_points))
       self.debug.info_message("len(x_points): " + str(len(x_points)))
       self.debug.info_message("len(y_points): " + str(len(y_points)))
       deg = int(smoothing)   # 10
@@ -1119,29 +1173,33 @@ class ModemCoreUtils(object):
       self.debug.error_message("Exception in interpolatePhaseDrift: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
+  def getStrongestN(self, frequencies, fft_magnitudes, N):
+
+    try:
+      top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
+      strongest_frequencies = frequencies[top_n_indices]
+      strongest_magnitudes  = fft_magnitudes[top_n_indices]
+
+    except:
+      self.debug.error_message("Exception in getStrongestN: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return strongest_frequencies
+
+
   def getStrongestNFromFdd(self, fdd, N):
-    #self.debug.info_message("getStrongestNFromFdd")
 
     fdd_strongest = {}
     try:
       frequencies = fdd["frequency"]
       fft_magnitudes = fdd["magnitude"]
 
-      #self.debug.info_message("argsort: " + str(np.argsort(fft_magnitudes)[:-6:-1]))
-      top_n_indices = np.argsort(fft_magnitudes)[:-6:-1]
-      strongest_frequencies = frequencies[top_n_indices]
-      #self.debug.info_message("BEST  === strongest_frequencies: " + str(strongest_frequencies))
-
       top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
-      #self.debug.info_message("top_n_indices: " + str(top_n_indices))
       strongest_frequencies = frequencies[top_n_indices]
       strongest_magnitudes  = fft_magnitudes[top_n_indices]
 
       fdd_strongest["frequency"] = strongest_frequencies
       fdd_strongest["magnitude"] = strongest_magnitudes
 
-      #self.debug.info_message("strongest_frequencies: " + str(strongest_frequencies))
-      #self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
     except:
       self.debug.error_message("Exception in getStrongestNFromFdd: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
@@ -1162,17 +1220,11 @@ class ModemCoreUtils(object):
     return fdd
 
 
-  #def processFddLoHi(self, data, lo, high):
   def processFddLoHi(self, fdd, lo, high):
-    #self.debug.info_message("processFddLoHi")
 
-    #fdd = {}
     try:
-      #fft_output = np.fft.fft(data)
-      #frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
       fft_output  = fdd["output"]
       data_len    = fdd["data_len"]
-      #frequencies = np.fft.fftfreq(data_len, 1/self.osmod.sample_rate)
       frequencies = np.fft.fftfreq(data_len, 1/self.osmod.getRxSampleRate())
 
       positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
@@ -1250,7 +1302,6 @@ class ModemCoreUtils(object):
       fdd = {}
       delta = 5
       fft_output = np.fft.fft(data)
-      #frequencies = np.fft.fftfreq(len(data), 1/self.osmod.sample_rate)
       frequencies = np.fft.fftfreq(len(data), 1/self.osmod.getRxSampleRate())
       positive_frequency_indices = np.where((frequencies > watch_freq - delta) & (frequencies < watch_freq + delta))[0]
 
@@ -1262,17 +1313,11 @@ class ModemCoreUtils(object):
       strong_freqs = frequencies[strongest_index]
       strong_magnitudes = fft_magnitude[strongest_index]
 
-      #sys.stdout.write("strongest index: " + str(strongest_index) + "\n")
-      #sys.stdout.write("strongest frequency: " + str(strong_freqs) + "\n")
-      #sys.stdout.write("strong_magnitudes: " + str(strong_magnitudes) + "\n")
-
       fdd["output"]   = fft_output
       fdd["data_len"] = len(data)
 
     except:
       self.debug.error_message("Exception in getIsSignalPresent: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-    #finally:
-    #  self.debug.info_message("Completed getIsSignalPresent: ")
 
     return strong_freqs, strong_magnitudes, fft_output, len(data), fdd
 
@@ -1704,6 +1749,70 @@ class ModemCoreUtils(object):
     self.debug.info_message("fft signal data type: " + str(filtered_signal.dtype))
 
     return filtered_signal, fft_signal[mask]
+
+
+
+
+  """ bandpass filter fft"""
+  def bandpass_filter_fft_subset(self, signal, freq_lo, freq_hi):
+    self.debug.info_message("bandpass_filter_fft_subset")
+
+    try:
+      num_points = 120
+
+      fft_output  = np.fft.fft(signal)
+      fft_freq_frequencies = np.fft.fftfreq(len(signal), 1/self.osmod.getRxSampleRate()) #[:N_over_2]
+      positive_frequency_indices = np.where((fft_freq_frequencies > freq_lo) & (fft_freq_frequencies < freq_hi))[0]
+      fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      frequencies = fft_freq_frequencies[positive_frequency_indices]
+
+      fft_filtered_frequencies = self.getStrongestN(frequencies, fft_magnitudes, num_points)
+      self.debug.info_message("fft_filtered_frequencies: " + str(fft_filtered_frequencies))
+
+
+      self.clusterAnalysis(fft_filtered_frequencies, 0.5)
+
+
+      mask = np.isin(fft_freq_frequencies, fft_filtered_frequencies)
+      fft_filtered = fft_output.copy()
+      fft_filtered[~mask] = 0
+
+      self.debug.info_message("fft_filtered: " + str(fft_filtered))
+
+      filtered_signal = np.fft.ifft(fft_filtered)
+    except:
+      self.debug.error_message("Exception in bandpass_filter_fft_subset: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return filtered_signal
+
+
+
+  def clusterAnalysis(self, frequency_list, max_distance):
+    try:
+      sorted_frequency_list = sorted(frequency_list)
+      groups = [[sorted_frequency_list[0]]]
+
+      for num in sorted_frequency_list[1:]:
+        if num - groups[-1][-1] <= max_distance:
+          #self.debug.info_message("append to group")
+          groups[-1].append([num])
+        else:
+          #self.debug.info_message("create new group")
+          groups.append([num])
+
+      #self.debug.info_message("groups: " + str(groups))
+
+      for group in groups:
+        self.debug.info_message("group: " + str(group) + "\n")
+
+      for group in groups:
+        self.debug.info_message("len(group): " + str(len(group)))
+
+
+      return groups
+
+    except:
+      self.debug.error_message("Exception in clusterAnalysis: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
 
   """ lowpass filter fft ????????????????????"""

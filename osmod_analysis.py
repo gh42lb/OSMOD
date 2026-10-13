@@ -263,10 +263,19 @@ class OsmodAnalysis(object):
           noise = values['btn_slider_awgn']
           form_gui.window['cb_override_dws_skew'].update(True)
           if count % 10 == 0:
-            random_1 = 0.22 #(float)(random.randint(0,100) / 100 )
-            random_2 = (float)(random.randint(-100,100) / 100 ) 
+            select_random = False
+            if select_random:
+              random_1 = 0.22 #(float)(random.randint(0,100) / 100 )
+              random_2 = (float)(random.randint(-100,100) / 100 ) 
+              random_3 = (float)(random.randint(-100,100) / 100 ) 
+              random_4 = (float)(random.randint(-100,100) / 100 ) 
+            else:
+              random_1 = 0.22 #(float)( (count / 10.0) / 100.0 ) #iterate 2000 times
+              random_2 = -0.13 #(float)(((count / 10.0) - 100.0) / 100.0 ) 
+              random_3 = -0.2  # (float)(((count / 10.0) - 100.0) / 100.0 ) 
+              random_4 = -0.34 #(float)(((count / 10.0) - 100.0) / 100.0 ) 
 
-            random_string = str(random_1) + ',' + str(random_2)
+            random_string = str(random_1) + ',' + str(random_2) + ',' + str(random_3) + ',' + str(random_4)
             form_gui.window['in_dws_skew'].update(random_string)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
@@ -423,19 +432,21 @@ class OsmodAnalysis(object):
           form_gui.window['cb_overridefdmseparation'].update(True)
           form_gui.window['cb_overridedownconvertshift'].update(True)
 
-          pair_level = form_gui.window['combo_fdmpairlevel'].get()
-          #rand_num_sep   = random.randint(75000,95000)
-          #rand_num_sep   = random.randint(140000,200000)
-          if pair_level == "Scale 1":
-            rand_num_sep   = random.randint(70000,100000)
-          elif pair_level == "Scale 2":
-            rand_num_sep   = random.randint(145000,185000)
-          elif pair_level == "Scale 3":
-            rand_num_sep   = random.randint(295000,390000)
+          if count % 3 == 0:
+            pair_level = form_gui.window['combo_fdmpairlevel'].get()
+            #rand_num_sep   = random.randint(75000,95000)
+            #rand_num_sep   = random.randint(140000,200000)
+            if pair_level == "Scale 1":
+              #rand_num_sep   = random.randint(70000,100000)
+              rand_num_sep   = random.randint(38000,100000)
+            elif pair_level == "Scale 2":
+              rand_num_sep   = random.randint(145000,185000)
+            elif pair_level == "Scale 3":
+              rand_num_sep   = random.randint(295000,390000)
 
-          rand_num_dcs   = random.randint(0,1000)
-          form_gui.window['in_fdmseparation'].update(rand_num_sep / 1000)
-          form_gui.window['in_downconvertshift'].update(rand_num_dcs / 1000)
+            rand_num_dcs   = self.osmod.downconvert_shift * 1000.0 #random.randint(0,1000)
+            form_gui.window['in_fdmseparation'].update(rand_num_sep / 1000)
+            form_gui.window['in_downconvertshift'].update(rand_num_dcs / 1000)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
 
         elif test_type == 'Test DCS':
@@ -752,6 +763,7 @@ DATA_CALC_2                = 23
       """ allocate colors for the data """
       data_x_max = -1000000000
       data_x_min = 1000000000
+
       data_y_max = -1000000000
       data_y_min = 1000000000
       threeinarow_count = 0
@@ -880,7 +892,7 @@ DATA_CALC_2                = 23
             dict_preset_pattern[str(data[point][ocn.DATA_GENERATOR_POLY_DEPTH]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_1]) + ' : ' + str(data[point][ocn.DATA_GENERATOR_POLYNOMIAL_2]) + ' : [' + str(data[point][ocn.DATA_FEC_PUNCTURE_CODE]) + ']'] = color_count
             color_count = color_count + 1
           elif legend_type == 'FDM Separator' and data[point][ocn.DATA_FDM_SEPARATOR] not in dict_preset_pattern:
-            dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]] = color_count
+            dict_preset_pattern[str(data[point][ocn.DATA_FDM_SEPARATOR]) + ' : ' + str(data[point][ocn.DATA_DOWNCONVERT_SHIFT]) ] = color_count
             color_count = color_count + 1
 
 
@@ -899,18 +911,21 @@ DATA_CALC_2                = 23
 
       analysis_show_grid = self.osmod.form_gui.window['cb_analysis_show_grid'].get()
       if analysis_show_grid:
+        if data_x_min > 0:
+          data_x_min = 0
+
         grid_color = 'gray'
-        grid_y_inc = 5
+        grid_y_inc = 3 #5
         grid_x_inc = 0.1
         grid_x_div = 10
         grid_y_div = 1
         if data_y_max > 0 and data_y_min < 0: 
-          for grid_y in range(0, int(data_y_max * grid_y_div), int(grid_y_inc * grid_y_div)):
+          for grid_y in range(int(data_y_min * grid_y_div), int(data_y_max * grid_y_div), int(grid_y_inc * grid_y_div)):
             y_value = y_chart_offset + (y_max * (((grid_y / grid_y_div) - data_y_min) / (data_y_max - data_y_min) ))
             graph.draw_text("{:.2f}".format(grid_y / grid_y_div), location = (x_chart_offset -50 , y_value), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
             graph.draw_line(point_from=(x_chart_offset, y_value), point_to=(x_chart_offset + x_max, y_value ), width=2, color=grid_color)
-        if data_x_max > 0 and data_x_min <= 0: 
-          for grid_x in range(0, int(data_x_max * grid_x_div)+1, int(grid_x_inc * grid_x_div)):
+        if True: #data_x_max > 0 and data_x_min <= 0: 
+          for grid_x in range(int(data_x_min * grid_x_div), int(data_x_max * grid_x_div)+1, int(grid_x_inc * grid_x_div)):
             x_value = x_chart_offset + (x_max * (((grid_x / grid_x_div) - data_x_min) / (data_x_max - data_x_min) ))
             graph.draw_text("{:.2f}".format((grid_x / grid_x_div)), location = (x_value , y_chart_offset - 20), angle = 0, font = '_ 12', color = 'black', text_location = 'center')
             graph.draw_line(point_from=(x_value, y_chart_offset), point_to=(x_value, y_chart_offset + y_max ), width=2, color=grid_color)
@@ -1028,8 +1043,8 @@ DATA_CALC_2                = 23
             plot_color_index = dict_preset_pattern[data[point][ocn.DATA_PULSE_START_ENVELOPE_SIGMA]]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'FDM Separator':
-            plot_color_index = dict_preset_pattern[data[point][ocn.DATA_FDM_SEPARATOR]]
-            #occurrences[plot_color_index] = occurrences[plot_color_index] + 1
+            plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_FDM_SEPARATOR]) + ' : ' + str(data[point][ocn.DATA_DOWNCONVERT_SHIFT])]
+            occurrences[plot_color_index] = occurrences[plot_color_index] + 1
           elif legend_type == 'RRC Alpha & T':
             plot_color_index = dict_preset_pattern[str(data[point][ocn.DATA_RRC_ALPHA]) + ' : ' + str(data[point][ocn.DATA_RRC_T])]
             occurrences[plot_color_index] = occurrences[plot_color_index] + 1
@@ -1178,11 +1193,13 @@ DATA_CALC_2                = 23
             graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
             count = count + 1
       elif legend_type == 'FDM Separator':
+        filter_legend = float(self.osmod.form_gui.window['in_analysislegendoccurences'].get())
         for pattern_location_name, color_index in dict_preset_pattern.items():
-          plot_color = colors[color_index]
-          graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
-          graph.draw_text(pattern_location_name, location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
-          count = count + 1
+          if occurrences[color_index] > filter_legend:
+            plot_color = colors[color_index]
+            graph.draw_point((x_chart_offset + x_max + 25, y_chart_offset + y_max - (count*14)), size=16, color=plot_color)
+            graph.draw_text(pattern_location_name + ' - ' + str(occurrences[color_index]), location = (x_chart_offset + x_max + 50, y_chart_offset + y_max - (count*14)), angle = 0, font = '_ 12', color = 'black', text_location = sg.TEXT_LOCATION_LEFT)
+            count = count + 1
       elif legend_type == 'Pulse Train Length':
         for pattern_location_name, color_index in dict_preset_pattern.items():
           plot_color = colors[color_index]

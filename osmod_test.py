@@ -739,12 +739,15 @@ class OsmodTest(object):
 
         # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
         if self.osmod.symbol_block_size <= 700: 
-          range_fft_filter        = [[3000, 16000, 1000], []] # 1600
-          range_fft_interpolate   = [[3000, 16000, 1000], []]
+          range_fft_filter        = [[3000, 17000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
         elif self.osmod.symbol_block_size == 800: 
           range_fft_filter        = [[4000, 16000, 1000], []] # 800 
           range_fft_interpolate   = [[4000, 16000, 1000], []]
         elif self.osmod.symbol_block_size == 900: 
+          range_fft_filter        = [[3000, 16000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 16000, 1000], []]
+        elif self.osmod.symbol_block_size == 960: 
           range_fft_filter        = [[3000, 16000, 1000], []] # 1600
           range_fft_interpolate   = [[3000, 16000, 1000], []]
         elif self.osmod.symbol_block_size == 1000: 
@@ -754,6 +757,9 @@ class OsmodTest(object):
           range_fft_filter        = [[3000, 10000, 1000], []] # 1600
           range_fft_interpolate   = [[3000, 10000, 1000], []]
         elif self.osmod.symbol_block_size == 1600: 
+          range_fft_filter        = [[3000, 6000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 6000, 1000], []]
+        elif self.osmod.symbol_block_size == 1800: 
           range_fft_filter        = [[3000, 6000, 1000], []] # 1600
           range_fft_interpolate   = [[3000, 6000, 1000], []]
         elif self.osmod.symbol_block_size == 3200: 
@@ -1620,8 +1626,42 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
       self.debug.info_message("encoding text: " + str(text))
 
-      bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
-      data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
+      if self.osmod.FDM == "yes":
+        bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
+
+        if random_message_enabled:
+          text_2 = ''.join(random.choice(self.osmod.modulation_object.encoding_b64) for _ in range(max_message_length))
+          text_2 = "        " + text_2
+          if truncate_to_max_msglength:
+            text_len = len(text_2)
+            if text_len > max_message_length:
+              text_2 = text_2[:max_message_length]
+            elif text_len <  max_message_length:
+              text_2 = text_2 + (padding_character * (max_message_length - text_len))
+
+          bit_groups_2, sent_bitstring_2, binary_array_pre_fec_2 = self.osmod.text_encoder(text_2)
+        else:
+          bit_groups_2, sent_bitstring_2, binary_array_pre_fec_2 = self.osmod.text_encoder("        how now brown cow. hey diddle diddle the cat and the fiddle the cow jumped over the moon.")
+
+        data2 = self.osmod.modulation_object.modulate(frequency, [bit_groups[0], bit_groups[1], bit_groups_2[0], bit_groups_2[1]], self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
+
+        self.debug.info_message("FDM len(sent_bitstring[0]): " + str(len(sent_bitstring[0])))
+
+        sent_bitstring[0] = sent_bitstring[0][0:60]
+        sent_bitstring[1] = sent_bitstring[1][0:60]
+
+        self.debug.info_message("FDM len(sent_bitstring[0]): " + str(len(sent_bitstring[0])))
+
+        #"""
+        for item in sent_bitstring_2[0]:
+          sent_bitstring[0].append(item)
+        for item in sent_bitstring_2[1]:
+          sent_bitstring[1].append(item)
+        #"""
+
+      else:
+        bit_groups, sent_bitstring, binary_array_pre_fec = self.osmod.text_encoder(text)
+        data2 = self.osmod.modulation_object.modulate(frequency, bit_groups, self.osmod.getTxSampleRate(), self.osmod.getTxSymbolBlockSize())
 
       """ filter the output signal """
       data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter, center_frequency, self.osmod.getTxSampleRate())
@@ -2125,10 +2165,12 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         dws_skew = self.osmod.form_gui.window['in_dws_skew'].get()
         split_it = dws_skew.split(',')
         dws = float(split_it[0].strip())
-        skew_factor = float(split_it[1].strip())
-        dws_skew = str(dws) + "_" + str(skew_factor)
+        skew_factor_1 = float(split_it[1].strip())
+        skew_factor_2 = float(split_it[2].strip())
+        skew_factor_3 = float(split_it[3].strip())
+        dws_skew = str(dws) + "_" + str(skew_factor_1) + "_" + str(skew_factor_2) + "_" + str(skew_factor_3)
       else:
-        dws_skew = "1.0_0.0"
+        dws_skew = "1.0_0.0_0.0_0.0"
 
       detector_threshold_1 = 1
       detector_threshold_2 = 1

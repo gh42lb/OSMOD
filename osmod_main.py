@@ -1997,11 +1997,11 @@ message formats...
       self.resetOptionalInitParamDefaults(mode)
       self.processOptionalInitParams(mode)
 
-      self.debug.info_message("optional_param_values (before inherit): " + str(self.optional_param_values))
+      #self.debug.info_message("optional_param_values (before inherit): " + str(self.optional_param_values))
 
       self.processInheritFrom(mode, True)
 
-      self.debug.info_message("optional_param_values (after inherit): " + str(self.optional_param_values))
+      #self.debug.info_message("optional_param_values (after inherit): " + str(self.optional_param_values))
 
       sys.stdout.write("\n")
       sys.stdout.write("\n")
@@ -2791,7 +2791,7 @@ message formats...
 
 
   def setStandingWaveValues(self, frequency, sample_rate):
-    self.debug.info_message("calcCarrierFrequencies")
+    self.debug.info_message("setStandingWaveValues")
 
     try:
 
@@ -3643,7 +3643,6 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       #tx_message_length = len(text)
       #self.form_gui.window['combo_max_message_length'].update(value = str(tx_message_length))
 
-
       #max_message_length = int(self.form_gui.window['combo_max_message_length'].get())
       #truncate_to_max_msglength = self.form_gui.window['cb_truncate_to_max_msglength'].get()
       #if truncate_to_max_msglength:
@@ -3658,21 +3657,35 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
       self.debug.info_message("encoding text: " + str(text))
 
-      #self.debug.info_message("encoding text: " + str(text))
 
-      bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
-      #data2 = self.modulation_object.modulate(frequency, bit_groups)
-      data2 = self.modulation_object.modulate(frequency, bit_groups, self.getTxSampleRate(), self.getTxSymbolBlockSize())
+      if self.FDM == "yes":
+        bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
+        bit_groups_2, sent_bitstring_2, binary_array_pre_fec_2 = self.text_encoder("        how now brown cow. hey diddle diddle the cat and the fiddle the cow jumped over the moon.")
+
+        data2 = self.modulation_object.modulate(frequency, [bit_groups[0], bit_groups[1], bit_groups_2[0], bit_groups_2[1]], self.getTxSampleRate(), self.getTxSymbolBlockSize())
+
+        #self.debug.info_message("FDM len(sent_bitstring[0]): " + str(len(sent_bitstring[0])))
+
+        # TEST CODE ONLY
+        #sent_bitstring[0] = sent_bitstring[0][0:60]
+        #sent_bitstring[1] = sent_bitstring[1][0:60]
+        #self.debug.info_message("FDM len(sent_bitstring[0]): " + str(len(sent_bitstring[0])))
+
+        for item in sent_bitstring_2[0]:
+          sent_bitstring[0].append(item)
+        for item in sent_bitstring_2[1]:
+          sent_bitstring[1].append(item)
+
+      else:
+        bit_groups, sent_bitstring, binary_array_pre_fec = self.text_encoder(text)
+        data2 = self.modulation_object.modulate(frequency, bit_groups, self.getTxSampleRate(), self.getTxSymbolBlockSize())
 
       """ filter the output signal """
       data2 = self.modulation_object.apply_filterSR(data2, self.tx_filter, self.center_frequency, self.getTxSampleRate())
       data2 = self.modulation_object.apply_filterSR(data2, self.tx_filter2, self.center_frequency, self.getTxSampleRate())
 
-
       """ write to file """
       self.debug.info_message("size of signal data: " + str(len(data2)))
-      #self.modulation_object.writeFileWav(mode + ".wav", data2)
-      #self.modulation_object.writeFileWavSR(mode + ".wav", data2, self.getTxSampleRate())
       self.modulation_object.writeFileWavSR(mode + ".wav", data2, self.getTxSampleRate())
 
       """ read file """
@@ -4123,13 +4136,16 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
 
 
-  def displayReceivedMessage(self, message, update, erase):
+  def displayReceivedMessage(self, message, update, erase, save_and_display):
     self.debug.info_message("displayReceivedMessage")
+
+    #save_and_display = False
+
     try:
         """ erase existing display info """
         bypass_display_during_test = self.form_gui.window['cb_bypass_display_during_test'].get()
 
-        if erase and bypass_display_during_test == False:
+        if erase and bypass_display_during_test == False and save_and_display == True:
           self.form_gui.window['ml_txrx_recvtext'].update('')
 
         message_struct = self.processFragmentedMessage(message)
@@ -4162,8 +4178,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           else:
             part_message = original_message
 
-
-          if bypass_display_during_test == False:
+          if bypass_display_during_test == False and save_and_display == True:
             if pass_fail[count] == 'p':
               self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='green', background_color = 'white')
             elif pass_fail[count] == 'f':
@@ -4174,7 +4189,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           #self.form_gui.window['ml_txrx_recvtext'].print(str(part_message), end="", text_color='orange', background_color = 'white')
           last_position = xref[count]
 
-        if bypass_display_during_test == False:
+        if bypass_display_during_test == False and save_and_display == True:
           self.form_gui.window['ml_txrx_recvtext'].print("\n\n", end="", text_color='orange', background_color = 'white')
 
 
@@ -4189,7 +4204,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
           else:
             fragment = fragments[frag_count]
 
-          if bypass_display_during_test == False:
+          if bypass_display_during_test == False and save_and_display == True:
             if pass_fail[frag_count] == 'p':
               self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='green', background_color = 'white')
             elif pass_fail[frag_count] == 'f':
@@ -4197,11 +4212,12 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
             elif pass_fail[frag_count] == 'u':
               self.form_gui.window['ml_txrx_recvtext'].print(str(fragment), end="", text_color='purple', background_color = 'white')
 
-        if bypass_display_during_test == False:
+        if bypass_display_during_test == False and save_and_display == True:
           self.form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='orange', background_color = 'white')
 
         if update:
-          timestamp = self.modulation_object.appendTableRow(original_message, sender_callsign)
+          if save_and_display:
+            timestamp = self.modulation_object.appendTableRow(original_message, sender_callsign)
 
           if self.form_gui.window['cb_use_prod_modes'].get() == True:
             mode = self.form_gui.window['combo_main_modem_prod_modes'].get()
@@ -4212,6 +4228,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
 
 
           #self.storeMessageInMemory(self.getCenterFrequency(), mode, callsign, timestamp, original_message)
+
+          #if save_and_display:
           self.storeMessageInMemory(self.getCenterFrequency(), mode, sender_callsign, timestamp, message)
 
 

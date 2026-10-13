@@ -560,6 +560,26 @@ int modulate_phases_intra_three(double* modulated_block_signal, int symbol_block
       table_index_1 = symbol_wave_triple_1_of_2[3];
       table_index_2 = symbol_wave_triple_2_of_2[3];
     }
+    else if(pulses_per_block == 12){
+      printf("using triplet table index\n");
+      table_index_1 = symbol_wave_triple_1_of_2[4];
+      table_index_2 = symbol_wave_triple_2_of_2[4];
+    }
+    else if(pulses_per_block == 18){
+      printf("using triplet table index\n");
+      table_index_1 = symbol_wave_triple_1_of_2[5];
+      table_index_2 = symbol_wave_triple_2_of_2[5];
+    }
+    else if(pulses_per_block == 24){
+      printf("using triplet table index\n");
+      table_index_1 = symbol_wave_triple_1_of_2[6];
+      table_index_2 = symbol_wave_triple_2_of_2[6];
+    }
+    else if(pulses_per_block == 48){
+      printf("using triplet table index\n");
+      table_index_1 = symbol_wave_triple_1_of_2[7];
+      table_index_2 = symbol_wave_triple_2_of_2[7];
+    }
     else{
       table_index_1 = symbol_wave_1_of_2[(int)(log2(pulses_per_block))-1];
       table_index_2 = symbol_wave_2_of_2[(int)(log2(pulses_per_block))-1];

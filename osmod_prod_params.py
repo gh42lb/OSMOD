@@ -1056,6 +1056,29 @@ class OsmodProdParams(object):
         }, 
 
 
+
+
+        'LB28-4800-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 baud (bits per second). ',
+                    'carrier_separation'    : 25,
+                    'symbol_block_size'     : 4800,
+                    'pulses_per_block'      : 48,
+                    
+                    'fft_filter'            : (-4.107,3.675,-3.675,4.107),
+                    'fft_interpolate'       : (-5.375,4.871,-4.871,5.375),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.656),
+                    'downconvert_shift'     : 0.525, 
+                    'parameters'            : (1500, 0.91, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+
         'LB28-3200-I3E-FEC' :{ 
                     'inherit_from'          : 'LB28-3200-I3-FEC',
                     'extrapolate'           : 'yes',
@@ -1489,6 +1512,69 @@ class OsmodProdParams(object):
                     'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
 
                     'rotation_increments'  : 100,
+
+        }, 
+
+
+
+        'LB28-2400-I3-FC38' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : '3.33 characters per second, 20.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 2400,
+                    'pulses_per_block'      : 24,
+
+                    'fft_filter'            : (-15.002,15.052,-15.052,15.002),
+                    'fft_interpolate'       : (-9.962,4.368,-4.368,9.962),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.542),
+                    'downconvert_shift'     : 0.123, 
+                    'parameters'            : (1500, 0.363, 0.798, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+
+
+        }, 
+
+
+        'LB28-1800-I3-FC38' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : '4.44 characters per second, 26.66 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 1800,
+                    'pulses_per_block'      : 18,
+
+                    'fft_filter'            : (-4.612,5.403,-5.403,4.612),
+                    'fft_interpolate'       : (-3.458,5.631,-5.631,3.458),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.257),
+                    'downconvert_shift'     : 0.199, 
+                    'parameters'            : (1500, 0.792, 0.887, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+
 
         }, 
 
@@ -1984,9 +2070,6 @@ class OsmodProdParams(object):
         }, 
 
 
-
-
-
         'LB28-1600-I3-FC5' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : 'Filtered Carriers - 17.3 Hz Wide - 5.0 characters per second, 30.0 baud (bits per second). ',
@@ -2010,9 +2093,6 @@ class OsmodProdParams(object):
                     #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -22, 4, 40),
 
         }, 
-
-
-
 
 
         'LB28-1600-I3' :{ 
@@ -2057,6 +2137,96 @@ class OsmodProdParams(object):
         }, 
 
 
+        'LB28-1200-I3-FC38-VC' :{ 
+                    'inherit_from'         : 'LB28-1200-I3-FC38',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 baud (bits per second) ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
+
+        'LB28-1200-I3-FC38' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : '6.66 characters per second, 40.0 baud (bits per second)',
+                    'carrier_separation'    : 38,
+                    'symbol_block_size'     : 1200,
+                    'pulses_per_block'      : 12,
+
+                    'fft_filter'            : (-15.002,15.052,-15.052,15.002),
+                    'fft_interpolate'       : (-9.962,4.368,-4.368,9.962),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.542),
+                    'downconvert_shift'     : 0.123, 
+                    'parameters'            : (1500, 0.363, 0.798, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    #'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+
+
+        }, 
+
+
+
+
+        'LB28-1200-I3-FF25-HFM4' :{ 
+                    'inherit_from'         : 'LB28-1200-I3-FF25',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 13.2 characters per second, 80.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+
+                    'FDM_parameters'       : [2, 54.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-9.046,8.377,-8.377,9.046),
+                    'fft_interpolate'       : (-5.831,9.514,-9.514,5.831),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.044),
+                    'downconvert_shift'     : 0.616, 
+                    'parameters'            : (1500, 0.146, 0.947, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+        'LB28-1200-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'symbol_block_size'     : 1200,
+                    'pulses_per_block'      : 12,
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-9.299,9.128,-9.128,9.299),
+                    'fft_interpolate'       : (-3.052,5.236,-5.236,3.052),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.513),
+                    'downconvert_shift'     : 0.599, 
+                    'parameters'            : (1500, 0.23, 0.822, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'pulse_train_sigma'     : 3.0,
+                    'pulse_start_sigma'     : 25.77,
+                    'pulse_start_envelope_sigma' : 13.44,
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
         'LB28-1000-I3-FF38' :{ 
                     'inherit_from'          : 'LB28-600-I3-FF40',
                     'info'                  : '???  10.0 characters per second, 60.0 baud (bits per second)',
@@ -2079,6 +2249,32 @@ class OsmodProdParams(object):
                     'pulse_train_sigma'     : 3.0,
                     'pulse_start_sigma'     : 25.77,
                     'pulse_start_envelope_sigma' : 13.44,
+
+        }, 
+
+
+
+        'LB28-960-I3-FF25-HFM4' :{ 
+                    'inherit_from'         : 'LB28-960-I3-FF25',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 16.66 characters per second, 100.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 54.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-10.036,10.381,-10.381,10.036),
+                    'fft_interpolate'       : (-3.312,6.98,-6.98,3.312),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.606),
+                    'downconvert_shift'     : 0.726, 
+                    'parameters'            : (1500, 0.662, 0.956, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+
+        }, 
+
+        'LB28-960-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-1200-I3-FF25',
+                    'info'                  : '8.33 characters per second, 50.0 baud (bits per second)',
+                    'symbol_block_size'     : 960,
+                    'pulses_per_block'      : 12,
+                    'carrier_separation'    : 25,
 
         }, 
 
@@ -2162,21 +2358,6 @@ class OsmodProdParams(object):
         }, 
 
 
-        'LB28-800-I3-HFM' :{  # solve for lowest Pattern first, then solve for downconvert and separation together
-                    'inherit_from'         : 'LB28-800-I3',
-                    'info'                  : 'Holographic Frequency Multiplexing  10.0 characters per second, 60.0 baud (bits per second) per hologram',
-                    'FDM'                  : "yes",
-                    #'downconvert_shift'    : 0.019,
-                    'downconvert_shift'    : 0.158,
-                    #'downconvert_shift'    : 0.04,
-                    'FDM_parameters'       : [2, 95.768], #frequency division mutiplexing: multiplier, separation
-                    #'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 200, 5, 50),
-                    #'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 200, 5, 50),
-                    'tx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
-                    'rx_filter'             : (ocn.FILTER_NONE, ocn.FILTER_NONE, 200, 5, 50),
-                    'I3_parameters'         : (0.99, 0.99, 2e-3, 'B-D', 0.178), 
-        }, 
-
 
         'LB28-800-I3E' :{ 
                     'info'                  : 'based on LB28-800-8-2-37-I3E8-FEC  10.0 characters per second, 60.0 baud (bits per second)',
@@ -2243,6 +2424,23 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-800-I3-FF38-HFM4' :{  # solve for lowest Pattern first, then solve for downconvert and separation together
+                    'inherit_from'         : 'LB28-800-I3-FF38',
+                    'info'                  : 'Holographic Frequency Multiplexing  20.0 characters per second, 120.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 94.566], #frequency division mutiplexing: multiplier, separation
+
+                    #'fft_filter'            : (-12.114,11.057,-11.057,12.114),
+                    #'fft_interpolate'       : (-5.928,7.615,-7.615,5.928),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.119),
+                    #'downconvert_shift'     : 0.209, 
+                    #'parameters'            : (1500, 0.328, 0.995, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'downconvert_shift'    : 0.976,
+
+        }, 
+
+
         'LB28-800-I3-FF38' :{ 
                     'inherit_from'          : 'LB28-600-I3-FF40',
                     'info'                  : '10.0 characters per second, 60.0 baud (bits per second)',
@@ -2272,26 +2470,75 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-800-I3-FF25-HFM4' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF25',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 20 characters per second, 120.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 50.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-11.584,11.507,-11.507,11.584),
+                    'fft_interpolate'       : (-6.321,6.667,-6.667,6.321),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.04),
+                    'downconvert_shift'     : 0.212, 
+                    'parameters'            : (1500, 0.417, 0.988, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+
+        }, 
+
+
+
         'LB28-800-I3-FF25' :{ 
                     'inherit_from'          : 'LB28-800-I3',
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
                     'carrier_separation'    : 25,
 
-                    
-                    'fft_filter'            : (-7.364,8.739,-8.739,7.364),
-                    'fft_interpolate'       : (-7.759,9.084,-9.084,7.759),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.915),
-                    'downconvert_shift'     : 0.164, 
-                    'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-13.887,9.711,-9.711,13.887),
+                    'fft_interpolate'       : (-4.044,5.2,-5.2,4.044),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.971),
+                    'downconvert_shift'     : 0.113, 
+                    'parameters'            : (1500, 0.815, 0.943, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
                     'I3_extract'            : ocn.INTRA_EXTRACT_TYPE5,
+
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.21, -0.85, 0.43, -0.04), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
                     'pulse_train_sigma'     : 12.47,
                     'pulse_start_sigma'     : 9.66,
                     'pulse_start_envelope_sigma' : 18.69,
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+        'LB28-800-I3-FF20-HFM4' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF20',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 20 characters per second, 120.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 40.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-5.349,4.645,-4.645,5.349),
+                    'fft_interpolate'       : (-7.457,5.524,-5.524,7.457),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'E-E', 0.141),
+                    'downconvert_shift'     : 0.469, 
+                    'parameters'            : (1500, 0.477, 0.84, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+        'LB28-800-I3-FF20' :{ 
+                    'inherit_from'          : 'LB28-800-I3-FF25',
+                    'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 baud (bits per second) ',
+                    'carrier_separation'    : 20,
+
+                    'fft_filter'            : (-15.885,4.605,-4.605,15.885),
+                    'fft_interpolate'       : (-5.779,5.742,-5.742,5.779),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.971),
+                    'downconvert_shift'     : 0.201, 
+                    #'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
         }, 
 
@@ -2412,24 +2659,14 @@ class OsmodProdParams(object):
         }, 
 
 
+
+
         'LB28-700-I3-FF38' :{ 
                     'inherit_from'          : 'LB28-600-I3-FF40',
                     'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
                     'carrier_separation'    : 38,
                     'symbol_block_size'     : 700,
                     'pulses_per_block'      : 7,
-
-                    #'fft_filter'            : (-14.053,14.695,-14.695,14.053),
-                    #'fft_interpolate'       : (-3.317,11.968,-11.968,3.317),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.575),
-                    #'downconvert_shift'     : 0.904, 
-                    #'parameters'            : (1500, 0.206, 0.998, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
-
-                    #'fft_filter'            : (-14.387,11.128,-11.128,14.387),
-                    #'fft_interpolate'       : (-8.227,13.549,-13.549,8.227),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.565),
-                    #'downconvert_shift'     : 0.743, 
-                    #'parameters'            : (1500, 0.348, 0.737, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     'fft_filter'            : (-11.88,9.873,-9.873,11.88),
                     'fft_interpolate'       : (-6.667,6.271,-6.271,6.667),
@@ -2497,19 +2734,60 @@ class OsmodProdParams(object):
         }, 
 
 
+        'LB28-600-I3-FF38-HFM4' :{ 
+                    'inherit_from'         : 'LB28-600-I3-FF38',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 26.66 characters per second, 160.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 80.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-15.988,16.242,-16.242,15.988),
+                    'fft_interpolate'       : (-3.373,10.125,-10.125,3.373),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.448),
+                    'downconvert_shift'     : 0.413, 
+                    'parameters'            : (1500, 0.039, 0.954, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #'dws_skew'              : (0.22, -0.24, -0.07, 0.85), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+        }, 
+
 
         'LB28-600-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FC38',
+                    'info'                  : '13.33 characters per second, 80.0 baud (bits per second)',
+
+                    'fft_filter'            : (-15.002,15.052,-15.052,15.002),
+                    'fft_interpolate'       : (-9.962,4.368,-4.368,9.962),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.542),
+                    'downconvert_shift'     : 0.123, 
+                    'parameters'            : (1500, 0.363, 0.798, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    #'tx_filter'             : (ocn.FILTER_FFT_SUBSET, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    #'rx_filter'             : (ocn.FILTER_FFT_SUBSET, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+
+        'LB28-600-I3-FC38-FR' :{ # FIXED ROTATION
+                    'inherit_from'          : 'LB28-600-I3-FC38',
+                    'info'                  : '16.66 characters per second, 100 baud (bits per second)',
+
+                    'phase_rotation'       : (1, 3),
+                    'phase_align'          : 'fixed_rotation',
+
+        }, 
+
+
+
+        'LB28-600-I3-FC38' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : '13.33 characters per second, 80.0 baud (bits per second)',
                     'carrier_separation'    : 38,
-                    'symbol_block_size'     : 600,
+                    'symbol_block_size'     : 600, #300, #540, #600,
                     'pulses_per_block'      : 6,
-
-                    #'fft_filter'            : (-8.874,15.882,-15.882,8.874),
-                    #'fft_interpolate'       : (-7.208,8.329,-8.329,7.208),
-                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-B', 0.962),
-                    #'downconvert_shift'     : 0.605, 
-                    #'parameters'            : (1500, 0.259, 0.764, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     'fft_filter'            : (-15.002,15.052,-15.052,15.002),
                     'fft_interpolate'       : (-9.962,4.368,-4.368,9.962),
@@ -2527,6 +2805,211 @@ class OsmodProdParams(object):
                     'pulse_train_sigma'     : 3.0,
                     'pulse_start_sigma'     : 25.77,
                     'pulse_start_envelope_sigma' : 13.44,
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
+
+
+        }, 
+
+
+
+
+        'LB28-600-I3-FF25-HFM4' :{ 
+                    'inherit_from'         : 'LB28-600-I3-FF25',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 20 characters per second, 120.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    #'FDM_parameters'       : [2, 51.868], #frequency division mutiplexing: multiplier, separation
+                    #'FDM_parameters'       : [2, 50.46], #frequency division mutiplexing: multiplier, separation
+                    #'FDM_parameters'       : [2, 52.202], #frequency division mutiplexing: multiplier, separation
+                    #'FDM_parameters'       : [2, 54], #frequency division mutiplexing: multiplier, separation
+                    'FDM_parameters'       : [2, 100], #frequency division mutiplexing: multiplier, separation
+
+                    #'fft_filter'            : (-11.584,11.507,-11.507,11.584),
+                    #'fft_interpolate'       : (-6.321,6.667,-6.667,6.321),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.04),
+                    #'downconvert_shift'     : 0.212, 
+                    #'parameters'            : (1500, 0.417, 0.988, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+
+        }, 
+
+
+
+        'LB28-600-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FF38',
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-11.763,3.489,-3.489,11.763),
+                    'fft_interpolate'       : (-9.713,3.336,-3.336,9.713),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.216),
+                    'downconvert_shift'     : 0.217, 
+                    'parameters'            : (1500, 0.227, 0.825, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+
+
+
+        'LB28-560-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-700-I3-FF38',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'symbol_block_size'     : 560,
+
+                    'fft_filter'            : (-12.601,12.704,-12.704,12.601),
+                    'fft_interpolate'       : (-13.674,7.918,-7.918,13.674),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-A', 0.026),
+                    'downconvert_shift'     : 0.878, 
+                    'parameters'            : (1500, 0.599, 0.926, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+        'LB28-560-I3-FF42' :{ 
+                    'inherit_from'          : 'LB28-560-I3-FF38',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'carrier_separation'    : 42,
+
+        }, 
+
+
+
+        'LB28-560-I3-FF40-HFM4' :{ 
+                    'inherit_from'         : 'LB28-560-I3-FF40',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 16.66 characters per second, 100.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 100.0], #frequency division mutiplexing: multiplier, separation
+
+        }, 
+
+
+        'LB28-560-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-560-I3-FF38',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'carrier_separation'    : 40,
+
+                    'fft_filter'            : (-15.69,13.686,-13.686,15.69),
+                    'fft_interpolate'       : (-5.3,11.025,-11.025,5.3),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.6),
+                    'downconvert_shift'     : 0.632, 
+                    'parameters'            : (1500, 0.861, 0.865, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #'dws_skew'              : (0.22, 0.38, 0.03, -0.25),
+
+        }, 
+
+
+        'LB28-560-I3-FF35' :{ 
+                    'inherit_from'          : 'LB28-560-I3-FF38',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'carrier_separation'    : 35,
+                    'symbol_block_size'     : 560,
+
+                    'fft_filter'            : (-12.768,6.003,-6.003,12.768),
+                    'fft_interpolate'       : (-10.52,4.943,-4.943,10.52),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-E', 0.946),
+                    'downconvert_shift'     : 0.416, 
+                    'parameters'            : (1500, 0.021, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    #'dws_skew'              : (0.22, -0.24, -0.07, 0.85),
+
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.22, 0.38, 0.03, -0.25),
+
+        }, 
+
+
+        'LB28-560-I3-FF25' :{ 
+                    'inherit_from'          : 'LB28-560-I3-FF38',
+                    'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 baud (bits per second)',
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-10.713,4.733,-4.733,10.713),
+                    'fft_interpolate'       : (-13.275,8.964,-8.964,13.275),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.533),
+                    'downconvert_shift'     : 0.571, 
+                    'parameters'            : (1500, 0.971, 0.968, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+        'LB28-540-I3-FC38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FC38',
+                    'info'                  : '14.8 characters per second, 88.88 baud (bits per second)',
+                    'symbol_block_size'     : 540,
+
+        }, 
+
+
+
+        'LB28-480-I3-FC25' :{ 
+                    'inherit_from'          : 'LB28-480-I3-FC38',
+                    'info'                  : '16.66 characters per second, 100 baud (bits per second)',
+                    'carrier_separation'    : 25,
+
+                    'fft_filter'            : (-16.948,15.802,-15.802,16.948),
+                    'fft_interpolate'       : (-15.331,4.182,-4.182,15.331),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-C', 0.208),
+                    'downconvert_shift'     : 0.242, 
+                    'parameters'            : (1500, 0.049, 0.919, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+        }, 
+
+
+        'LB28-480-I3-FF38-HFM4' :{ 
+                    'inherit_from'         : 'LB28-480-I3-FF38',
+                    'info'                  : 'Holographic Frequency Multiplexing - 4 Carriers. 33.2 characters per second, 200.0 baud (bits per second)',
+                    'FDM'                  : "yes",
+                    'FDM_parameters'       : [2, 98.0], #frequency division mutiplexing: multiplier, separation
+
+                    'fft_filter'            : (-6.082,10.896,-10.896,6.082),
+                    'fft_interpolate'       : (-3.246,12.081,-12.081,3.246),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.041),
+                    'downconvert_shift'     : 0.017, 
+                    'parameters'            : (1500, 0.278, 0.95, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    #'dws_skew'              : (0.22, -0.39, -0.86, 0.01),
+                    #'dws_skew'              : (0.22, -0.24, -0.07, 0.85), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+                    #'dws_skew'              : (0.22, -0.13, -0.2, -0.34),
+
+        }, 
+
+
+        'LB28-480-I3-FF38' :{ 
+                    'inherit_from'          : 'LB28-480-I3-FC38',
+                    'info'                  : '16.66 characters per second, 100 baud (bits per second)',
+
+                    #'fft_filter'            : (-4.246,12.497,-12.497,4.246),
+                    #'fft_interpolate'       : (-10.859,6.603,-6.603,10.859),
+                    #'I3_parameters'         : (0.99, 0.99, 0.002, 'C-D', 0.217),
+                    #'downconvert_shift'     : 0.071, 
+                    #'parameters'            : (1500, 0.579, 0.999, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    #'dws_skew'              : (0.22, -0.24, -0.07, 0.85), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    'fft_filter'            : (-4.705,11.992,-11.992,4.705),
+                    'fft_interpolate'       : (-4.787,13.567,-13.567,4.787),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-D', 0.926),
+                    'downconvert_shift'     : 0.004, 
+                    'parameters'            : (1500, 0.084, 0.511, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'dws_skew'              : (0.22, -0.39, -0.86, 0.01),
+
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+        }, 
+
+
+        'LB28-480-I3-FC38' :{ 
+                    'inherit_from'          : 'LB28-600-I3-FC38',
+                    'info'                  : '16.66 characters per second, 100 baud (bits per second)',
+                    'symbol_block_size'     : 480,
+
+                    'fft_filter'            : (-4.246,12.497,-12.497,4.246),
+                    'fft_interpolate'       : (-10.859,6.603,-6.603,10.859),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'C-D', 0.217),
+                    'downconvert_shift'     : 0.071, 
+                    'parameters'            : (1500, 0.579, 0.999, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
         }, 
 
