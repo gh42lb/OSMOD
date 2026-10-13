@@ -16,7 +16,7 @@ v0.3.6 includes:-
 * Multi-Slice hologram decodes
 * Segmented Viterbi FEC: segmented messages with Viterbi, CRC, Extrapolation and Multi-Slice Hologram Decodes + Combination Decodes.
 * 80 bit per second narrow mode (68Hz wide)
-* Holographic Frequency Multiplexing: Multiple 4 carrier narrow modes up to 200 bits per second.
+* Holographic Frequency Multiplexing: Multiple 4 carrier narrow modes - up to 200 bits per second.
 
 please note...audio testing is more effective at minimal magnitues i.e. barely audible. latency in the audio processing callbacks (instream and ostream) can significantly impact signal and decodes. modem tested successfully on Apple M4 laptop using lowest audio speaker setting; input magnitudes in the range 2 to 4
 
