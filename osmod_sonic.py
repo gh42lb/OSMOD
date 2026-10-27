@@ -81,6 +81,11 @@ class OsmodSonic(object):
   def isKernelQueueEmpty(self):
     return self.KernelQueue.empty()
 
+  def setMode(self, mode):
+    self.mode = mode
+
+  def getMode(self):
+    return self.mode
 
   def send_threaded(self, window, values, form_gui):
     self.debug.info_message("send_threaded()")
@@ -98,7 +103,40 @@ class OsmodSonic(object):
     self.debug.info_message("kernelLoop()")
     try:
 
+      def reinitialize():
+        if self.kernelInitialized == True:
+          self.terminate()
+          self.kernelInitialized = False
+        initialize()
+
+      def initialize():
+        """ initialize kernel """
+
+        if self.kernelInitialized == False:
+          self.kernelInitialized = True
+          self.osmod.set_sd_blocksize_tx()
+          self.osmod.set_sd_blocksize_rx()
+          self.osmod.set_symbol_blocksize_rx()
+          use_existing_txblocks = False
+          input_device  = form_gui.window['combo_main_modem_input_device'].get()
+          output_device = form_gui.window['combo_main_modem_output_device'].get()
+          self.initialize(input_device, output_device, self.osmod.getTxSampleRate(), self.osmod.get_sd_blocksize_tx() )
+
+          if self.continuous: 
+            self.startInputStream()
+
+          return
+
       """ initialize kernel """
+      initialize()
+      previous_tx_sample_rate = self.osmod.getTxSampleRate()
+      previous_rx_sample_rate = self.osmod.getRxSampleRate()
+      if self.continuous: 
+        spectralDensityDisplayEnabled = True
+      else:
+        spectralDensityDisplayEnabled = False
+
+      """
       if self.kernelInitialized == False:
         self.kernelInitialized = True
         self.osmod.set_sd_blocksize_tx()
@@ -110,15 +148,7 @@ class OsmodSonic(object):
         self.debug.info_message("input_device: " + str(input_device))
         self.debug.info_message("output_device: " + str(output_device))
         self.initialize(input_device, output_device, self.osmod.getTxSampleRate(), self.osmod.get_sd_blocksize_tx() )
-
-        if self.continuous: #self.osmod.form_gui.window['cb_continuous_decode'].get() == True:
-          self.startInputStream()
-
-        #center_frequency = values['slider_frequency']
-        #separation_override = values['slider_carrier_separation']
-        #self.watch_frequency = self.calcCarrierFrequencies(center_frequency, separation_override)[0]
-        #self.debug.info_message("watch_frequency: " + str(self.watch_frequency) )
-
+      """
 
 
       """ main kernel loop """
@@ -126,8 +156,9 @@ class OsmodSonic(object):
       while kernel_loop_active:
         if self.isKernelQueueEmpty():
 
-          if self.continuous: #self.osmod.form_gui.window['cb_continuous_decode'].get() == True:
-            block = self.getLastSdBlock() #self.getMagnitudeFrame()
+          if spectralDensityDisplayEnabled:
+          #if self.continuous: 
+            block = self.getLastSdBlock() 
             present_freq, present_mag, fft_output, data_len, fdd = self.osmod.modulation_object.getIsSignalPresent(block, self.watch_frequency + 0.5)
             self.osmod.form_gui.window['text_input_signal_magnitude_passband'].update(f"Magnitude: {present_mag:.3f}")
             self.osmod.form_gui.spectralDensityQueue.put(fdd)
@@ -135,10 +166,19 @@ class OsmodSonic(object):
           time.sleep(1)
 
         else:
+          #if self.osmod.getTxSampleRate() != previous_tx_sample_rate or self.osmod.getRxSampleRate() != previous_rx_sample_rate:
+          #  reinitialize()
+          #  previous_tx_sample_rate = self.osmod.getTxSampleRate()
+          #  previous_rx_sample_rate = self.osmod.getRxSampleRate()
+
           kernel_action = self.popKernelQueue()
           #self.debug.info_message("kernel_action: " + str(kernel_action))
 
           if kernel_action == ocn.KERNEL_TX_NOW:
+
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
@@ -163,6 +203,10 @@ class OsmodSonic(object):
             gc.collect()
 
           elif kernel_action == ocn.KERNEL_TX_BEACON_GENERAL:
+
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
             gc.disable()
 
             mode = form_gui.window['combo_main_modem_prod_modes'].get()
@@ -184,6 +228,10 @@ class OsmodSonic(object):
             gc.collect()
 
           elif kernel_action == ocn.KERNEL_RX_SQUELCH:
+
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
@@ -198,13 +246,17 @@ class OsmodSonic(object):
             gc.collect()
 
           elif kernel_action == ocn.KERNEL_TXRX_NOW:
+
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
             bufferStart = self.getRxBufferStart()
             self.txrx_now(window, values, form_gui, bufferStart)
 
-            if self.continuous: #self.osmod.form_gui.window['cb_continuous_decode'].get() == True:
+            if self.continuous: 
               self.stopOutputStream()
             else:
               self.stopStream()
@@ -212,17 +264,37 @@ class OsmodSonic(object):
             gc.enable()
             gc.collect()
 
-          #elif kernel_action == ocn.KERNEL_TX_STOP:
-          #  if self.continuous: 
-          #    self.stopOutputStream()
-          #  else:
-          #    self.stopStream()
+            """
+          elif kernel_action == ocn.KERNEL_TX_STOP:
+            if self.continuous: 
+              self.stopOutputStream()
+            else:
+              self.stopStream()
+            """
 
+          elif kernel_action == ocn.KERNEL_SDD_STOP:
+            self.debug.info_message("KERNEL_SDD_STOP")
+            if self.continuous: 
+              spectralDensityDisplayEnabled = False
 
           elif kernel_action == ocn.KERNEL_TX_TIME_SYNC:
             self.tx_time_sync()
           elif kernel_action == ocn.KERNEL_RX_TIME_SYNC:
             self.rx_time_sync()
+
+          elif kernel_action == ocn.KERNEL_REINITIALIZE:
+            self.debug.info_message("KERNEL_REINITIALIZE")
+
+            while form_gui.txwindowQueue.empty() == False:
+              form_gui.txwindowQueue.get_nowait()
+            mode = self.getMode()
+            self.osmod.setInitializationBlock(mode)
+
+            if self.osmod.getTxSampleRate() != previous_tx_sample_rate or self.osmod.getRxSampleRate() != previous_rx_sample_rate:
+              reinitialize()
+              previous_tx_sample_rate = self.osmod.getTxSampleRate()
+              previous_rx_sample_rate = self.osmod.getRxSampleRate()
+
           elif kernel_action == ocn.KERNEL_EXIT:
             kernel_loop_active = False
 
@@ -552,6 +624,7 @@ class OsmodSonic(object):
       self.osmod.compiled_lib.initialize.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
       self.osmod.compiled_lib.initialize.restype = ctypes.c_int
       self.osmod.compiled_lib.initialize(c_inputDeviceName, c_outputDeviceName, sample_rate, sd_blocksize)
+      #self.osmod.compiled_lib.initialize(c_inputDeviceName, c_outputDeviceName, min(sample_rate, 48000), sd_blocksize)
     except:
       sys.stdout.write("Exception in initialize: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 

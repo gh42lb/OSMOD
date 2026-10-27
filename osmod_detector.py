@@ -648,13 +648,15 @@ class OsmodDetector(object):
       def identifyStrongestPeaksPerBlockFraction(signal, divisions, search_range):
         self.debug.info_message("identifyStrongestPeaksPerBlockFraction()")
 
+        block_offsets = []
+
         #search_range = 0
         #multiplier = 1
         #multiplier = 50
 
+
         search_lo = 0
         search_hi = pulse_length
-        block_offsets = []
         num_full_blocks = int((len(signal)) // self.osmod.symbol_block_size)
         for block_count in range(0, num_full_blocks): 
           offset = ((block_count * self.osmod.pulses_per_block) * pulse_length) 
@@ -1280,20 +1282,20 @@ class OsmodDetector(object):
 
         self.debug.info_message("self.osmod.sample_rate: " + str(self.osmod.sample_rate))
 
-        if self.osmod.sample_rate == 8000:
+        if self.osmod.sample_rate == 8000 or self.osmod.sample_rate == 48000 or self.osmod.sample_rate == 96000 or self.osmod.sample_rate == 144000 or self.osmod.sample_rate == 288000:
           start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, False, (0,0))
-        elif self.osmod.sample_rate == 48000:
-          #start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, False, (0,0))
-          self.debug.info_message("LOCATE_PULSE_START_INDEX step 1")
-          first_inc = 10
-          start_index_first_pass, _ = identifyStrongestPeaks(test_signal, first_inc, 1, False, (0,0))
-          span = first_inc
-          self.debug.info_message("LOCATE_PULSE_START_INDEX step 2")
-          second_inc = 3
-          start_index_second_pass, _ = identifyStrongestPeaks(test_signal, second_inc, 1, True, (start_index_first_pass - span, start_index_first_pass + span))
-          span = second_inc
-          self.debug.info_message("LOCATE_PULSE_START_INDEX step 3")
-          start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, True, (start_index_second_pass - span, start_index_second_pass + span))
+        #elif self.osmod.sample_rate == 48000:
+        #  #start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, False, (0,0))
+        #  self.debug.info_message("LOCATE_PULSE_START_INDEX step 1")
+        #  first_inc = 10
+        #  start_index_first_pass, _ = identifyStrongestPeaks(test_signal, first_inc, 1, False, (0,0))
+        #  span = first_inc
+        #  self.debug.info_message("LOCATE_PULSE_START_INDEX step 2")
+        #  second_inc = 3
+        #  start_index_second_pass, _ = identifyStrongestPeaks(test_signal, second_inc, 1, True, (start_index_first_pass - span, start_index_first_pass + span))
+        #  span = second_inc
+        #  self.debug.info_message("LOCATE_PULSE_START_INDEX step 3")
+        #  start_index_2, _ = identifyStrongestPeaks(test_signal, 1, 1, True, (start_index_second_pass - span, start_index_second_pass + span))
         elif self.osmod.sample_rate == 16000:
           self.debug.info_message("LOCATE_PULSE_START_INDEX step 1")
           first_inc = 10
@@ -1334,6 +1336,12 @@ class OsmodDetector(object):
       elif detection_type == ocn.CALC_BLOCK_OFFSETS:
         self.debug.info_message("CALC_BLOCK_OFFSETS")
 
+        if self.osmod.doppler_adjust == ocn.DOPPLER_ADJUST_NONE:
+          self.debug.info_message("bypassing doppler code")
+          num_full_blocks = int((len(audio_array)) // self.osmod.symbol_block_size)
+          block_offsets = [0] * num_full_blocks
+          return [0, [], block_offsets]
+
         smoothing = ocn.SIGNAL_ENVELOPE_GAUSSIAN
         #smoothing = ocn.SIGNAL_ENVELOPE_SAVITZKY_GOLAY
         #smoothing = ocn.SIGNAL_ENVELOPE_HILBERT_GAUSS
@@ -1365,14 +1373,14 @@ class OsmodDetector(object):
           test_signal = savgol_filter(analytic_signal, window_length, polyorder)
 
 
-        if self.osmod.sample_rate == 8000:
+        if self.osmod.sample_rate == 8000 or self.osmod.sample_rate == 48000 or self.osmod.sample_rate == 96000 or self.osmod.sample_rate == 144000  or self.osmod.sample_rate == 288000:
         #if self.osmod.sample_rate == 86666000:
           block_offsets = identifyStrongestPeaksPerBlock(test_signal)
-        elif self.osmod.sample_rate == 48000:
-        #elif self.osmod.sample_rate == 8000:
-          #block_offsets = identifyStrongestPeaksPerBlock(test_signal)
-          num_full_blocks = int((len(test_signal)) // self.osmod.symbol_block_size)
-          block_offsets = [0] * num_full_blocks
+        #elif self.osmod.sample_rate == 48000:
+        ##elif self.osmod.sample_rate == 8000:
+        #  #block_offsets = identifyStrongestPeaksPerBlock(test_signal)
+        #  num_full_blocks = int((len(test_signal)) // self.osmod.symbol_block_size)
+        #  block_offsets = [0] * num_full_blocks
         elif self.osmod.sample_rate == 16000:
           num_full_blocks = int((len(test_signal)) // self.osmod.symbol_block_size)
           block_offsets = [0] * num_full_blocks
@@ -1427,6 +1435,17 @@ class OsmodDetector(object):
       elif detection_type == ocn.CALC_PULSE_OFFSETS:
         self.debug.info_message("CALC_PULSE_OFFSETS")
 
+
+        if self.osmod.doppler_adjust == ocn.DOPPLER_ADJUST_NONE:
+          self.debug.info_message("bypassing doppler code")
+          pulses = []
+          num_full_blocks = int((len(audio_array)) // self.osmod.symbol_block_size)
+          for _ in range(0, num_full_blocks): 
+            for _ in range(0, self.osmod.pulses_per_block): 
+              pulses.append(0.0)
+          return [pulse_start_index, [], [], pulses]
+
+
         median_gradient = []
         which_series = []
         doppler_shift = []
@@ -1442,24 +1461,24 @@ class OsmodDetector(object):
         block_scan_fraction = 1/4
         block_scan_range = int(pulse_length / 16)
 
-        if self.osmod.sample_rate == 8000:
+        if self.osmod.sample_rate == 8000 or self.osmod.sample_rate == 48000 or self.osmod.sample_rate == 96000 or self.osmod.sample_rate == 144000 or self.osmod.sample_rate == 288000:
         #if self.osmod.sample_rate == 666000:
           doppler_fourths = getDopplerShiftFourths(audio_array, int(pulse_length / 8))
           self.dict_saved_data['block offsets fourth'] = doppler_fourths
           #doppler_fourths_b = getDopplerShiftPulsesN(audio_array, block_scan_range, int(self.osmod.pulses_per_block * block_scan_fraction))
           #self.dict_saved_data['block offsets fourth b'] = doppler_fourths_b
           pulses_per_offset = int(self.osmod.pulses_per_block / 4)
-        elif self.osmod.sample_rate == 48000:
-        #elif self.osmod.sample_rate == 8000:
-          number_of_pulses = int((self.osmod.pulses_per_block * block_scan_fraction) // 6) * 6
-          number_of_pulses = max(1, number_of_pulses)
+        #elif self.osmod.sample_rate == 48000:
+        ##elif self.osmod.sample_rate == 8000:
+        #  number_of_pulses = int((self.osmod.pulses_per_block * block_scan_fraction) // 6) * 6
+        #  number_of_pulses = max(1, number_of_pulses)
 
-          self.debug.info_message("self.osmod.pulses_per_block: " + str(self.osmod.pulses_per_block))
-          self.debug.info_message("number_of_pulses: " + str(number_of_pulses))
+        #  self.debug.info_message("self.osmod.pulses_per_block: " + str(self.osmod.pulses_per_block))
+        #  self.debug.info_message("number_of_pulses: " + str(number_of_pulses))
 
-          doppler_fourths = getDopplerShiftPulsesN(audio_array, block_scan_range, number_of_pulses)
-          self.dict_saved_data['block offsets fourth b'] = doppler_fourths
-          pulses_per_offset = int(number_of_pulses / 2)
+        #  doppler_fourths = getDopplerShiftPulsesN(audio_array, block_scan_range, number_of_pulses)
+        #  self.dict_saved_data['block offsets fourth b'] = doppler_fourths
+        #  pulses_per_offset = int(number_of_pulses / 2)
         elif self.osmod.sample_rate == 16000:
           number_of_pulses = int((self.osmod.pulses_per_block * block_scan_fraction) // 6) * 6
           number_of_pulses = max(1, number_of_pulses)
@@ -1475,11 +1494,8 @@ class OsmodDetector(object):
         #dominant_series = identifyDominantSeries(doppler_fourths_b)
         #self.dict_saved_data['dominant series 1'] = dominant_series[0]
 
-
-
         #pulses = interpolatePulsesCheby(doppler_fourths)
         #self.dict_saved_data['interpolated pulse offsets'] = pulses
-
 
         pulses = interpolatePulsesSpline(doppler_fourths, pulses_per_offset)
         self.dict_saved_data['interpolated pulse offsets'] = pulses

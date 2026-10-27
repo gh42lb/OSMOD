@@ -255,17 +255,14 @@ int initialize(char* strInputDeviceName, char* strOutputDeviceName, int sample_r
     outputParameters.hostApiSpecificStreamInfo = NULL;
 
 
-    err = Pa_OpenStream(&output_stream, NULL, &outputParameters, 8000, sd_blocksize, paNoFlag, audioCallbackOutput, NULL);
-    //err = Pa_OpenStream(&output_stream, NULL, &outputParameters, 8000, sd_blocksize, paClipOff, audioCallbackOutput, NULL);
-    //err = Pa_OpenStream(&stream, &inputParameters, &outputParameters, paFloat32, 48000, sd_blocksize, audioCallback, NULL);
-    //err = Pa_OpenStream(&stream, NULL, &outputParameters, paFloat32, 8000, sd_blocksize, audioCallback, NULL);
-    //err = Pa_OpenDefaultStream(&output_stream, 0, 1, paFloat32, 8000, sd_blocksize, audioCallbackOutput, NULL);
+    //err = Pa_OpenStream(&output_stream, NULL, &outputParameters, 8000, sd_blocksize, paNoFlag, audioCallbackOutput, NULL);
+    err = Pa_OpenStream(&output_stream, NULL, &outputParameters, sample_rate, sd_blocksize, paNoFlag, audioCallbackOutput, NULL);
     if (err != paNoError){
         printf("Pa_OpenDefaultStream output ERROR %s\n", Pa_GetErrorText(err));
     }
 
-    err = Pa_OpenStream(&input_stream, &inputParameters, NULL, 8000, sd_blocksize, paNoFlag, audioCallbackInput, NULL);
-    //err = Pa_OpenDefaultStream(&input_stream, 1, 0, paFloat32, 8000, sd_blocksize, audioCallbackInput, NULL);
+    //err = Pa_OpenStream(&input_stream, &inputParameters, NULL, 8000, sd_blocksize, paNoFlag, audioCallbackInput, NULL);
+    err = Pa_OpenStream(&input_stream, &inputParameters, NULL, sample_rate, sd_blocksize, paNoFlag, audioCallbackInput, NULL);
     if (err != paNoError){
         printf("Pa_OpenDefaultStream input ERROR %s\n", Pa_GetErrorText(err));
     }
@@ -360,7 +357,7 @@ static int audioCallbackOutput(const void *inputBufferCallback, void *outputBuff
 }
 
 static int audioCallbackInput(const void *inputBufferCallback, void *outputBufferCallback, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData){
-    printf("audioCallbackInput\n");
+    /*printf("audioCallbackInput\n");*/
 
     /* read data from input buffer */
     

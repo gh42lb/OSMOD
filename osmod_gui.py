@@ -173,7 +173,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-480-I3-FC25,LB28-480-I3-FC38,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-540-I3-FC38,LB28-560-I3-FF25,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-600-I3-FF25,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1600-I3-FC10,LB28-1600-I3-FF16,LB28-1600-I3-FF16-VCE,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-2400-I3-FC38,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+    combo_modem_prod_modes  = 'LB28-300-I3-FF38-96K,LB28-360-I3-FF38-48K,LB28-420-I3-FF38-48K,LB28-480-I3-FF25,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-2400-I3-FC38,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -331,7 +331,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.6 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.3.7 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -1005,7 +1005,7 @@ SOFTWARE.\n\
 
                            sg.CBox('CRC', key='cb_enable_crc', default=False ),
 
-                           sg.CBox('Mode Detect', key='cb_enable_automatic_mode_detection', default=False ),
+                           sg.CBox('Signal Detect', key='cb_enable_automatic_mode_detection', default=False ),
 
                            sg.CBox('Extrapolate', key='cb_override_extrapolate', default=False ),
 
@@ -1236,7 +1236,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.6 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.3.7 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
@@ -1933,7 +1933,19 @@ class ReceiveControlsProc(object):
       self.update_max_chars(window, values, form_gui, mode)
       self.updateBeaconOptions(window, values, form_gui, mode)
 
-      form_gui.osmod.setInitializationBlock(mode)
+      if form_gui.osmod.sonic.kernel_thread_initialized == True:
+        kernel_action = ocn.KERNEL_SDD_STOP
+        form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+        form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+        form_gui.osmod.sonic.setMode(mode)
+
+        kernel_action = ocn.KERNEL_REINITIALIZE
+        form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+        form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+      else:
+        form_gui.osmod.setInitializationBlock(mode)
+
       form_gui.window['text_info_description'].update(str(form_gui.osmod.getInitBlockParam(mode, 'info')))
     except:
       sys.stdout.write("Exception in event_combomainmodemprodmodes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")

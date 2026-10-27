@@ -960,14 +960,20 @@ class demod_2FSK8PSK(DemodulatorPSK):
       """ processing *before* fft """
       ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
       pulse_start_index = ret_values[0]
+
       ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, pulse_start_index, 0, ocn.CALC_PULSE_OFFSETS)
       pulse_offsets = ret_values[3]
+
+      # FIXME THIS LINE SHORTENS THE SIGNAL
       pulse_start_index, audio_array = self.osmod.detector.processAudioArrayPulses(audio_array, pulse_start_index, 0, 0, pulse_offsets)
+
       ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, pulse_start_index, 0, ocn.CALC_BLOCK_OFFSETS)
       block_offsets = ret_values[2]
+
       pulse_start_index, audio_array = self.osmod.detector.processAudioArray(audio_array, pulse_start_index, 0, 0, block_offsets)
+
       #TEST DEBUG CODE
-      self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, pulse_start_index, 0, ocn.FIND_TRIPLET_MAX_POINT)
+      #self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, pulse_start_index, 0, ocn.FIND_TRIPLET_MAX_POINT)
 
 
       self.osmod.getDurationAndReset('detectStandingWavePulseNew')

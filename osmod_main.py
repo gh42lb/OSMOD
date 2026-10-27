@@ -1414,7 +1414,15 @@ message formats...
                                                               'fft_interpolate'      : (-3, 2, -2, 3),
                                                               'pulses_per_block'     : 16,
                                                               'process_debug'        : False,
-                                                              'parameters'           : (600, 0.67, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01) },  #magic number for phase value extraction, RRC_1, RRC_2, baseband, normalization value. extract phase num waves
+                                                              'parameters'           : (600, 0.67, 0.9, 10000, 2, 98, 0.7072, 0.1, 0.1414, 0.01),
+
+                    #'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    #'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 2, 20),
+                    'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 1, 2, 20),
+
+ },  
 
 #                                             'LB28-10-20':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
                                           'LB28-4-2-20-N':   {'encoder_callback'     : self.mod_2fsk8psk.encoder_8psk_callback,
@@ -2072,10 +2080,25 @@ message formats...
       self.rotation_table_name = self.getParam(mode, 'rotation_table_name')
       self.dcs_lpf             = self.getParam(mode, 'dcs_lpf')
       self.dws_skew            = self.getParam(mode, 'dws_skew')
-      #self.skew                = self.getParam(mode, 'skew')
 
 
+
+      if self.resample_params[0] == ocn.RESAMPLE_AVAILABLE and abs(self.carrier_separation -  (self.resample_params[2] - self.resample_params[1])) < 3.0:
+        self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = False)
+        self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = False)
+        #self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(True)
+      else:
+        self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = True)
+        self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = True)
+        #self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(False)
+
+
+
+
+      if self.symbol_block_size <= 800 and self.sample_rate == 8000:
+        self.form_gui.window['cb_enable_automatic_mode_detection'].update(True)
       
+
       override_carrier_separation = self.form_gui.window['cb_enable_separation_override'].get()
       if override_carrier_separation:
         self.carrier_separation = self.getSliderCarrierSeparation()
@@ -2401,9 +2424,14 @@ message formats...
         self.debug.info_message("self.filtRRC_coef_post: " + str(self.filtRRC_coef_post))
 
       else:
+        self.debug.info_message("pulses_per_block: " + str(self.pulses_per_block))
         """ These modes are only available in C compiled code. Only need to create RRC shape."""
         divisor = int(self.pulses_per_block)
         self.filtRRC_coef_pre, self.filtRRC_coef_main, self.filtRRC_coef_post = self.demod_2fsk8psk.filterSpanRRC( int(self.symbol_block_size/divisor), rrc_alpha, rrc_T, self.sample_rate)
+
+        self.debug.info_message("self.filtRRC_coef_pre: " + str(self.filtRRC_coef_pre))
+        self.debug.info_message("self.filtRRC_coef_main: " + str(self.filtRRC_coef_main))
+        self.debug.info_message("self.filtRRC_coef_post: " + str(self.filtRRC_coef_post))
 
       """ initialize the sin cosine optimization lookup tables"""
       self.radTablesInitialize()

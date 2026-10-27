@@ -739,8 +739,8 @@ class OsmodTest(object):
 
         # start, end, resolution. i.e.  0.01 to 7.00 resolution 0.01
         if self.osmod.symbol_block_size <= 700: 
-          range_fft_filter        = [[3000, 17000, 1000], []] # 1600
-          range_fft_interpolate   = [[3000, 17000, 1000], []]
+          range_fft_filter        = [[8000, 21000, 1000], []] # 1600
+          range_fft_interpolate   = [[8000, 21000, 1000], []]
         elif self.osmod.symbol_block_size == 800: 
           range_fft_filter        = [[4000, 16000, 1000], []] # 800 
           range_fft_interpolate   = [[4000, 16000, 1000], []]
@@ -756,18 +756,46 @@ class OsmodTest(object):
         elif self.osmod.symbol_block_size == 1200: 
           range_fft_filter        = [[3000, 10000, 1000], []] # 1600
           range_fft_interpolate   = [[3000, 10000, 1000], []]
-        elif self.osmod.symbol_block_size == 1600: 
-          range_fft_filter        = [[3000, 6000, 1000], []] # 1600
-          range_fft_interpolate   = [[3000, 6000, 1000], []]
-        elif self.osmod.symbol_block_size == 1800: 
-          range_fft_filter        = [[3000, 6000, 1000], []] # 1600
-          range_fft_interpolate   = [[3000, 6000, 1000], []]
+        elif self.osmod.symbol_block_size == 1440: # 48K
+          range_fft_filter        = [[3000, 17000, 1000], []] # 1600
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
+        elif self.osmod.symbol_block_size == 1600:
+          if self.osmod.sample_rate == 8000:
+            range_fft_filter        = [[3000, 6000, 1000], []] # 8K
+            range_fft_interpolate   = [[3000, 6000, 1000], []]
+          else:
+            range_fft_filter        = [[3000, 17000, 1000], []] # 48K
+            range_fft_interpolate   = [[3000, 17000, 1000], []]
+        elif self.osmod.symbol_block_size == 1800: # for 48K
+          range_fft_filter        = [[6000, 19000, 1000], []]
+          range_fft_interpolate   = [[6000, 19000, 1000], []]
+        elif self.osmod.symbol_block_size == 2160: # 48k
+          range_fft_filter        = [[6000, 21000, 1000], []] 
+          range_fft_interpolate   = [[6000, 21000, 1000], []]
+        elif self.osmod.symbol_block_size == 2520: 
+          range_fft_filter        = [[3000, 17000, 1000], []] 
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
+        elif self.osmod.symbol_block_size == 2880: #96K
+          range_fft_filter        = [[3000, 17000, 1000], []] 
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
         elif self.osmod.symbol_block_size == 3200: 
           range_fft_filter        = [[2000, 7000, 1000], []] # 3200
           range_fft_interpolate   = [[2000, 7000, 1000], []]
+        elif self.osmod.symbol_block_size == 3600: # 96K
+          range_fft_filter        = [[6000, 23000, 1000], []] 
+          range_fft_interpolate   = [[6000, 23000, 1000], []]
+        elif self.osmod.symbol_block_size == 4320: # 144K
+          range_fft_filter        = [[3000, 17000, 1000], []] 
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
+        elif self.osmod.symbol_block_size == 5400: # 144K
+          range_fft_filter        = [[3000, 17000, 1000], []] 
+          range_fft_interpolate   = [[3000, 17000, 1000], []]
         elif self.osmod.symbol_block_size == 6400: 
           range_fft_filter        = [[500, 3000, 1000], []] # 6400
           range_fft_interpolate   = [[500, 3000, 1000], []]
+        elif self.osmod.symbol_block_size == 8640: # 288K
+          range_fft_filter        = [[8000, 21000, 1000], []] 
+          range_fft_interpolate   = [[8000, 21000, 1000], []]
         elif self.osmod.symbol_block_size == 12800: 
           range_fft_filter        = [[400, 2100, 1000], []] # 12800
           range_fft_interpolate   = [[400, 2100, 1000], []]
@@ -829,7 +857,7 @@ class OsmodTest(object):
               new_string_1, new_string_2 = format_string_fft(value_1, value_2)
               self.osmod.form_gui.window['in_fft_interpolate'].update(new_string_1)
 
-          elif chosen_section == 3 and "-I3-" in mode:
+          elif chosen_section == 3: # and "-I3-" in mode:
 
             final_values = downconvert_shift_section()
 
@@ -844,7 +872,7 @@ class OsmodTest(object):
               new_string_1, new_string_2 = format_string_dcs(value_1, value_2)
               self.osmod.form_gui.window['in_downconvertshift'].update(new_string_1)
 
-          elif chosen_section == 4  and "-I3-" in mode:
+          elif chosen_section == 4: #  and "-I3-" in mode:
 
             final_values = standing_wave_section()
 
@@ -1781,8 +1809,18 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
           return frequency_test
       """
-      #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1382.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
-      #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, 1417.5, 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+
+      #doppler shift
+      #doppler_shift_value = 1.0010
+      #audio_array, _ = self.osmod.modulation_object.resampleDopplerShift(audio_array, self.osmod.sample_rate, self.osmod.sample_rate * doppler_shift_value)
+
+      #frequency shift
+      #frequency_shift_value = 0.01
+      #audio_array = self.osmod.modulation_object.shiftAllFrequencies(audio_array, frequency_shift_value, self.osmod.sample_rate)
+
+      #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+      #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+
 
 
       #self.osmod.modulation_object.findDecodeCandidates(audio_array)

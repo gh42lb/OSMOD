@@ -3064,8 +3064,9 @@ class ModemCoreUtils(object):
       self.osmod.form_gui.window['text_input_detected_mode'].update("")
       self.osmod.form_gui.window['text_input_detected_block_start'].update("")
 
+      magnitude_trigger = 0.1
       #magnitude_trigger = 0.00001
-      magnitude_trigger = 0.0000001
+      #magnitude_trigger = 0.0000001
       N = 10
       lo = 250
       high = 2750
@@ -3149,8 +3150,10 @@ class ModemCoreUtils(object):
                 self.debug.info_message("signal_scan: " + str(signal_scan))
                 self.debug.info_message("current_magnitude: " + str(current_magnitude))
                 if signal_scan > 0:
+                  self.debug.info_message("signal_scan > 0")
                   dict_signal_start[center_frequency] = signal_scan + 800 # 1st two pulses in 100 pulse sequence triggers detection
                 else:
+                  self.debug.info_message("signal_scan <= 0")
                   dict_signal_start[center_frequency] = signal_scan
 
             if current_magnitude > magnitude_trigger:
@@ -3165,12 +3168,14 @@ class ModemCoreUtils(object):
                     dict_carrier_transitions[center_frequency].append(signal_scan)
                     self.debug.info_message("found carrier transition")
                     self.debug.info_message("signal_scan: " + str(signal_scan))
+                    self.debug.info_message("current_magnitude: " + str(current_magnitude))
                   elif current_frequency - center_frequency < 0 and dict_last_frequency[center_frequency] - center_frequency > 0:
                     dict_last_frequency[center_frequency] = current_frequency
                     dict_carrier_transitions[center_frequency].append(signal_scan)
                     self.debug.info_message("found carrier transition")
                     self.debug.info_message("signal_scan: " + str(signal_scan))
-
+                    self.debug.info_message("current_magnitude: " + str(current_magnitude))
+ 
                   #self.debug.info_message("found carrier transition")
                   #self.debug.info_message("signal_scan: " + str(signal_scan))
                   #dict_last_frequency[center_frequency] = current_frequency

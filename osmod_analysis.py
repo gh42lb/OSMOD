@@ -223,7 +223,7 @@ class OsmodAnalysis(object):
         elif test_type == 'Pulse Train Sigma':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_overridepulsetrainsigma'].update(True)
-          if count % 3 == 0:
+          if count % 10 == 0:
             #rand_num = random.randint(0,len(self.osmod.best_pulse_shapes)-1)
             #rrc_alpha = self.osmod.best_pulse_shapes[rand_num][0]
             #rrc_T     = self.osmod.best_pulse_shapes[rand_num][1]
@@ -235,7 +235,7 @@ class OsmodAnalysis(object):
         elif test_type == 'Pulse Start Sigma':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_overridepulsestartsigma'].update(True)
-          if count % 3 == 0:
+          if count % 10 == 0:
             pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsestartsigma'].update(pulse_start_sigma)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
@@ -244,7 +244,7 @@ class OsmodAnalysis(object):
         elif test_type == 'Pulse Start Envelope Sigma':
           noise = values['btn_slider_awgn']
           form_gui.window['cb_overridepulsestartenvelopesigma'].update(True)
-          if count % 3 == 0:
+          if count % 10 == 0:
             pulse_start_sigma = 5 + (random.randint(0,2100) / 100)
             form_gui.window['in_pulsestartenvelopesigma'].update(pulse_start_sigma)
           test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, file_append)
@@ -263,17 +263,17 @@ class OsmodAnalysis(object):
           noise = values['btn_slider_awgn']
           form_gui.window['cb_override_dws_skew'].update(True)
           if count % 10 == 0:
-            select_random = False
+            select_random = True
             if select_random:
-              random_1 = 0.22 #(float)(random.randint(0,100) / 100 )
+              random_1 = (float)(random.randint(10,40) / 100 )
               random_2 = (float)(random.randint(-100,100) / 100 ) 
               random_3 = (float)(random.randint(-100,100) / 100 ) 
               random_4 = (float)(random.randint(-100,100) / 100 ) 
             else:
               random_1 = 0.22 #(float)( (count / 10.0) / 100.0 ) #iterate 2000 times
-              random_2 = -0.13 #(float)(((count / 10.0) - 100.0) / 100.0 ) 
-              random_3 = -0.2  # (float)(((count / 10.0) - 100.0) / 100.0 ) 
-              random_4 = -0.34 #(float)(((count / 10.0) - 100.0) / 100.0 ) 
+              random_2 = (float)(((count / 10.0) - 100.0) / 100.0 ) 
+              random_3 = (float)(((count / 10.0) - 100.0) / 100.0 ) 
+              random_4 = (float)(((count / 10.0) - 100.0) / 100.0 ) 
 
             random_string = str(random_1) + ',' + str(random_2) + ',' + str(random_3) + ',' + str(random_4)
             form_gui.window['in_dws_skew'].update(random_string)
@@ -432,7 +432,7 @@ class OsmodAnalysis(object):
           form_gui.window['cb_overridefdmseparation'].update(True)
           form_gui.window['cb_overridedownconvertshift'].update(True)
 
-          if count % 3 == 0:
+          if count % 5 == 0:
             pair_level = form_gui.window['combo_fdmpairlevel'].get()
             #rand_num_sep   = random.randint(75000,95000)
             #rand_num_sep   = random.randint(140000,200000)

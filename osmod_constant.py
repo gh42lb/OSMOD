@@ -305,6 +305,9 @@ KERNEL_TXRX_NOW                 = 5
 KERNEL_TX_BEACON_GENERAL        = 6
 KERNEL_TX_STOP                  = 7
 KERNEL_RX_STOP                  = 8
+KERNEL_REINITIALIZE             = 9
+KERNEL_SDD_START                = 10
+KERNEL_SDD_STOP                 = 11
 
 RCV_PRE_FILTER_DISABLE          = 0
 RCV_PRE_FILTER_ENABLE           = 1
