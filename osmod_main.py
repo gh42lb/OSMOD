@@ -93,6 +93,9 @@ class osModem(object):
   received_data_table = None
   received_data_table_callsign = None
 
+  #override_resample_params = False
+  #lds_awgn_level = 0
+
   spectral_density_queue_counter = 0
   spectral_density_block = None
 
@@ -165,7 +168,7 @@ message formats...
 
     self.test_counter = 0
 
-    self.aperture = 1.5
+    self.aperture = 5.0
 
     self.mode = None
 
@@ -1725,7 +1728,7 @@ message formats...
                                     'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                     'dcs_lpf'              : (2,115),
                                     'dws_skew'             : (1.0,0.0),
-                                    #'skew'                 : 0.0,
+                                    'lds_per_awgn'         : [],
 
                                    }
 
@@ -2080,19 +2083,19 @@ message formats...
       self.rotation_table_name = self.getParam(mode, 'rotation_table_name')
       self.dcs_lpf             = self.getParam(mode, 'dcs_lpf')
       self.dws_skew            = self.getParam(mode, 'dws_skew')
+      self.lds_per_awgn        = self.getParam(mode, 'lds_per_awgn')
 
 
-
-      if self.resample_params[0] == ocn.RESAMPLE_AVAILABLE and abs(self.carrier_separation -  (self.resample_params[2] - self.resample_params[1])) < 3.0:
+      if self.resample_params[0] == ocn.RESAMPLE_AVAILABLE and abs(self.carrier_separation -  (self.resample_params[2] - self.resample_params[1])) < 8.0:
         self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = False)
         self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = False)
-        #self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(True)
       else:
         self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = True)
         self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = True)
-        #self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(False)
 
 
+      #if self.override_resample_params == True and self.lds_per_awgn != []:
+      #  self.resample_params = [ocn.RESAMPLE_AVAILABLE, self.lds_per_awgn[self.lds_awgn_level][0], self.lds_per_awgn[self.lds_awgn_level][1]]
 
 
       if self.symbol_block_size <= 800 and self.sample_rate == 8000:

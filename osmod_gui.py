@@ -173,7 +173,7 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-300-I3-FF38-96K,LB28-360-I3-FF38-48K,LB28-420-I3-FF38-48K,LB28-480-I3-FF25,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-2400-I3-FC38,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+    combo_modem_prod_modes  = 'LB28-300-I3-FF38-96K,LB28-360-I3-FF38-48K,LB28-420-I3-FF38-48K,LB28-480-I3-FF25,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-2400-I3-FC38,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -244,6 +244,8 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
     combo_random_choice_options = 'AWGN Factor,I3 Standing Wave,I3 Pattern,RRC Alpha & T,Gaussian Sigma,Test Pulse Shape,Best Pulse Shape,Pulse Train Sigma,Pulse Start Sigma,Pulse Start Envelope Sigma,Padding Character,FFT Filter,FFT Interpolate,Test Standing Wave,Downconvert Shift,Best Pulse Shapes,FEC Generator Polynomials,Test FEC Generator Polynomials,Best FEC Generator Polynomials,LDPC SNR,FDM Separation & DCS,Test DCS,Costas K1 & K2,Costas Damping & Loop BW,DWS & Skew'.split(',')
 
     combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
+
+    combo_re_decode_noise_level = '0,1,2,3,4,5,6,7,8'.split(',')
 
     combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
 
@@ -331,7 +333,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.3.7 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.4.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -783,7 +785,8 @@ SOFTWARE.\n\
                            sg.Text('Code Options: ')  ,
                            sg.Combo(combo_code_options, key='combo_code_options', default_value=combo_code_options[0], enable_events=True),
                            sg.Text('CRC fragment size: ')  ,
-                           sg.InputText('16', key='in_crc_fragment_size', size=(8, 1), enable_events=True, disabled = False)],
+                           sg.InputText('16', key='in_crc_fragment_size', size=(8, 1), enable_events=True, disabled = False),
+                           sg.CBox('Show CZT frequencies', key='cb_test_show_czt_frequencies', default=False, enable_events=True )],
 
 
                         [sg.Frame('Generate Test Data', [
@@ -848,7 +851,7 @@ SOFTWARE.\n\
 
 
                        sg.Frame('Aperture Hz +/-', [
-                           [sg.Slider(range=(0.1, 10), default_value = 1.5, orientation='h', resolution=0.1, expand_x = False, expand_y = True, enable_events = True, key='slider_fft_aperture')],
+                           [sg.Slider(range=(0.1, 10), default_value = 5.0, orientation='h', resolution=0.1, expand_x = False, expand_y = True, enable_events = True, key='slider_fft_aperture')],
 
                         ], size=(110, 60)),
 
@@ -862,7 +865,7 @@ SOFTWARE.\n\
                         ], size=(220, 60)),
 
                         sg.Frame('Frequency Shift', [
-                           [sg.Slider(range=(-2, 2), default_value = 0, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_freq_fine_tune'),
+                           [sg.Slider(range=(-4, 4), default_value = 0, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_freq_fine_tune'),
                             sg.CBox('Enable', key='cb_enable_fine_tune_frequency', default=False, enable_events=True ),
                             sg.CBox('Auto Correct', key='cb_enable_frequency_shift_auto_correct', default=False, enable_events=True, disabled=True, visible = False )],
 
@@ -885,12 +888,12 @@ SOFTWARE.\n\
                            [sg.Text('LDS: ', size=(25, 1), font=("Helvetica", 12), key='text_decode_lds_correction_hz' )] ,
                            [sg.Text('FS: ', size=(25, 1), font=("Helvetica", 12), key='text_decode_fs_correction_hz' )] ,
 
-                        ], size=(110, 60)),
+                        ], size=(130, 60)),
 
                         sg.Frame('Frequency Bias', [
                            [sg.Slider(range=(0.5, 2), default_value = 1.14, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
 
-                        ], size=(120, 60)),
+                        ], size=(120, 60), visible=False),
 
 
                         sg.Text('', expand_x = True),
@@ -978,21 +981,24 @@ SOFTWARE.\n\
 
                             #sg.Button('Queue / Send', size=(11, 1), key='btn_another_button', visible=True)],
                             #sg.Button('Tx Send', size=(15, 1), key='btn_init_test', visible=True),
-                            sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False )],
+                            #sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
+                            sg.Button('Re - Decode', size=(11, 1), key='btn_re_decode', visible=True),
+                            #sg.Text('Noise: ', size=(5, 1) ) ,
+                            sg.Combo(combo_re_decode_noise_level, key='combo_re_decode_noise_level', size=(4, 1), font=("Helvetica", 10), default_value=combo_re_decode_noise_level[0], enable_events=True, visible=False)],
 
 
                           [
-                           sg.Button('Rx - Decode', size=(11, 1), key='btn_8pskdecoder', visible=True),
+                           sg.Button('Rx - Listen', size=(11, 1), key='btn_8pskdecoder', visible=True),
                            sg.CBox('Continuous', key='cb_continuous_decode', default=True , visible=False, enable_events = True),
-                           sg.Button('Stop Decoder', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
+                           sg.Button('Stop Rx', size=(11, 1), key='btn_stop8pskdecoder', visible=True),
                            #sg.Button('init output stream', size=(18, 1), key='btn_init_ostream'),
                            #sg.Button('draw plot', size=(11, 1), key='btn_canvasdrawplotwaveform'),
                            #sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx', visible=False),
                            sg.Button('TxRx 1', size=(6, 1), key='btn_txrx_c_code', visible=False),
 
-                           sg.Button('Tx / Rx', size=(11, 1), key='btn_txrx_c_code_2'),
+                           sg.Button('Tx / Rx', size=(8, 1), key='btn_txrx_c_code_2'),
 
-                           sg.Button('Tx Send', size=(11, 1), key='btn_init_test', visible=True),
+                           sg.Button('Tx Send', size=(8, 1), key='btn_init_test', visible=True),
 
                            sg.Button('Stop Tx', size=(8, 1), key='btn_stop_tx', visible=True),
 
@@ -1008,6 +1014,8 @@ SOFTWARE.\n\
                            sg.CBox('Signal Detect', key='cb_enable_automatic_mode_detection', default=False ),
 
                            sg.CBox('Extrapolate', key='cb_override_extrapolate', default=False ),
+
+                           sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
 
                            #sg.Button('TEST', size=(5, 1), key='btn_testit'),
                            sg.CBox('Save Sampled Signal', key='cb_savesampledsignal', default=False, visible=False )],
@@ -1236,7 +1244,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.3.7 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.4.0 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
@@ -1535,7 +1543,7 @@ class ReceiveControlsProc(object):
 
 
 
-  """ RX Decode """
+  """ RX Listen / Decode """
   def event_8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_8pskdecoder\n")
     try:
@@ -1553,6 +1561,15 @@ class ReceiveControlsProc(object):
       kernel_action = ocn.KERNEL_TX_NOW
       form_gui.osmod.sonic.pushKernelQueue(kernel_action)
       form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+      if form_gui.osmod.getDecoderRunning() == True:
+        form_gui.osmod.setDecoderRunning(False)
+
+      kernel_action = ocn.KERNEL_RX_SQUELCH
+      form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+ 
+
     except:
       sys.stdout.write("Exception in event_inittest: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
@@ -1563,6 +1580,15 @@ class ReceiveControlsProc(object):
       kernel_action = ocn.KERNEL_TXRX_NOW
       form_gui.osmod.sonic.pushKernelQueue(kernel_action)
       form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+      if form_gui.osmod.getDecoderRunning() == True:
+        form_gui.osmod.setDecoderRunning(False)
+
+      #kernel_action = ocn.KERNEL_RX_SQUELCH
+      #form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+      #form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+
     except:
       sys.stdout.write("Exception in event_txrx_c_code_2: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
@@ -1580,7 +1606,7 @@ class ReceiveControlsProc(object):
     except:
       sys.stdout.write("Exception in event_stoptx: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-  """ Stop Decoder """
+  """ Stop Listening / Decoder """
   def event_stop8pskdecoder(self, window, values, form_gui):
     sys.stdout.write("event_stop8pskdecoder\n")
     try:
@@ -1797,6 +1823,47 @@ class ReceiveControlsProc(object):
 
     except:
       sys.stdout.write("Exception in event_overridestandard48k: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+
+  def event_btn_re_decode(self, window, values, form_gui):
+    sys.stdout.write("event_btn_re_decode\n")
+
+    try:
+      #lds_noise_level = int(values['combo_re_decode_noise_level'])
+      #form_gui.osmod.override_resample_params = True
+      #form_gui.osmod.lds_awgn_level = lds_noise_level
+
+      form_gui.window['cb_test_routine_use_audio_sample'].update(True)
+
+      form_gui.window['combo_audio_sample_name'].update(value = 'sampled_audio.wav')
+    
+      test = OsmodTest(form_gui.osmod, window)
+      mode = values['combo_main_modem_modes']
+      noise = values['btn_slider_awgn']
+      text_num = values['combo_text_options'].split(':')[0]
+      chunk_num = values['combo_chunk_options'].split(':')[0]
+      amplitude = values['slider_amplitude']
+      carrier_separation_override = values['slider_carrier_separation']
+
+      form_gui.osmod.writeModeToCache(mode, form_gui, values)
+
+      if values['cb_use_prod_modes'] == True:
+        form_gui.osmod.useProdMode()
+        mode = values['combo_main_modem_prod_modes']
+      else:
+        form_gui.osmod.useTestMode()
+        mode = values['combo_main_modem_modes']
+
+      test.testRoutine2(mode, form_gui, values, noise, text_num, chunk_num, carrier_separation_override, amplitude, True)
+
+      form_gui.window['cb_test_routine_use_audio_sample'].update(False)
+
+      #form_gui.window['combo_re_decode_noise_level'].update(value = str((lds_noise_level + 1) % len(form_gui.osmod.lds_per_awgn) ))
+      #form_gui.osmod.override_resample_params = False
+
+    except:
+      sys.stdout.write("Exception in event_btn_re_decode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
 
@@ -2041,6 +2108,10 @@ class ReceiveControlsProc(object):
   def event_enable_auto_correct_frequency_only(self, window, values, form_gui):
     sys.stdout.write("event_enable_auto_correct_frequency_only\n")
     form_gui.window['cb_enable_block_level_resample_auto_correct'].update(False)
+
+
+  def event_cb_test_show_czt_frequencies(self, window, values, form_gui):
+    sys.stdout.write("event_cb_test_show_czt_frequencies\n")
 
 
 
@@ -2746,6 +2817,8 @@ class ReceiveControlsProc(object):
       'tbl_callsign_locator'                  : event_tbl_callsign_locator,
       'cb_continuous_decode'                  : event_cb_continuous_decode,
       'btn_load_solve_data'                   : event_btn_load_solve_data,
+      'btn_re_decode'                         : event_btn_re_decode,
+      'cb_test_show_czt_frequencies'          : event_cb_test_show_czt_frequencies,
       #'add_stn'          : self.osmod.osmod_net_dispatcher.event_addstn, 
 
 

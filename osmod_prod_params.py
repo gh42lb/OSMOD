@@ -565,7 +565,7 @@ class OsmodProdParams(object):
                     'parameters'            : (1500, 0.216, 0.925, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
 
                     #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -18.125, 19.014, 0], # available, low freq, hi freq
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -18.12438208730191,  18.74388701266639, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -18.12438208730191,  18.74388701266639, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -756,7 +756,7 @@ class OsmodProdParams(object):
                     'parameters'            : (1500, 0.704, 0.982, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-E', 0.413),
 
-                    'resample_params'       : [ocn.RESAMPLE_AVAILABLE, -18.123760536729833, 18.737747429275032, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'       : [ocn.RESAMPLE_AVAILABLE, -18.123760536729833, 18.737747429275032, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1090,7 +1090,7 @@ class OsmodProdParams(object):
                     'pulses_per_block'      : 64,
                     'symbol_wave_function'  : self.osmod.mod_2fsk8psk.sixtyfourths_symbol_wave_function,
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.497683197851984, 18.725503490166602, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.497683197851984, 18.725503490166602, 257.8458], # available, low freq relative center, hi freq relative center
 
 
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'A-E', 0.544),
@@ -1119,6 +1119,8 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -11.664357399349683, 13.33737333333329, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1173,48 +1175,6 @@ class OsmodProdParams(object):
         }, 
 
 
-        """
-        'LB28-3200-I3-FC40-VFEC' :{ 
-                    'inherit_from'          : 'LB28-3200-I3-FC40',
-                    'info'                  : 'Viterbi - Filtered Carriers - 10 Hz Wide - 2.5 characters per second, 15 bits per second. ',
-                    'text_encoder'          : self.osmod.mod_2fsk8psk.stringToTripletFEC,
-
-                    'FEC'                   : ocn.FEC_VITERBI,
-                    #'fec_params'            : (13 , 5890 , 6271, []),      # 1/2   works well
-
-                    'fec_params'           : (16, 256, 809, [1,1,0,1]), #2/3      works
-                    #'fec_params'           : (16, 23095, 44876, [1,1,0,1]), #2/3      works 
-                    #'fec_params'           : (13, 7515, 5754, [1,1,0,1]), #2/3      works
-                    #'fec_params'           : (13, 7515, 5754, [0,1,1,1]), #2/3      works
-                    #'fec_params'           : (17, 85365, 59157, [0,1,1,1]), #2/3      works
-
-                    #'fec_params'           : (16, 120, 595, [1,0,0,0,1,0,1,0,1,1,1,0]),     #5/6       
-                    #'fec_params'           : (15, 23552, 21839, [1,0,0,0,1,0,1,0,1,1,1,0]), #5/6       
-                    #'fec_params'           : (16, 120, 595, [1,0,0,1,1,0,1,0,1,1,0,0]),      #5/6      
-                    #'fec_params'           : (16, 3805, 3370, [1,0,1,1]), #2/3      
-                    #'fec_params'           : (16, 256, 809, [1,1,1,0]), #2/3       
-                    #'fec_params'           : (16, 12, 167, [1,0,1,1]), #2/3        
-
-
-                    #???
-                    #'fec_params'           : (16, 256, 809, [1,1,1,1,0,0]),                 #3/4         ???
-                    #'fec_params'           : (16, 256, 809, [1,1,1,1,0,0,0,1]),             #4/5         ???
-                    #'fec_params'           : (16, 120, 595, [0,0,1,1,0,0,1,0,1,0,0,1,0,1]), #7/8         ???
-
-
-
-                    'holographic_decode'    : ocn.HOLOGRAPH_DECODE_NONE,
-                    'msg_sections'          : (8,0,48), #init sequence length, msg ID length, message length
-                    'msg_type'              : ocn.MSGTYPE_FIXED_LENGTH,
-                    'extrapolate_seqlen'    : 8,
-
-                    #'extrapolate'           : 'yes',
-
-        }, 
-        """
-
-
-
         'LB28-3200-I3-FC50' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
                     'info'                  : 'Filtered Carriers - 52.6 Hz Wide - 2.5 characters per second, 15 bits per second. ',
@@ -1232,6 +1192,8 @@ class OsmodProdParams(object):
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS_X2, (-50, 25), 2, 40),
                     'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
                     'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
+
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996506976744286, 20.30920952738188, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1280,7 +1242,21 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996506934510535, 20.30920883921135, 257.8458], # available, low freq relative center, hi freq relative center
+                    # for simulation
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996506934510535, 20.30920883921135, 257.8458], # available, low freq relative center, hi freq relative center
+
+                    #'lds_per_awgn'         : [[-19.996506934510535, 20.30920883921135],   
+                    #                          [-19.99526443794616,  20.30732357250008],   
+                    #                          [-19.995423508053136, 20.014290161348754]], 
+
+                    # for audio
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -19.99742673777132, 20.01128173945517, 257.8458], # available, low freq relative center, hi freq relative center
+
+                    # audio_sample_1.wav
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996506976744286, 20.30920952738188, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.997043250812794, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996506976744286, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+
 
         }, 
 
@@ -1303,7 +1279,7 @@ class OsmodProdParams(object):
                     'tx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
                     'rx_filter2'            : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, -50, 2, 40),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996453179976243, 20.01446469933444, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.996453403351097, 20.308890247561976, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1342,6 +1318,8 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -12.496394368592291, 12.504039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1406,6 +1384,8 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -7.496424796199335, 7.504039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1491,6 +1471,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -4.996505496374084, 5.309081915478828, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
 
 
@@ -1555,8 +1537,8 @@ class OsmodProdParams(object):
                     'dcs_type'              : ocn.DCS_FREQUENCY_SPECIFIC,
                     'dcs_by_frequency'      : {'160':0.159, '200':0.601, '320':0.27, '640':0.27, '800':0.922, '960':0.291, '1000':0.622, '1010':0.616, '1040':0.78, '1080':0.707, '1120':0.51, '1160':0.12, '2000':0.76, '2640':0.866, '2720':0.97 },
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.495215152030596,  17.515281914900925, 247.1610], # available, low freq, hi freq
-                    'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515653291377703, 247.1610], # available, low freq, hi freq
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.495215152030596,  17.515281914900925, 247.1610], # available, low freq, hi freq
+                    #'resample_params_48k'  : [ocn.RESAMPLE_AVAILABLE,  -17.49399399399431,  17.515653291377703, 247.1610], # available, low freq, hi freq
 
                     #next only for 48k search
                     'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
@@ -1594,7 +1576,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.995599430119228, 20.01816477187276, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.995599430119228, 20.01816477187276, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, -19.995960000000196,  20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1626,7 +1609,7 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.772290193915524, 18.327390759742684, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.773737777778024,  18.32929333333368, 257.8458], # available, low freq relative center, hi freq relative center
 
 
         }, 
@@ -1736,6 +1719,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -24.995960000000196, 25.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
 
 
@@ -1798,6 +1783,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -19.995960000000196, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
 
 
@@ -1848,6 +1835,8 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -14.995960000000196, 15.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2146,7 +2135,7 @@ class OsmodProdParams(object):
 
                     'persistent_search'     : (1, 0.95, -0.005, "yes"), #hi range, lo range, inc, scan entire range
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.68012094363803, 18.907336705869966, 247.1610], # available, low freq, hi freq
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -17.68012094363803, 18.907336705869966, 247.1610], # available, low freq, hi freq
 
                     'tx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
@@ -2161,14 +2150,26 @@ class OsmodProdParams(object):
                     'pulses_per_block'      : 12,
                     'carrier_separation'    : 40,
 
-                    'fft_filter'            : (-3.683,6.816,-6.816,3.683),
-                    'fft_interpolate'       : (-3.57,3.367,-3.367,3.57),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-D', 0.886),
-                    'downconvert_shift'     : 0.083, 
-                    'parameters'            : (1500, 0.789, 0.67, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_filter'            : (-9.268,9.914,-9.914,9.268),
+                    'fft_interpolate'       : (-3.953,3.676,-3.676,3.953),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'A-B', 0.484),
+                    'downconvert_shift'     : 0.103, 
+                    'parameters'            : (1500, 0.155, 0.802, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
+
+                    #'pulse_train_sigma'     : 3.0,
+                    #'pulse_start_sigma'     : 25.77,
+                    #'pulse_start_envelope_sigma' : 13.44,
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -19.995960000000196, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2261,6 +2262,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -13.329293333333453, 13.33737333333329, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
 
 
@@ -2326,6 +2329,7 @@ class OsmodProdParams(object):
                     'pulse_start_sigma'     : 9.66,
                     'pulse_start_envelope_sigma' : 18.69,
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -8.329293333333453, 9.370960000000196, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2524,7 +2528,7 @@ class OsmodProdParams(object):
                     'pulse_start_sigma'     : 9.66,
                     'pulse_start_envelope_sigma' : 18.69,
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.985643786556693, 20.054603618034434, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.995960000000196, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2571,6 +2575,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
 
 
@@ -2605,6 +2611,8 @@ class OsmodProdParams(object):
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'C-C', 0.971),
                     'downconvert_shift'     : 0.201, 
                     #'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -3292,14 +3300,19 @@ class OsmodProdParams(object):
                     'pulses_per_block'      : 18,
 
                     'fft_filter'            : (-19.117,7.75,-7.75,19.117),
-                    'fft_interpolate'       : (-21.297,14.935,-14.935,21.297),
-                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.043),
-                    'downconvert_shift'     : 0.689, 
-                    'parameters'            : (1500, 0.725, 0.617, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'fft_interpolate'       : (-21.971,11.253,-11.253,21.971),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'B-C', 0.258),
+                    'downconvert_shift'     : 0.093, 
+                    'parameters'            : (1500, 0.6, 0.946, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'dws_skew'              : (0.18, -0.96, -0.12, 0.07), #0.02 to 0.15
+                    #'dws_skew'              : (0.18, -0.96, -0.12, 0.07), #0.02 to 0.15
                     #'dws_skew'              : (0.23, 0.97, 0.05, -0.76), #0.02 to 0.15
                     #'dws_skew'              : (0.22, 0.25, 0.54, -0.2), #0.02 to 0.15
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE7,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+                    'dcs_lpf'               : (1,110), 
+                    'dws_skew'              : (0.33, -0.94, 0.48, 0.11), # downconvert_window_size, skew_1, skew_2 (opt). # 16/100 vs 7/100
 
 
                     #'dws_skew'              : (0.36, 0.86, -0.32, 0.0), #0.02 to 0.15

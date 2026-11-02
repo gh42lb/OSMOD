@@ -1183,7 +1183,7 @@ class ModemCoreUtils(object):
     except:
       self.debug.error_message("Exception in getStrongestN: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
-    return strongest_frequencies
+    return strongest_frequencies, strongest_magnitudes
 
 
   def getStrongestNFromFdd(self, fdd, N):
@@ -1753,6 +1753,27 @@ class ModemCoreUtils(object):
 
 
 
+
+  def calcTopN(self, signal, freq_lo, freq_hi, N):
+    self.debug.info_message("calcTopN")
+
+    try:
+      fft_output  = np.fft.fft(signal)
+      fft_freq_frequencies = np.fft.fftfreq(len(signal), 1/self.osmod.getRxSampleRate()) #[:N_over_2]
+      positive_frequency_indices = np.where((fft_freq_frequencies > freq_lo) & (fft_freq_frequencies < freq_hi))[0]
+      fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+      frequencies = fft_freq_frequencies[positive_frequency_indices]
+
+      top_N_frequencies, top_N_magnitudes = self.getStrongestN(frequencies, fft_magnitudes, N)
+      self.debug.info_message("Top " + str(N) + " Frequencies: " + str(top_N_frequencies))
+      self.debug.info_message("Top " + str(N) + " Magnitudes: " + str(top_N_magnitudes))
+
+    except:
+      self.debug.error_message("Exception in calcTopN: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+
+    return top_N_frequencies
+
+
   """ bandpass filter fft"""
   def bandpass_filter_fft_subset(self, signal, freq_lo, freq_hi):
     self.debug.info_message("bandpass_filter_fft_subset")
@@ -1766,7 +1787,7 @@ class ModemCoreUtils(object):
       fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
       frequencies = fft_freq_frequencies[positive_frequency_indices]
 
-      fft_filtered_frequencies = self.getStrongestN(frequencies, fft_magnitudes, num_points)
+      fft_filtered_frequencies, _ = self.getStrongestN(frequencies, fft_magnitudes, num_points)
       self.debug.info_message("fft_filtered_frequencies: " + str(fft_filtered_frequencies))
 
 
@@ -1802,11 +1823,19 @@ class ModemCoreUtils(object):
 
       #self.debug.info_message("groups: " + str(groups))
 
+      #counter = 0
       for group in groups:
         self.debug.info_message("group: " + str(group) + "\n")
+        #counter = counter + 1
+        #if counter > 1:
+        #  break
 
+      #counter = 0
       for group in groups:
         self.debug.info_message("len(group): " + str(len(group)))
+        #counter = counter + 1
+        #if counter > 1:
+        #  break
 
 
       return groups
@@ -2145,41 +2174,43 @@ class ModemCoreUtils(object):
   def getDopplerRatioFromDoubleCarrier(self, signal, target_frequencies, padding_factor, upconvert_factor, frequency_delta, czt_num_points, num_dp, sample_rate):
     self.debug.info_message("getDopplerRatioFromDoubleCarrier")
     try:
+
       f1 = target_frequencies[0]
       f2 = target_frequencies[1]
-      self.debug.info_message("f1: " + str(f1 * upconvert_factor))
-      self.debug.info_message("f2: " + str(f2 * upconvert_factor))
-      #df1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, 5/upconvert_factor, 8, 0, 10)
-      #df2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, 5/upconvert_factor, 8, 0, 10)
-      #df1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, 10/upconvert_factor, 8, 0, 10)
-      #df2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, 10/upconvert_factor, 8, 0, 10)
+      aperture = self.osmod.getAperture() / upconvert_factor
 
-      #alpha = 0.97
-      alpha = self.osmod.getBiasFilterValue() # 1.2
-      emphasized_signal = lfilter([1, -alpha], [1], signal)
+      test_frequency_lo = (self.osmod.getCenterFrequency() - (self.osmod.carrier_separation / 2)) / upconvert_factor
+      test_frequency_hi = (self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2)) / upconvert_factor
 
-      #observed_f1 = self.resolveFrequencyToNDP(signal, padding_factor, f1, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
-      #observed_f2 = self.resolveFrequencyToNDP(signal, padding_factor, f2, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
-      observed_f1 = self.resolveFrequencyToNDP(emphasized_signal, padding_factor, f1, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
-      observed_f2 = self.resolveFrequencyToNDP(emphasized_signal, padding_factor, f2, frequency_delta, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
 
+      top_frequencies_lo = self.calcTopN(signal, test_frequency_lo - aperture, test_frequency_lo + aperture, 1)
+      initial_guess_f1 = top_frequencies_lo[0]
+      test_diff = f1 - initial_guess_f1
+      top_frequencies_hi = self.calcTopN(signal, test_frequency_hi - aperture, test_frequency_hi + aperture, 2)
+      if abs(f2 - top_frequencies_hi[0] - test_diff) < abs(f2 - top_frequencies_hi[1] - test_diff) :
+        initial_guess_f2 = top_frequencies_hi[0]
+      else:
+        initial_guess_f2 = top_frequencies_hi[1]
+
+
+      self.debug.info_message("initial_guess_f1: " + str(initial_guess_f1 * upconvert_factor))
+      self.debug.info_message("initial_guess_f2: " + str(initial_guess_f2 * upconvert_factor))
+
+      observed_f1 = self.resolveFrequencyToNDP(signal, padding_factor, initial_guess_f1, 0.001, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
+      observed_f2 = self.resolveFrequencyToNDP(signal, padding_factor, initial_guess_f2, 0.001, num_dp, 0, num_dp + 2, czt_num_points, sample_rate)
       self.debug.info_message("observed_f1: " + str(observed_f1 * upconvert_factor))
       self.debug.info_message("observed_f2: " + str(observed_f2 * upconvert_factor))
-     
-      #term_1 = (f2 / f1)
-      #term_2 = (observed_f2 / observed_f1)
+
+      self.debug.info_message("param 1: " + str((observed_f1 * upconvert_factor) - self.osmod.getCenterFrequency()))
+      self.debug.info_message("param 2: " + str((observed_f2 * upconvert_factor) - self.osmod.getCenterFrequency()))
+
+
       term_1 = (f2 - f1)
       term_2 = (observed_f2 - observed_f1)
       self.debug.info_message("term_1: " + str(term_1))
       self.debug.info_message("term_2: " + str(term_2))
-      #ratio = term_1 / term_2
-      #ratio = 1.0
       lds_ratio = term_2 / term_1
-      #inv_ds = ((observed_f2 / f2) - (observed_f1 / f1))
       self.debug.info_message("lds_ratio: " + str(lds_ratio))
-      #ds = 1 / inv_ds
-      #self.debug.info_message("ds: " + str(ds))
-      #self.debug.info_message("delta shift: " + str(ds))
 
       """ now calculate the frequency shift required on both carriers """
       """ first calculate the new doppler shifted frequencies """
@@ -2190,7 +2221,11 @@ class ModemCoreUtils(object):
       f2_shift_amount = f2 - observed_f2_ds
  
       averaged_doppler_shift_amount = (f1_shift_amount + f2_shift_amount) /2
-      self.osmod.form_gui.window['text_decode_lds_correction_hz'].update("LDS: " + str(averaged_doppler_shift_amount) )
+
+      #self.osmod.form_gui.window['text_decode_lds_correction_hz'].update("LDS: " + "{:.9f}".format(averaged_doppler_shift_amount) )
+      self.osmod.form_gui.window['text_decode_lds_correction_hz'].update("LDS: " + "{:.9f}".format(averaged_doppler_shift_amount * upconvert_factor) )
+
+
       if abs(averaged_doppler_shift_amount) > 5:
         self.osmod.form_gui.window['text_decode_lds_correction_hz'].update(text_color = 'red') 
       else:
@@ -2200,18 +2235,18 @@ class ModemCoreUtils(object):
       frequency_correction_f2 = f2 - (observed_f2 - f2_shift_amount)
 
       averaged_frequency_shift_amount = (frequency_correction_f1 + frequency_correction_f2) /2
-      self.osmod.form_gui.window['text_decode_fs_correction_hz'].update("FS: " + str(averaged_frequency_shift_amount) )
+
+      #self.osmod.form_gui.window['text_decode_fs_correction_hz'].update("FS: " + "{:.9f}".format(averaged_frequency_shift_amount) )
+      self.osmod.form_gui.window['text_decode_fs_correction_hz'].update("FS: " + "{:.9f}".format(averaged_frequency_shift_amount * upconvert_factor) )
+
       if abs(averaged_frequency_shift_amount) > 5:
         self.osmod.form_gui.window['text_decode_fs_correction_hz'].update(text_color = 'red') 
       else:
         self.osmod.form_gui.window['text_decode_fs_correction_hz'].update(text_color = 'light green') 
 
       frequency_shift_value = ((f2 - observed_f2_ds ) + (f1 - observed_f1_ds)) / 2.0 
-      #frequency_shift_value = ((observed_f2_ds - f2 ) + (observed_f1_ds - f1)) / 2.0 
 
       fs_only_value = f1 - observed_f1
-      #fs_only_value = observed_f1 - f1
-
 
       return lds_ratio, frequency_shift_value, fs_only_value
     except:
@@ -2240,7 +2275,10 @@ class ModemCoreUtils(object):
       error_target = doppler_params[0]  #0.8 #0.7
       padding_factor = doppler_params[1] # 4
       upconvert_factor = doppler_params[2]  #25  # this is the best but processing intensive
+
       frequency_delta = self.osmod.getAperture() #doppler_params[3] #0.5 
+      #frequency_delta = 0.01 / upconvert_factor
+
       source_offset_max = doppler_params[4] # 20
       czt_num_points = doppler_params[5] # 50000
       num_dp = doppler_params[6]

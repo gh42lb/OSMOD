@@ -1810,6 +1810,39 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
           return frequency_test
       """
 
+
+      show_czt_frequencies = self.osmod.form_gui.window['cb_test_show_czt_frequencies'].get()
+      if show_czt_frequencies:
+
+        self.debug.info_message("TEST CODE cluster analysis...")
+        #self.osmod.modulation_object.clusterAnalysis(audio_array, 0.5)
+        test_frequency_lo = center_frequency - (self.osmod.carrier_separation / 2)
+        test_frequency_hi = center_frequency + (self.osmod.carrier_separation / 2)
+
+        top_frequencies_lo = self.osmod.modulation_object.calcTopN(audio_array, test_frequency_lo-5, test_frequency_lo+5, 1)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_lo-5, test_frequency_lo+5, 2)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_lo-5, test_frequency_lo+5, 3)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_lo-5, test_frequency_lo+5, 4)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_lo-5, test_frequency_lo+5, 5)
+        top_frequencies_hi = self.osmod.modulation_object.calcTopN(audio_array, test_frequency_hi-5, test_frequency_hi+5, 1)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_hi-5, test_frequency_hi+5, 2)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_hi-5, test_frequency_hi+5, 3)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_hi-5, test_frequency_hi+5, 4)
+        self.osmod.modulation_object.calcTopN(audio_array, test_frequency_hi-5, test_frequency_hi+5, 5)
+
+        self.debug.info_message("top_frequencies_lo: " + str(top_frequencies_lo[0]) )
+        self.debug.info_message("top_frequencies_hi: " + str(top_frequencies_hi[0]) )
+
+        self.debug.info_message("TEST CODE show_czt_frequencies...")
+        #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+        #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+        #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, top_frequencies_lo[0], 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+        #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, top_frequencies_hi[0], 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+        self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, top_frequencies_lo[0], 0.01, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+        self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, top_frequencies_hi[0], 0.01, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
+
+
+
       #doppler shift
       #doppler_shift_value = 1.0010
       #audio_array, _ = self.osmod.modulation_object.resampleDopplerShift(audio_array, self.osmod.sample_rate, self.osmod.sample_rate * doppler_shift_value)
@@ -1817,9 +1850,6 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #frequency shift
       #frequency_shift_value = 0.01
       #audio_array = self.osmod.modulation_object.shiftAllFrequencies(audio_array, frequency_shift_value, self.osmod.sample_rate)
-
-      #self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
-      #self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(audio_array, 1, center_frequency + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - center_frequency))
 
 
 

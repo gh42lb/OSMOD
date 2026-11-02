@@ -188,6 +188,7 @@ class OsmodSonic(object):
             #time.sleep(num_sd_blocks + 1)
 
             timer = 0
+            resume_decode_after_transmit = False
             while timer < num_sd_blocks + 1:
               if self.isKernelQueueEmpty():
                 time.sleep(1)
@@ -196,11 +197,19 @@ class OsmodSonic(object):
                 kernel_action = self.popKernelQueue()
                 if kernel_action == ocn.KERNEL_TX_STOP:
                   timer = num_sd_blocks + 1
-
+                elif kernel_action == ocn.KERNEL_RX_SQUELCH:
+                  resume_decode_after_transmit = True
 
             self.stopOutputStream()
             gc.enable()
             gc.collect()
+
+            #if resume_decode_after_transmit == True:             
+            #if True: #always start listening after Tx
+            if form_gui.window['cb_enable_squelch_rx_processing'].get():
+              self.pushKernelQueue(ocn.KERNEL_RX_SQUELCH)
+              self.send_threaded(window, values, form_gui)
+
 
           elif kernel_action == ocn.KERNEL_TX_BEACON_GENERAL:
 
@@ -263,6 +272,12 @@ class OsmodSonic(object):
 
             gc.enable()
             gc.collect()
+
+            #if True: #always start listening after Tx
+            if form_gui.window['cb_enable_squelch_rx_processing'].get():
+              self.pushKernelQueue(ocn.KERNEL_RX_SQUELCH)
+              self.send_threaded(window, values, form_gui)
+
 
             """
           elif kernel_action == ocn.KERNEL_TX_STOP:
@@ -339,6 +354,14 @@ class OsmodSonic(object):
       txblocks = txblocks * self.osmod.getOutputGain()
       self.debug.info_message("getOutputGain() : " + str(self.osmod.getOutputGain()))
 
+
+      show_czt_frequencies = self.osmod.form_gui.window['cb_test_show_czt_frequencies'].get()
+      if show_czt_frequencies:
+        self.debug.info_message("TEST CODE show_czt_frequencies in tx_now ...")
+        self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(txblocks, 1, self.osmod.getCenterFrequency() - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+        self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(txblocks, 1, self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+
+
       self.sendTxBuffer(txblocks)
 
       return int(math.ceil(len(txblocks) / self.osmod.get_sd_blocksize_tx()))
@@ -377,6 +400,8 @@ class OsmodSonic(object):
     self.debug.info_message("rx_squelch()")
 
     try:
+      rxData = None
+
       squelch_activate   = self.osmod.getSignalSquelch()
       squelch_deactivate = self.osmod.getSignalSquelchReset()
       sd_blocks_min = 6 # message must be a minimum of 6 seconds (blocks) long
@@ -644,6 +669,16 @@ class OsmodSonic(object):
           self.osmod.modulation_object.writeFileWavSR(sampled_signal_name, multi_block, self.osmod.getRxSampleRate())
 
         multi_block = self.osmod.getInputGain() * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
+
+
+
+        show_czt_frequencies = self.osmod.form_gui.window['cb_test_show_czt_frequencies'].get()
+        if show_czt_frequencies:
+          self.debug.info_message("TEST CODE show_czt_frequencies in processRxData ...")
+          self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+          self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+
+
 
         #center_frequency = values['slider_frequency']
         #separation_override = values['slider_carrier_separation']
