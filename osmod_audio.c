@@ -129,7 +129,7 @@ int get_rx_data(float* signal, int buffer_start, int num_sd_blocks) {
 }
 
 int get_last_sd_block(float* signal) {
-    printf("get_last_sd_block\n");
+    //printf("get_last_sd_block\n");
 
     pthread_mutex_lock(&lock_next_inbuffer_start);
     int buffer_start = next_input_buffer_start;
@@ -335,7 +335,7 @@ int stopInputStream(){
 
 
 static int audioCallbackOutput(const void *inputBufferCallback, void *outputBufferCallback, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData){
-    printf("audioCallbackOutput\n");
+    //printf("audioCallbackOutput\n");
 
     /* write data to output buffer */
     if(ostream_counter < max_ostream_sdblocks){

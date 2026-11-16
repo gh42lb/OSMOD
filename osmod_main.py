@@ -82,6 +82,8 @@ class osModem(object):
   slider_amplitude = 1.0
   slider_carrier_separation = 37
 
+  crc_enabled = False
+
   all_messages = {}
   messages_by_frequency = {}
   messages_by_callsign = {}
@@ -93,8 +95,8 @@ class osModem(object):
   received_data_table = None
   received_data_table_callsign = None
 
-  #override_resample_params = False
-  #lds_awgn_level = 0
+  override_resample_params = False
+  lds_selector = 0
 
   spectral_density_queue_counter = 0
   spectral_density_block = None
@@ -171,6 +173,7 @@ message formats...
     self.aperture = 5.0
 
     self.mode = None
+
 
     """ frequency separation between tones, in Hz (baud rate) """
     self.freq_sep = self.bandwidth/self.symbols
@@ -1728,7 +1731,7 @@ message formats...
                                     'text_decoder'         : self.demod_2fsk8psk.displayTextFromIntlist,
                                     'dcs_lpf'              : (2,115),
                                     'dws_skew'             : (1.0,0.0),
-                                    'lds_per_awgn'         : [],
+                                    #'lds_per_awgn'         : [],
 
                                    }
 
@@ -1764,6 +1767,11 @@ message formats...
   def getSliderCarrierSeparation(self):
     return self.slider_carrier_separation
 
+  def getCrcEnabled(self):
+    return self.crc_enabled 
+
+  def setCrcEnabled(self, crc_enabled):
+    self.crc_enabled = crc_enabled
 
   def getTestModeEnabled(self):
     return self.test_mode_enabled
@@ -1771,6 +1779,8 @@ message formats...
   def setTestModeEnabled(self, enabled):
     self.test_mode_enabled = enabled
 
+  def getCurrentMode(self):
+    return self.mode
 
   def setAperture(self, aperture):
     self.aperture = aperture
@@ -2083,22 +2093,28 @@ message formats...
       self.rotation_table_name = self.getParam(mode, 'rotation_table_name')
       self.dcs_lpf             = self.getParam(mode, 'dcs_lpf')
       self.dws_skew            = self.getParam(mode, 'dws_skew')
-      self.lds_per_awgn        = self.getParam(mode, 'lds_per_awgn')
+      #self.lds_per_awgn        = self.getParam(mode, 'lds_per_awgn')
 
 
-      if self.resample_params[0] == ocn.RESAMPLE_AVAILABLE and abs(self.carrier_separation -  (self.resample_params[2] - self.resample_params[1])) < 8.0:
+      if self.resample_params[0] == ocn.RESAMPLE_AVAILABLE and abs(self.carrier_separation -  (self.resample_params[2] - self.resample_params[1])) < 9.0:
         self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = False)
         self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = False)
+
+        self.form_gui.window['combo_re_decode_selector'].update(disabled = False)
+        self.form_gui.window['combo_re_decode_selector'].update(value = "0")
+
       else:
         self.form_gui.window['cb_enable_block_level_resample_auto_correct'].update(disabled = True)
         self.form_gui.window['cb_enable_auto_correct_frequency_only'].update(disabled = True)
+        self.form_gui.window['combo_re_decode_selector'].update(disabled = True)
+        self.form_gui.window['combo_re_decode_selector'].update(value = "0")
 
 
       #if self.override_resample_params == True and self.lds_per_awgn != []:
-      #  self.resample_params = [ocn.RESAMPLE_AVAILABLE, self.lds_per_awgn[self.lds_awgn_level][0], self.lds_per_awgn[self.lds_awgn_level][1]]
+      #  self.resample_params = [ocn.RESAMPLE_AVAILABLE, self.lds_per_awgn[self.lds_selector][0], self.lds_per_awgn[self.lds_selector][1]]
 
 
-      if self.symbol_block_size <= 800 and self.sample_rate == 8000:
+      if self.symbol_block_size <= 1600 and self.sample_rate == 8000:
         self.form_gui.window['cb_enable_automatic_mode_detection'].update(True)
       
 
@@ -2195,12 +2211,14 @@ message formats...
         self.rotation_tables      = self.opd.readRotationTablesFromFile(self.rotation_table_name)
 
       if self.crc_params[0] == ocn.CRC_ENABLE or self.crc_params[0] == ocn.CRC_VFEC:
+        self.setCrcEnabled(True)
         self.form_gui.window['cb_enable_crc'].update(True)
         self.form_gui.window['cb_enable_crc'].update(disabled=True)
         self.form_gui.window['in_crc_fragment_size'].update(self.crc_params[2])
         self.form_gui.window['in_crc_fragment_size'].update(disabled=True)
 
         if self.crc_params[1] != ocn.EXTRAPOLATE_NONE:
+          self.extrapolate          = "yes"
           self.form_gui.window['cb_override_extrapolate'].update(True)
           self.form_gui.window['cb_override_extrapolate'].update(disabled=True)
           self.form_gui.window['combo_extrapolate_option'].update(disabled=True)
@@ -2213,6 +2231,7 @@ message formats...
           self.form_gui.window['combo_extrapolate_option'].update(self.form_gui.combo_extrapolate[3])
       else:
         #self.form_gui.window['cb_enable_crc'].update(False)
+        #self.setCrcEnabled(False)
         self.form_gui.window['cb_enable_crc'].update(disabled=False)
         self.form_gui.window['combo_extrapolate_option'].update(disabled=False)
         self.form_gui.window['in_crc_fragment_size'].update(disabled=False)
@@ -2223,6 +2242,7 @@ message formats...
           self.form_gui.window['cb_override_extrapolate'].update(disabled = True)
 
         self.form_gui.window['cb_override_extrapolate'].update(False)
+        self.extrapolate          = "no"
 
 
       """
@@ -3314,7 +3334,7 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       self.timer_last_name = name
       return elapsed
     except:
-      self.debug.error_message("Exception in getDurationAndReset: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      self.debug.info_message("Exception in getDurationAndReset: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
   def getSummary(self):
     self.debug.info_message("getSummary")
@@ -3649,7 +3669,9 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
       message_text = self.modulation_object.translateOutbound(message_text)
 
       """ insert CRC codes to protect message fragments """
-      is_crc_enabled = self.form_gui.window['cb_enable_crc'].get()
+      #is_crc_enabled = self.form_gui.window['cb_enable_crc'].get()
+      is_crc_enabled = self.getCrcEnabled()
+        
       if is_crc_enabled:
         message_text = self.modulation_object.protectMessage(message_text, truncate_to_max_msglength, 8, max_message_length)
 
@@ -4246,7 +4268,10 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
         if bypass_display_during_test == False and save_and_display == True:
           self.form_gui.window['ml_txrx_recvtext'].print("\n", end="", text_color='orange', background_color = 'white')
 
+
         if update:
+          timestamp = datetime.utcnow().strftime('%Y/%m/%d %H:%M')
+
           if save_and_display:
             timestamp = self.modulation_object.appendTableRow(original_message, sender_callsign)
 
@@ -4254,12 +4279,8 @@ LB28-6400-64-2-15-I3,-0.9624270747393336,-24.42755728573219,0.07716049382716049,
             mode = self.form_gui.window['combo_main_modem_prod_modes'].get()
           else:
             mode = self.form_gui.window['combo_main_modem_modes'].get()
-          callsign = "FIXME_TEST"
-          #mode = "FIXME_MODE"
 
-
-          #self.storeMessageInMemory(self.getCenterFrequency(), mode, callsign, timestamp, original_message)
-
+          #callsign = "FIXME_TEST"
           #if save_and_display:
           self.storeMessageInMemory(self.getCenterFrequency(), mode, sender_callsign, timestamp, message)
 

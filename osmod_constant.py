@@ -303,11 +303,12 @@ KERNEL_TX_TIME_SYNC             = 3
 KERNEL_RX_TIME_SYNC             = 4
 KERNEL_TXRX_NOW                 = 5
 KERNEL_TX_BEACON_GENERAL        = 6
-KERNEL_TX_STOP                  = 7
-KERNEL_RX_STOP                  = 8
-KERNEL_REINITIALIZE             = 9
-KERNEL_SDD_START                = 10
-KERNEL_SDD_STOP                 = 11
+KERNEL_RX_BEACON                = 7
+KERNEL_TX_STOP                  = 8
+KERNEL_RX_STOP                  = 9
+KERNEL_REINITIALIZE             = 10
+KERNEL_SDD_START                = 11
+KERNEL_SDD_STOP                 = 12
 
 RCV_PRE_FILTER_DISABLE          = 0
 RCV_PRE_FILTER_ENABLE           = 1

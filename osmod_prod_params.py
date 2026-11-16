@@ -803,6 +803,33 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-6400-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-6400-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 2.5 characters per second, 15 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-6400-I3-FF40',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.753658264565956, 20.16455354338609, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+        'LB28-6400-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-6400-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.753658264565956, 20.16455354338609, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
 
         'LB28-6400-I3-FF40' :{ 
                     'inherit_from'          : 'LB28-6400-I3',
@@ -819,7 +846,7 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.998250268940183, 20.154606857195404, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.998250212553103, 20.154606979244818, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1103,6 +1130,56 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-4800-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-4800-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 2.5 characters per second, 15 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-4800-I3-FF40',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.670706666666547, 20.21941212303068, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+        'LB28-4800-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-4800-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.670706666666547, 20.21941212303068, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-4800-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-3200-I3',
+                    'info'                  : 'Filtered Carriers - 36 Hz Wide - 2.5 characters per second, 15 bits per second. ',
+                    'carrier_separation'    : 40,
+                    'symbol_block_size'     : 4800,
+                    'pulses_per_block'      : 48,
+                    
+                    'fft_filter'            : (-2.976,6.303,-6.303,2.976),
+                    'fft_interpolate'       : (-3.273,2.109,-2.109,3.273),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.764),
+                    'downconvert_shift'     : 0.531, 
+                    'parameters'            : (1500, 0.91, 0.883, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -19.99766044511125, 19.951956666666547, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
 
         'LB28-4800-I3-FF25' :{ 
                     'inherit_from'          : 'LB28-3200-I3',
@@ -1224,7 +1301,24 @@ class OsmodProdParams(object):
                     'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
                     'rotation_table_name'  : 'LB28-3200-I3-FF40',
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.504039999999804, 20.32903999999985, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
+
+
+        'LB28-3200-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-3200-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.504039999999804, 20.32903999999985, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
 
 
         'LB28-3200-I3-FF40' :{ 
@@ -1549,6 +1643,73 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-2400-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-2400-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 48.4 Hz Wide - 5.0 characters per second, 30.0 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-2400-I3-FF40',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.337373333333062, 20.4373733333332, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-2400-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-2400-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.337373333333062, 20.4373733333332, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-2400-I3-FF40' :{ 
+                    'inherit_from'          : 'LB28-1600-I3',
+                    'info'                  : 'Filtered Carriers - 48.4 Hz Wide - 5.0 characters per second, 30.0 bits per second. ',
+                    'carrier_separation'    : 40,
+                    'symbol_block_size'     : 2400,
+                    'pulses_per_block'      : 24,
+                    
+                    'fft_filter'            : (-4.942,5.638,-5.638,4.942),
+                    'fft_interpolate'       : (-4.805,3.367,-3.367,4.805),
+                    'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.655),
+                    'downconvert_shift'     : 0.841, 
+                    'parameters'            : (1500, 0.417, 0.827, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+
+                    'I3_combine'            : ocn.INTRA_COMBINE_TYPE5,
+                    'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
+
+                    'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+                    'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -19.995960000000196, 20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-2400-I3-FC38-VCE' :{ 
+                    'inherit_from'         : 'LB28-2400-I3-FC38',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 61.4 Hz Wide - 5.0 characters per second, 30.0 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-2400-I3-FC38',
+
+        }, 
+
+
         'LB28-2400-I3-FC38' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'info'                  : '3.33 characters per second, 20.0 bits per second',
@@ -1577,9 +1738,42 @@ class OsmodProdParams(object):
                     'rx_filter'             : (ocn.FILTER_BUTTERWORTH, ocn.FILTER_BANDPASS, 87, 5, 50),
 
                     #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -19.995599430119228, 20.01816477187276, 257.8458], # available, low freq relative center, hi freq relative center
-                    'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, -19.995960000000196,  20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, -19.337373333333062, 20.4373733333332, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE, -19.995960000000196,  20.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
+
+
+
+
+        'LB28-1800-I3-FC38-VCE' :{ 
+                    'inherit_from'         : 'LB28-1800-I3-FC38',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 48.4 Hz Wide - 5.0 characters per second, 30.0 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1800-I3-FC38',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -16.89292888888872, 19.462626666666893, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-1800-I3-FC38-VC' :{ 
+                    'inherit_from'         : 'LB28-1800-I3-FC38',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -16.89292888888872, 19.462626666666893, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
 
 
         'LB28-1800-I3-FC38' :{ 
@@ -1719,7 +1913,9 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -24.995960000000196, 25.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -24.995960000000196, 25.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -24.004039999999804, 25.654039999999895, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -24.820793926701526, 24.5546107312166, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -1757,7 +1953,26 @@ class OsmodProdParams(object):
                     'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
                     'rotation_table_name'  : 'LB28-1600-I3-FF40',
 
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -20.154039999999668, 19.896252113028368, 257.8458], # available, low freq relative center, hi freq relative center
+
         }, 
+
+
+
+        'LB28-1600-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-1600-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -20.154039999999668, 19.896252113028368, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
 
 
         'LB28-1600-I3-FF40' :{ 
@@ -1766,19 +1981,14 @@ class OsmodProdParams(object):
                     'carrier_separation'    : 40,
 
                     
-                    'fft_filter'            : (-2.405,2.633,-2.633,2.405),
+                    'fft_filter'            : (-5.789,5.427,-5.427,5.789),
                     'fft_interpolate'       : (-4.206,2.006,-2.006,4.206),
                     'I3_parameters'         : (0.99, 0.99, 0.002, 'D-E', 0.655),
                     'downconvert_shift'     : 0.841, 
-                    'parameters'            : (1500, 0.324, 0.866, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
+                    'parameters'            : (1500, 0.417, 0.827, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
                     'I3_combine'            : ocn.INTRA_COMBINE_TYPE5,
                     'I3_extract'            : ocn.INTRA_EXTRACT_TYPE4,
-
-                    #'pulse_train_sigma'     : 5.0,
-                    #'pulse_start_sigma'     : 6.48,
-                    #'pulse_start_envelope_sigma' : 23.5,
-
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
@@ -2144,6 +2354,36 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-1200-I3-FF40-VCE' :{ 
+                    'inherit_from'         : 'LB28-1200-I3-FF40',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 26.7 Hz Wide - 5.0 characters per second, 30.0 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-1200-I3-FF40',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -20.20403999999985, 19.862626666666756, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
+        'LB28-1200-I3-FF40-VC' :{ 
+                    'inherit_from'         : 'LB28-1200-I3-FF40',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -20.20403999999985, 19.862626666666756, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
         'LB28-1200-I3-FF40' :{ 
                     'inherit_from'          : 'LB28-1600-I3',
                     'symbol_block_size'     : 1200,
@@ -2262,7 +2502,10 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -13.329293333333453, 13.33737333333329, 257.8458], # available, low freq relative center, hi freq relative center
+                    #?????????????????????
+                    'resample_params'      : [ocn.RESAMPLE_UNAVAILABLE,  -13.329293333333453, 13.33737333333329, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -13.31010101010088, 13.389898989899166, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -13.304039999999759, 13.395960000000287, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2329,7 +2572,8 @@ class OsmodProdParams(object):
                     'pulse_start_sigma'     : 9.66,
                     'pulse_start_envelope_sigma' : 18.69,
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -8.329293333333453, 9.370960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -8.329293333333453, 9.370960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -8.370960000000196, 8.370960000000196, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2551,6 +2795,35 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-800-I3-FF25-VCE' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF25',
+                    'info'                 : 'VFEC with CRC and Extrapolate - 10Hz Wide - 2.5 characters per second, 15 bits per second. ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'rotation_table_name'  : 'LB28-800-I3-FF25',
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -10.304039999999759, 9.10403999999994, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+        'LB28-800-I3-FF25-VC' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF25',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -10.304039999999759, 9.10403999999994, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
         'LB28-800-I3-FF25' :{ 
                     'inherit_from'          : 'LB28-800-I3',
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 bits per second ',
@@ -2575,7 +2848,8 @@ class OsmodProdParams(object):
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 10.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2601,6 +2875,19 @@ class OsmodProdParams(object):
         }, 
 
 
+
+        'LB28-800-I3-FF20-VC' :{ 
+                    'inherit_from'         : 'LB28-800-I3-FF20',
+                    'info'                 : 'VFEC with CRC - 68 Hz Wide - 6.66 characters per second, 40.0 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+        }, 
+
+
         'LB28-800-I3-FF20' :{ 
                     'inherit_from'          : 'LB28-800-I3-FF25',
                     'info'                  : 'Filtered Carriers - 34 Hz Wide - 10.0 characters per second, 60.0 bits per second ',
@@ -2612,7 +2899,8 @@ class OsmodProdParams(object):
                     'downconvert_shift'     : 0.201, 
                     #'parameters'            : (1500, 0.21, 0.942, 10000, 8, 98, 0.7072, 0.1, 0.1414, 0.01), 
 
-                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    #'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 11.245960000000196, 257.8458], # available, low freq relative center, hi freq relative center
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -9.995960000000196, 10.004039999999804, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2714,6 +3002,7 @@ class OsmodProdParams(object):
 
 
 
+
         'LB28-700-I3-FF38-VC' :{ 
                     'inherit_from'         : 'LB28-700-I3-FF38',
                     'info'                 : 'VFEC with CRC - 61.6 Hz Wide - 11.4 characters per second, 68.6 bits per second ',
@@ -2721,8 +3010,9 @@ class OsmodProdParams(object):
                     'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
 
                     'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
-                    'rotation_table_name'  : 'LB28-700-I3-FF38',
                     'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.48975428571407, 18.63261142857118, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2752,6 +3042,8 @@ class OsmodProdParams(object):
                     'pulse_train_sigma'     : 3.0,
                     'pulse_start_sigma'     : 25.77,
                     'pulse_start_envelope_sigma' : 13.44,
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.138817142857533, 18.567388571428637, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 
@@ -2967,6 +3259,21 @@ class OsmodProdParams(object):
 
 
 
+        'LB28-560-I3-FF42-VC' :{ 
+                    'inherit_from'         : 'LB28-560-I3-FF42',
+                    'info'                 : 'VFEC with CRC - 61.6 Hz Wide - 11.4 characters per second, 68.6 bits per second ',
+                    'text_encoder'         : self.osmod.mod_2fsk8psk.stringToTripletSegmentedFEC,
+                    'text_decoder'         : self.osmod.demod_2fsk8psk.displayTextFromIntlistSegmentedFEC,
+
+                    'include_params'       : 'FEC_VITERBI_PARAM_GROUP',
+                    'crc_params'           : (ocn.CRC_VFEC, ocn.EXTRAPOLATE_NONE, 8, 21),      # enable, encode crc_segment_size, decode crc_segment_size  
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE, -17.48975428571407, 18.63261142857118, 257.8458], # available, low freq relative center, hi freq relative center
+
+        }, 
+
+
+
         'LB28-560-I3-FF42' :{ 
                     'inherit_from'          : 'LB28-560-I3-FF38',
                     'info'                  : '61.6 Hz Wide - 11.4 characters per second, 68.6 bits per second',
@@ -3169,6 +3476,8 @@ class OsmodProdParams(object):
 
                     'tx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
                     'rx_filter'             : (ocn.FILTER_FFT, ocn.FILTER_BANDPASS_X2_SIG, 0),
+
+                    'resample_params'      : [ocn.RESAMPLE_AVAILABLE,  -16.66262666666671, 8.850126666666938, 257.8458], # available, low freq relative center, hi freq relative center
 
         }, 
 

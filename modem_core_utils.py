@@ -2183,14 +2183,34 @@ class ModemCoreUtils(object):
       test_frequency_hi = (self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2)) / upconvert_factor
 
 
-      top_frequencies_lo = self.calcTopN(signal, test_frequency_lo - aperture, test_frequency_lo + aperture, 1)
+      top_frequencies_lo = self.calcTopN(signal, test_frequency_lo - aperture, test_frequency_lo + aperture, 2)
       initial_guess_f1 = top_frequencies_lo[0]
-      test_diff = f1 - initial_guess_f1
-      top_frequencies_hi = self.calcTopN(signal, test_frequency_hi - aperture, test_frequency_hi + aperture, 2)
-      if abs(f2 - top_frequencies_hi[0] - test_diff) < abs(f2 - top_frequencies_hi[1] - test_diff) :
-        initial_guess_f2 = top_frequencies_hi[0]
+
+      """
+      top_frequencies_lo = self.calcTopN(signal, test_frequency_lo - aperture, test_frequency_lo + aperture, 2)
+      if abs(f1 - top_frequencies_lo[0]) < abs(f1 - top_frequencies_lo[1]):
+        initial_guess_f1 = top_frequencies_lo[0]
       else:
-        initial_guess_f2 = top_frequencies_hi[1]
+        initial_guess_f1 = top_frequencies_lo[1]
+      """
+
+      if self.osmod.override_resample_params == True :
+        if self.osmod.lds_selector == 0:
+          initial_guess_f1 = top_frequencies_lo[0]
+        elif self.osmod.lds_selector == 1:
+          initial_guess_f1 = top_frequencies_lo[1]
+
+
+      test_diff = f1 - initial_guess_f1
+
+      top_frequencies_hi = self.calcTopN(signal, test_frequency_hi - aperture, test_frequency_hi + aperture, 5)
+
+      selected_value = 0
+      initial_guess_f2 = top_frequencies_hi[selected_value]
+      for test_count in range(1, min(5, len(top_frequencies_hi)) ):
+        if abs(f2 - top_frequencies_hi[test_count] - test_diff) < abs(f2 - initial_guess_f2 - test_diff) :
+          selected_value = test_count
+          initial_guess_f2 = top_frequencies_hi[selected_value]
 
 
       self.debug.info_message("initial_guess_f1: " + str(initial_guess_f1 * upconvert_factor))
@@ -2696,10 +2716,11 @@ class ModemCoreUtils(object):
       center_frequency = self.osmod.getCenterFrequency()
       timestamp = datetime.utcnow().strftime('%Y/%m/%d %H:%M')
 
-      if self.osmod.form_gui.window['cb_use_prod_modes'].get() == True:
-        mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
-      else:
-        mode = self.osmod.form_gui.window['combo_main_modem_modes'].get()
+      #if self.osmod.form_gui.window['cb_use_prod_modes'].get() == True:
+      #  mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
+      #else:
+      #  mode = self.osmod.form_gui.window['combo_main_modem_modes'].get()
+      mode = self.osmod.getCurrentMode()
 
       data_key = str(center_frequency) + "_" + str(mode)
       self.osmod.dict_rcvd[data_key] = [timestamp, message]
@@ -2734,7 +2755,7 @@ class ModemCoreUtils(object):
         self.osmod.form_gui.window['tbl_callsign_locator'].update(data_table)
         self.osmod.received_data_table_callsign = data_table
 
-      if self.osmod.form_gui.window['cb_bypass_display_during_test'].get() == False:
+      if self.osmod.form_gui.window['cb_bypass_display_during_test'].get() == False and self.osmod.form_gui.window['cb_use_preset_message'].get():
         self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
 
       return timestamp
@@ -3095,16 +3116,137 @@ class ModemCoreUtils(object):
 
 
 
-  def findDecodeCandidates(self, data):
+  def findDecodeCandidates(self, data, original_center_frequency):
     self.debug.info_message("findDecodeCandidates")
 
     try:
+
+      def getModeNameFromSignalLength(local_center_frequency, signal_length_seconds, local_signal_start, local_signal_end):
+        self.debug.info_message("getModeNameFromSignalLength")
+        # calculate mode for currently selected frequency only
+        N_local = 30
+        lo = local_center_frequency - 29
+        high = local_center_frequency + 29
+
+        sub_signal = upconvert_data[0:40000] # first 5 seconds of signal
+        fft_output = np.fft.fft(sub_signal)
+        frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
+
+        #fft_output = np.fft.fft(upconvert_data)
+        #frequencies = np.fft.fftfreq(len(upconvert_data), 1/self.osmod.getRxSampleRate())
+
+        positive_frequency_indices = np.where((frequencies > (lo / upconvert_factor)) & (frequencies < (high / upconvert_factor)))[0]
+        fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
+        frequencies_2 = frequencies[positive_frequency_indices]
+        top_n_indices = np.argsort(fft_magnitudes)[-N_local:][::-1]
+        strongest_frequencies = frequencies_2[top_n_indices]
+        self.debug.info_message("strongest_frequencies: " + str(strongest_frequencies * upconvert_factor))
+        self.debug.info_message("strongest_frequencies[0] * upconvert_factor: " + str(strongest_frequencies[0] * upconvert_factor))
+        signal_width = abs( ( strongest_frequencies[0] * upconvert_factor) - local_center_frequency) * 2
+        self.debug.info_message("signal_width: " + str(signal_width))
+
+        self.debug.info_message("local_center_frequency: " + str(local_center_frequency))
+
+        has_lo = False
+        has_hi = False
+        for loop_frequencies in range(0, len(strongest_frequencies)):
+          if strongest_frequencies[loop_frequencies] * upconvert_factor < local_center_frequency:
+            has_lo = True
+          elif strongest_frequencies[loop_frequencies] * upconvert_factor > local_center_frequency:
+            has_hi = True
+
+        ignore = False
+        if has_lo == False or has_hi == False:
+          ignore = True
+
+        if local_center_frequency == original_center_frequency:
+          ignore = False
+
+        self.debug.info_message("ignore: " + str(ignore))
+
+        signal_mode_type = ""
+        if math.isclose(signal_width, 50, rel_tol = 0.0, abs_tol = 2):
+          signal_mode_type = "FF50"
+        elif math.isclose(signal_width, 40, rel_tol = 0.0, abs_tol = 2):
+          signal_mode_type = "FF40"
+        elif math.isclose(signal_width, 34, rel_tol = 0.0, abs_tol = 2):
+          signal_mode_type = "FF38"
+        elif math.isclose(signal_width, 25, rel_tol = 0.0, abs_tol = 5):
+          signal_mode_type = "FF25"
+        elif math.isclose(signal_width, 20, rel_tol = 0.0, abs_tol = 2):
+          signal_mode_type = "FF20"
+        elif math.isclose(signal_width, 10, rel_tol = 0.0, abs_tol = 2):
+          signal_mode_type = "FF10"
+
+        #all_mode_ref = {3: [0, "LB28-480-I3-", ""], 4: [0, "LB28-560-I3-", ""], 5: [0, "LB28-700-I3-", ""], 6: [0, "LB28-800-I3-", ""], 8: [0, "LB28-700-I3-", "-VC"], 9: [0, "LB28-800-I3-", "-VCE"], 9: [1, "LB28-1200-I3-", ""], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1800-I3-", ""], 14: [1, "LB28-1200-I3-", "-VCE"], 19: [1, "LB28-2400-I3-", ""], 19: [1, "LB28-1600-I3-", "-VCE"], 25:[1, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [1, "LB28-6400-I3-", ""], 59: [1, "LB28-4800-I3-", "-VCE"], 79: [1, "LB28-6400-I3-", "-VCE"]}
+
+        if self.osmod.form_gui.window['cb_enable_squelch_rx_processing'].get():
+          base_mode_ref = {}
+        elif self.osmod.form_gui.window['cb_enable_sync_rx_processing_timing'].get():
+
+          base_mode_ref = {3: [0, "LB28-480-I3-", ""], 4: [0, "LB28-560-I3-", ""], 5: [0, "LB28-700-I3-", ""], 6: [0, "LB28-800-I3-", ""], 8: [0, "LB28-700-I3-", "-VC"], 9: [0, "LB28-800-I3-", "-VCE"], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1200-I3-", "-VCE"], 19: [2, "LB28-1600-I3-", "-VCE"], 25:[2, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [2, "LB28-6400-I3-", ""], 59: [2, "LB28-4800-I3-", "-VCE"], 79: [2, "LB28-6400-I3-", "-VCE"]}
+
+          #base_mode_ref = {6: [0, "LB28-800-I3-", ""], 7: [0, "LB28-960-I3-", ""], 9: [1, "LB28-1200-I3-", ""], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1800-I3-", ""], 19: [1, "LB28-1600-I3-", "-VCE"], 25: [1, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [1, "LB28-6400-I3-", ""], 79: [1, "LB28-6400-I3-", "-VCE"]}
+        elif self.osmod.form_gui.window['cb_enable_beacon_mode'].get():
+          #base_mode_ref = {6: [0, "LB28-800-I3-", ""], 7: [0, "LB28-960-I3-", ""], 9: [1, "LB28-1200-I3-", ""], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1800-I3-", ""], 19: [1, "LB28-1600-I3-", "-VCE"], 25: [1, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [1, "LB28-6400-I3-", ""], 79: [1, "LB28-6400-I3-", "-VCE"]}
+          base_mode_ref = {3: [0, "LB28-480-I3-", ""], 4: [0, "LB28-560-I3-", ""], 5: [0, "LB28-700-I3-", ""], 6: [0, "LB28-800-I3-", ""], 8: [0, "LB28-700-I3-", "-VC"], 9: [0, "LB28-800-I3-", "-VCE"], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1200-I3-", "-VCE"], 19: [2, "LB28-1600-I3-", "-VCE"], 25:[2, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [2, "LB28-6400-I3-", ""], 59: [2, "LB28-4800-I3-", "-VCE"], 79: [2, "LB28-6400-I3-", "-VCE"]}
+
+        mode_name = ""
+        self.debug.info_message("signal_length_seconds: " + str(signal_length_seconds))
+
+        for key, value in base_mode_ref.items():
+          sig_seconds = int(key)
+          sig_name_parts = value
+          if math.isclose(signal_length_seconds, sig_seconds, rel_tol = 0.0, abs_tol = sig_name_parts[0]):
+            mode_name = sig_name_parts[1] + signal_mode_type + sig_name_parts[2]
+            break
+
+        """
+        if math.isclose(signal_length_seconds, 6, rel_tol = 0.0, abs_tol = 0):
+          mode_name = "LB28-800-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 7, rel_tol = 0.0, abs_tol = 0):
+          mode_name = "LB28-960-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 9, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-1200-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 12, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-1600-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 14, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-1800-I3-" + signal_mode_type
+        #elif math.isclose(signal_length_seconds, 19, rel_tol = 0.0, abs_tol = 1): # 1600-VCE is also 19
+        #  mode_name = "LB28-2400-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 19, rel_tol = 0.0, abs_tol = 1): # 1600-VCE is also 19
+          mode_name = "LB28-1600-I3-" + signal_mode_type + "-VCE"
+        elif math.isclose(signal_length_seconds, 25, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-3200-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 29, rel_tol = 0.0, abs_tol = 2):
+          mode_name = "LB28-2400-I3-" + signal_mode_type + "-VCE"
+        elif math.isclose(signal_length_seconds, 37, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-4800-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 39, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-3200-I3-" + signal_mode_type + "-VCE"
+        elif math.isclose(signal_length_seconds, 51, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-6400-I3-" + signal_mode_type
+        elif math.isclose(signal_length_seconds, 79, rel_tol = 0.0, abs_tol = 1):
+          mode_name = "LB28-6400-I3-" + signal_mode_type + "-VCE"
+        """
+
+        if mode_name not in self.osmod.form_gui.combo_modem_prod_modes:
+          test_new_name = mode_name.replace('-I3-FF', '-I3-FC')
+          if test_new_name in self.osmod.form_gui.combo_modem_prod_modes:
+            mode_name = test_new_name
+
+        if mode_name not in self.osmod.form_gui.combo_modem_prod_modes and "FF40-VCE" in mode_name:
+          test_new_name = mode_name.replace('-I3-FF40-VCE', '-I3-FC38-VCE')
+          if test_new_name in self.osmod.form_gui.combo_modem_prod_modes:
+            mode_name = test_new_name
+
+        return mode_name, ignore
+
+
       self.osmod.form_gui.window['text_input_detected_mode'].update("")
       self.osmod.form_gui.window['text_input_detected_block_start'].update("")
 
       magnitude_trigger = 0.1
-      #magnitude_trigger = 0.00001
-      #magnitude_trigger = 0.0000001
       N = 10
       lo = 250
       high = 2750
@@ -3129,7 +3271,6 @@ class ModemCoreUtils(object):
         magnitude = strongest_magnitudes[frequency_count]
         self.debug.info_message("magnitude: " + str(magnitude))
         segment = int((frequency - 240 - (segment_width // 2)) // segment_width)
-        #if (segment not in candidate_segments) and magnitude > 100 : 
         if (segment not in candidate_segments) and magnitude > magnitude_trigger : 
           candidate_segments.append(segment)
 
@@ -3145,6 +3286,8 @@ class ModemCoreUtils(object):
       dict_signal_end = {}  # last block of signal detected
       dict_signal_complete = {}
 
+      dict_signal_candidates = {}
+
       for segment_count in range(0, len(candidate_segments)):
         center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240
         dict_carrier_transitions[center_frequency] = []
@@ -3154,127 +3297,134 @@ class ModemCoreUtils(object):
       for segment_count in range(0, len(candidate_segments)):
         center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240 #+ (segment_width // 2))
         self.debug.info_message("center_frequency: " + str(center_frequency))
-        lo = center_frequency - 18.5
-        high = center_frequency + 18.5
 
-        for signal_scan in range(0, len(data), 100): # analyze first 5 seconds of data only. use increments of 10 pulses (100 samples each)
-          sub_signal = data[signal_scan:signal_scan + 1000]
-          dict_signal_complete[center_frequency] = True
+
+        #upconvert_factor = 10
+        upconvert_factor = 1
+
+        if upconvert_factor != 1:
+          lo = center_frequency - 25
+          high = center_frequency + 25
+          span_pulses = 8
+          transition_trigger = 9
+          magnitude_trigger = 0.001
+          upconvert_data = data.astype(np.complex128)
+          upconvert_data = scipy_signal.resample(upconvert_data, len(upconvert_data) * upconvert_factor)
+        else:
+          lo = center_frequency - 25#18.5
+          high = center_frequency + 25#18.5
+          upconvert_data = data
+          span_pulses = 10
+          transition_trigger = 15
+
+        self.debug.info_message("transition frequency lo diff: " + str(lo - center_frequency))
+        self.debug.info_message("transition frequency hi diff: " + str(high - center_frequency))
+
+        signal_end_counter = 0
+        signal_start_counter = 0
+        signal_start_confirmed = False
+
+        dict_signal_complete[center_frequency] = False
+
+        for signal_scan in range(0, len(upconvert_data), 100 * upconvert_factor): # analyze first 5 seconds of data only. use increments of 10 pulses (100 samples each)
+          sub_signal = upconvert_data[signal_scan:signal_scan + (span_pulses * 100 * upconvert_factor)]
+          #dict_signal_complete[center_frequency] = True
 
           fft_output = np.fft.fft(sub_signal)
           frequencies = np.fft.fftfreq(len(sub_signal), 1/self.osmod.getRxSampleRate())
 
           total_magnitude = 0
 
-          positive_frequency_indices = np.where((frequencies > lo) & (frequencies < high))[0]
+          positive_frequency_indices = np.where((frequencies > (lo / upconvert_factor)) & (frequencies < (high / upconvert_factor)))[0]
           fft_magnitudes = np.abs(fft_output)[positive_frequency_indices]
           frequencies_2 = frequencies[positive_frequency_indices]
 
           top_n_indices = np.argsort(fft_magnitudes)[-N:][::-1]
           strongest_frequencies = frequencies_2[top_n_indices]
           strongest_magnitudes  = fft_magnitudes[top_n_indices] / 1000
-          #self.debug.info_message("strongest_magnitudes: " + str(strongest_magnitudes))
 
-          if len(strongest_frequencies) != 0: # and sum_magnitude > average_magnitude * 1.5  :
-            current_frequency = strongest_frequencies[0]
+          if len(strongest_frequencies) != 0: 
+            current_frequency = strongest_frequencies[0] * upconvert_factor
             current_magnitude = strongest_magnitudes[0]
-            #self.debug.info_message("current_magnitude: " + str(current_magnitude))
 
             if current_magnitude > magnitude_trigger:
-              dict_signal_end[center_frequency] = signal_scan
-              dict_signal_complete[center_frequency] = False
+              signal_end_counter = 0
+              signal_start_counter = signal_start_counter + 1
+              self.debug.info_message("signal_start_counter: " + str(signal_start_counter))
+
+              if signal_start_counter > 20:
+                signal_start_confirmed = True
+
               if center_frequency not in dict_signal_start:
-                self.debug.info_message("found signal start")
-                self.debug.info_message("signal_scan: " + str(signal_scan))
+                self.debug.info_message("found signal start A")
+                self.debug.info_message("signal_scan: " + str(signal_scan / upconvert_factor))
                 self.debug.info_message("current_magnitude: " + str(current_magnitude))
                 if signal_scan > 0:
                   self.debug.info_message("signal_scan > 0")
-                  dict_signal_start[center_frequency] = signal_scan + 800 # 1st two pulses in 100 pulse sequence triggers detection
+                  #dict_signal_start[center_frequency] = (signal_scan / upconvert_factor) + 800 # 1st two pulses in 100 pulse sequence triggers detection
+                  dict_signal_start[center_frequency] = (signal_scan / upconvert_factor) + 1000 # 1st two pulses in 100 pulse sequence triggers detection
                 else:
                   self.debug.info_message("signal_scan <= 0")
-                  dict_signal_start[center_frequency] = signal_scan
+                  dict_signal_start[center_frequency] = signal_scan  / upconvert_factor
+              else:
+                if signal_start_counter == 1:
+                  self.debug.info_message("found signal start B")
+                  dict_signal_start[center_frequency] = (signal_scan / upconvert_factor) + 1000
 
-            if current_magnitude > magnitude_trigger:
-              if center_frequency not in dict_last_frequency:
-                dict_last_frequency[center_frequency] = current_frequency
-              elif current_frequency != dict_last_frequency[center_frequency]:
-                #self.debug.info_message("abs(current_frequency - center_frequency): " + str(abs(current_frequency - center_frequency)))
-                if abs(current_frequency - center_frequency) > 15:
+                if dict_signal_complete[center_frequency] == False and signal_start_confirmed:
+                  dict_signal_end[center_frequency] = signal_scan / upconvert_factor
+                  self.debug.info_message("found signal end 1")
+            else:
+              #if center_frequency in dict_signal_start and signal_start_counter < 300:
+              #  dict_signal_start[center_frequency] = signal_scan  / upconvert_factor
 
-                  if current_frequency - center_frequency > 0 and dict_last_frequency[center_frequency] - center_frequency < 0:
-                    dict_last_frequency[center_frequency] = current_frequency
-                    dict_carrier_transitions[center_frequency].append(signal_scan)
-                    self.debug.info_message("found carrier transition")
-                    self.debug.info_message("signal_scan: " + str(signal_scan))
-                    self.debug.info_message("current_magnitude: " + str(current_magnitude))
-                  elif current_frequency - center_frequency < 0 and dict_last_frequency[center_frequency] - center_frequency > 0:
-                    dict_last_frequency[center_frequency] = current_frequency
-                    dict_carrier_transitions[center_frequency].append(signal_scan)
-                    self.debug.info_message("found carrier transition")
-                    self.debug.info_message("signal_scan: " + str(signal_scan))
-                    self.debug.info_message("current_magnitude: " + str(current_magnitude))
- 
-                  #self.debug.info_message("found carrier transition")
-                  #self.debug.info_message("signal_scan: " + str(signal_scan))
-                  #dict_last_frequency[center_frequency] = current_frequency
-                  #dict_carrier_transitions[center_frequency].append(signal_scan)
+              signal_start_counter = 0
+              if center_frequency in dict_signal_start and signal_start_confirmed:
+                signal_end_counter = signal_end_counter + 1
+
+              self.debug.info_message("signal_end_counter: " + str(signal_end_counter))
+
+              if signal_end_counter >= 1 and signal_start_confirmed and dict_signal_complete[center_frequency] == False:
+                dict_signal_complete[center_frequency] = True
+                dict_signal_end[center_frequency] = signal_scan / upconvert_factor
+                self.debug.info_message("found signal end 2")
+
+        #dict_signal_complete[center_frequency] = True
+
+        signal_start = dict_signal_start[center_frequency]
+        signal_end   = dict_signal_end[center_frequency]
+        current_signal_length = (int(signal_end) - int(signal_start)) // 8000
+        mode_name, ignore_it = getModeNameFromSignalLength(center_frequency, current_signal_length, signal_start, signal_end)
+        if ignore_it == False:
+          dict_signal_candidates[center_frequency] = {"signal_start": signal_start, "signal_end": signal_end, "signal_length": current_signal_length, "mode_name": mode_name}
 
       self.debug.info_message("dict_signal_start: " + str(dict_signal_start))
       self.debug.info_message("dict_signal_end: " + str(dict_signal_end))
       self.debug.info_message("dict_signal_complete: " + str(dict_signal_complete))
 
-      min_block_start_location = 100000000
-
-      for segment_count in range(0, len(candidate_segments)):
-        center_frequency = ((candidate_segments[segment_count] + 1) * segment_width) + 240 
-
-        if len(dict_carrier_transitions[center_frequency]) > 4:
-          self.debug.info_message("center_frequency: " + str(center_frequency))
-          self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
-
-          new_array = np.array(dict_carrier_transitions[center_frequency])
-          for test in range(7, 2, -1):
-            test_len = 2 ** test
-
-            new_array_2 = new_array % (test_len * 100)
-
-            """ rebase """
-            unique_items, counts = np.unique(new_array_2, return_counts = True)
-            min_count = 100000000
-            for rebase_count in range(0, len(counts)):
-              if counts[rebase_count] > len(new_array_2) * 0.3 and unique_items[rebase_count] < min_count:
-                min_count = unique_items[rebase_count]
-            if min_count != 100000000:
-              new_array_2 = new_array_2 - min_count
-
-            new_array_3 = new_array_2 // 400
-
-            unique_items, counts = np.unique(new_array_3, return_counts = True)
-
-            self.debug.info_message("B unique_items: " + str(unique_items))
-            self.debug.info_message("B counts: " + str(counts))
-
-            if np.max(counts) > len(new_array_3) * 0.6 and center_frequency == self.osmod.center_frequency:
-              self.debug.info_message("center_frequency: " + str(center_frequency))
-              self.debug.info_message("MATCH. length is: " + str(test_len * 200))
-              self.debug.info_message("dict_carrier_transitions: " + str(dict_carrier_transitions[center_frequency]))
-              block_start_location = np.min(dict_carrier_transitions[center_frequency])
-              if block_start_location < min_block_start_location:
-                min_block_start_location = block_start_location
-              mode_name = str(test_len * 200)
-              self.osmod.form_gui.window['text_input_detected_mode'].update("LB28-" + str(mode_name) + "-I3")
-
-              break
-
       if self.osmod.center_frequency in dict_signal_start:
-        signal_start = dict_signal_start[self.osmod.center_frequency]
-        signal_end   = dict_signal_end[self.osmod.center_frequency]
-        signal_length_seconds = (signal_end - signal_start) // 8000
- 
-        self.osmod.form_gui.window['text_input_detected_block_start'].update(str(signal_start) + "," + str(signal_length_seconds))
-        return data[signal_start:]
+        self.debug.info_message("setting signal start and end")
+        self.debug.info_message("dict_signal_start: " + str(dict_signal_start))
+        self.debug.info_message("dict_signal_end: " + str(dict_signal_end))
+
+        signal_start = int(dict_signal_start[self.osmod.center_frequency])
+        self.debug.info_message("signal_start: " + str(signal_start))
+
+        signal_end   = int(dict_signal_end[self.osmod.center_frequency])
+        self.debug.info_message("signal_end: " + str(signal_end))
+
+        current_signal_length = (dict_signal_end[self.osmod.center_frequency] - dict_signal_start[self.osmod.center_frequency]) // 8000
+
+        mode_name, ignore_it = getModeNameFromSignalLength(self.osmod.center_frequency, current_signal_length, signal_start, signal_end)
+
+        self.osmod.form_gui.window['text_input_detected_mode'].update(mode_name)
+
+        self.debug.info_message("dict_signal_candidates: " + str(dict_signal_candidates))
+
+        self.osmod.form_gui.window['text_input_detected_block_start'].update(str(signal_start) + "," + str(current_signal_length))
+        return data[signal_start:], dict_signal_candidates
       else:
-        return data
+        return data, dict_signal_candidates
 
     except:
       self.debug.error_message("Exception in findDecodeCandidates: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
@@ -3557,11 +3707,11 @@ class ModemCoreUtils(object):
 
       message = string_out
       self.debug.info_message("completed getRunLengthDecode. unescaped message: " + str(message) )
-
       return message
 
     except:
       self.debug.error_message("Exception in getRunLengthDecode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
+      return message
 
 
 

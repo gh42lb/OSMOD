@@ -545,6 +545,7 @@ class OsmodTest(object):
           self.osmod.center_frequency = frequency
 
           self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
+          #self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "partial")
 
       elif routine_type == 'Calculate Rotation Tables':
         self.createRotationTables(values, mode, chunk_num, carrier_separation_override, amplitude, mode, "full")
@@ -772,6 +773,9 @@ class OsmodTest(object):
         elif self.osmod.symbol_block_size == 2160: # 48k
           range_fft_filter        = [[6000, 21000, 1000], []] 
           range_fft_interpolate   = [[6000, 21000, 1000], []]
+        elif self.osmod.symbol_block_size == 2400: 
+          range_fft_filter        = [[3000, 6000, 1000], []] 
+          range_fft_interpolate   = [[3000, 6000, 1000], []]
         elif self.osmod.symbol_block_size == 2520: 
           range_fft_filter        = [[3000, 17000, 1000], []] 
           range_fft_interpolate   = [[3000, 17000, 1000], []]
@@ -787,6 +791,9 @@ class OsmodTest(object):
         elif self.osmod.symbol_block_size == 4320: # 144K
           range_fft_filter        = [[3000, 17000, 1000], []] 
           range_fft_interpolate   = [[3000, 17000, 1000], []]
+        elif self.osmod.symbol_block_size == 4800:
+          range_fft_filter        = [[2000, 7000, 1000], []] 
+          range_fft_interpolate   = [[2000, 7000, 1000], []]
         elif self.osmod.symbol_block_size == 5400: # 144K
           range_fft_filter        = [[3000, 17000, 1000], []] 
           range_fft_interpolate   = [[3000, 17000, 1000], []]
@@ -1062,36 +1069,36 @@ class OsmodTest(object):
 
     zero_delta_pulse_length = 1 / wavelength_per_sample
     nearest_to_required = (pulse_length_in_samples // zero_delta_pulse_length) * zero_delta_pulse_length
-    self.debug.error_message("zero_delta_pulse_length: " + str(zero_delta_pulse_length))
-    self.debug.error_message("nearest_to_required: " + str(nearest_to_required))
+    self.debug.info_message("zero_delta_pulse_length: " + str(zero_delta_pulse_length))
+    self.debug.info_message("nearest_to_required: " + str(nearest_to_required))
 
     """ nearest frequency with zero delta """
     zero_delta_wavelength_per_sample = int(waves) / pulse_length_in_samples
     zero_delta_frequency = zero_delta_wavelength_per_sample * self.osmod.sample_rate
-    self.debug.error_message("zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
-    self.debug.error_message("zero_delta_frequency: " + str(zero_delta_frequency))
+    self.debug.info_message("zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
+    self.debug.info_message("zero_delta_frequency: " + str(zero_delta_frequency))
     zero_delta_wavelength_per_sample = (int(waves)+1) / pulse_length_in_samples
     zero_delta_frequency = zero_delta_wavelength_per_sample * self.osmod.sample_rate
-    self.debug.error_message("+1 zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
-    self.debug.error_message("+1 zero_delta_frequency: " + str(zero_delta_frequency))
+    self.debug.info_message("+1 zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
+    self.debug.info_message("+1 zero_delta_frequency: " + str(zero_delta_frequency))
     zero_delta_wavelength_per_sample = (int(waves)-1) / pulse_length_in_samples
     zero_delta_frequency = zero_delta_wavelength_per_sample * self.osmod.sample_rate
-    self.debug.error_message("-1 zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
-    self.debug.error_message("-1 zero_delta_frequency: " + str(zero_delta_frequency))
+    self.debug.info_message("-1 zero_delta_wavelength_per_sample: " + str(zero_delta_wavelength_per_sample))
+    self.debug.info_message("-1 zero_delta_frequency: " + str(zero_delta_frequency))
 
     waves = wavelength_per_sample * pulse_length_in_samples  
-    self.debug.error_message("test 0: " + str(((waves * 8) ) % 8))
+    self.debug.info_message("test 0: " + str(((waves * 8) ) % 8))
     waves = wavelength_per_sample * pulse_length_in_samples * 2 
-    self.debug.error_message("test 1: " + str(((waves * 8) ) % 8))
+    self.debug.info_message("test 1: " + str(((waves * 8) ) % 8))
     waves = wavelength_per_sample * pulse_length_in_samples * 3 
-    self.debug.error_message("test 2: " + str(((waves * 8) ) % 8))
+    self.debug.info_message("test 2: " + str(((waves * 8) ) % 8))
     waves = wavelength_per_sample * pulse_length_in_samples * (((num_pulses // 3) * 3) +1)
-    self.debug.error_message("test 3: " + str(((waves * 8) ) % 8))
+    self.debug.info_message("test 3: " + str(((waves * 8) ) % 8))
 
 
     waves = wavelength_per_sample * pulse_length_in_samples * num_pulses
     inter_pulse_phase = (waves * 2 * np.pi) % np.pi
-    self.debug.error_message("inter_pulse_phase: " + str(inter_pulse_phase))
+    self.debug.info_message("inter_pulse_phase: " + str(inter_pulse_phase))
 
     return ((waves * 8) + 4 ) % 8
     
@@ -1353,11 +1360,15 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter, center_frequency, self.osmod.getTxSampleRate())
       data2 = self.osmod.modulation_object.apply_filterSR(data2, self.osmod.tx_filter2, center_frequency, self.osmod.getTxSampleRate())
 
+      self.debug.info_message("len(data2): " + str(len(data2)))
 
       #self.osmod.modulation_object.writeFileWav(mode + ".wav", data2)
       self.osmod.modulation_object.writeFileWavSR(mode + ".wav", data2, self.osmod.getTxSampleRate())
 
       audio_array = self.osmod.modulation_object.readFileWav(mode + ".wav")
+
+      self.debug.info_message("len(audio_array): " + str(len(audio_array)))
+
       noise_free_signal = audio_array*0.00001 * float(amplitude)
 
       how_many_blocks = 1 #max(1, int(len(text) // int(chunk_num)))
@@ -1365,30 +1376,34 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       #audio_block = noise_free_signal.copy()
 
 
+      self.debug.info_message("len(audio_block): " + str(len(audio_block[0])))
 
-
+      test_signal = audio_block[0]
 
       """ adjust for doppler shift """
       #audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShift(audio_block, values, center_frequency)
-      audio_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(audio_block, values, center_frequency, self.osmod.getTxSampleRate())
+      test_signal = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(test_signal, values, center_frequency, self.osmod.getTxSampleRate())
 
       """ filter the input signal """
-      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, self.osmod.rx_filter, center_frequency, self.osmod.getRxSampleRate())
-      audio_block = self.osmod.modulation_object.apply_filterSR(audio_block, self.osmod.rx_filter2, center_frequency, self.osmod.getRxSampleRate())
+      test_signal = self.osmod.modulation_object.apply_filterSR(test_signal, self.osmod.rx_filter, center_frequency, self.osmod.getRxSampleRate())
+      test_signal = self.osmod.modulation_object.apply_filterSR(test_signal, self.osmod.rx_filter2, center_frequency, self.osmod.getRxSampleRate())
 
       """ locate pulse start index """
       #ret_values = self.osmod.detector.detectStandingWavePulseNew([audio_block, audio_block], frequency, 0, 0, ocn.LOCATE_PULSE_START_INDEX)
       #pulse_start_index = ret_values[0]
 
 
-      base_signal = audio_block[0].copy()
+      base_signal = test_signal.copy()
       half = int(self.osmod.pulses_per_block / 2)
 
       rotation_dict = self.osmod.opd.readRotationTablesFromFile(tablename)
 
       if full_partial == "full":
         loop__end = half
-        if self.osmod.pulses_per_block == 64:
+        if self.osmod.pulses_per_block == 48:
+          loop_start = 6
+          loop_increment = 3
+        elif self.osmod.pulses_per_block == 64:
           loop_start = 12
           loop_increment = 3
         elif self.osmod.pulses_per_block == 128:
@@ -1405,9 +1420,12 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
           loop_increment = 1
 
       elif full_partial == "partial":
-        loop_increment = 1
-        loop_start = half - 3
-        loop__end  = half
+        #loop_increment = 1
+        #loop_start = half - 3
+        #loop__end  = half
+        loop_increment = 3
+        loop_start = 6
+        loop__end  = 7
         #self.osmod.rotation_increments = 100000
 
       for pulse_train_length in range(loop_start,loop__end + 1, loop_increment):
@@ -1869,9 +1887,11 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       """ DEBUG CODE ONLY"""
       #audio_array = self.osmod.modulation_object.alignTimePointT0(audio_array, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
       #self.osmod.modulation_object.alignTimePointT0(audio_array, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
+      original_center_frequency = self.osmod.center_frequency
+
       automatic_mode_detection = self.osmod.form_gui.window['cb_enable_automatic_mode_detection'].get()
       if automatic_mode_detection:
-        audio_array = self.osmod.modulation_object.findDecodeCandidates(audio_array)
+        audio_array, dict_signal_candidates = self.osmod.modulation_object.findDecodeCandidates(audio_array, original_center_frequency)
 
       """ TEST CODE ONLY debug code for FFT analysis"""
       #self.osmod.detector.detectStandingWavePulseNew([audio_array, audio_array], frequency, 0, 0, ocn.FFT_ANALYSIS)
@@ -1931,16 +1951,16 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
 
 
 
+
+
       """ receive section """
 
       """ filter the input signal """
       audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, self.osmod.rx_filter, center_frequency, self.osmod.getRxSampleRate())
       audio_array = self.osmod.modulation_object.apply_filterSR(audio_array, self.osmod.rx_filter2, center_frequency, self.osmod.getRxSampleRate())
 
-
       if use_hifi_tx == True and use_hifi_rx == True:
         audio_array = scipy_signal.resample(audio_array, int(len(audio_array) * 1/6))
-
 
       """ THIS IS TEST CODE """
       #frequency_test = self.osmod.modulation_object.getStrongestFrequencyCZT(np.append(audio_array, np.zeros((len(audio_array)*20,), dtype = audio_array.dtype)).copy(), 1380, 1385, self.osmod.sample_rate, 50000)
@@ -1957,7 +1977,6 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
       rcvd_bitstring_2 = []
 
       how_many_blocks = max(1, int(len(text) // int(chunk_num)))
-
 
       simulate_random_phase_shift = self.osmod.form_gui.window['cb_simulatephaseshift'].get()
       simulate_random_phase_shift_add = self.osmod.form_gui.window['cb_simulatephaseshift_add'].get()
@@ -2018,6 +2037,8 @@ Info: persistent_higher: [33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
         rcvd_bitstring_2.append(decoded_bitstring_2)
 
       self.debug.info_message("complete")
+
+
 
 
 

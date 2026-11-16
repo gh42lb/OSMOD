@@ -173,7 +173,31 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     """ TEST """
     #combo_modem_prod_modes  = 'LB28-400-I3,LB28-400-I3-FC10,LB28-800-I3,LB28-800-I3-FC10,LB28-800-I3-FC10-VFEC,LB28-800-I3-HFM,LB28-1600-I3,LB28-1600-I3-FC10,LB28-1600-I3-FC10-VFEC,LB28-1600-I3-FC10-LFEC,LB28-1600-I3-FC15,LB28-1600-I3-FC20,LB28-1600-I3-FC25,LB28-1600-I3-FC40,LB28-1600-I3-FC50,LB28-1600-I3-FC80,LB28-1600-I3-FC100,LB28-1600-I3-VFEC,LB28-3200-I3,LB28-3200-I3-FC10,LB28-3200-I3-FC40,LB28-3200-I3-FC50,LB28-3200-I3-FC40-VFEC,LB28-3200-I3-FC40-LFEC,LB28-3200-I3-FC10-VFEC,LB28-3200-I3-FC10-LFEC,LB28-3200-I3-VFEC,LB28-6400-I3,LB28-6400-I3-FC1,LB28-6400-I3-FC2,LB28-6400-I3-FC3,LB28-6400-I3-FC4,LB28-6400-I3-FC5,LB28-6400-I3-FC10,LB28-6400-I3-FC15,LB28-6400-I3-FC40,LB28-6400-I3-FC50,LB28-6400-I3-FC10-VFEC,LB28-6400-I3-DP,LB28-12800-I3,LB28-12800-I3-FC10,LB28-12800-I3-FC40,LB28-12800-I3-FC10-VFEC,LB28-25600-I3,LB28-25600-I3-FC10,LB28-25600-I3-FC40,LB28-51200-I3-FC40'.split(',')
     """ LIVE """
-    combo_modem_prod_modes  = 'LB28-300-I3-FF38-96K,LB28-360-I3-FF38-48K,LB28-420-I3-FF38-48K,LB28-480-I3-FF25,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-2400-I3-FC38,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+    combo_modem_prod_modes  = 'LB28-300-I3-FF38-96K,LB28-360-I3-FF38-48K,LB28-420-I3-FF38-48K,LB28-480-I3-FF25,LB28-480-I3-FF38,LB28-480-I3-FF38-HFM4,LB28-560-I3-FF35,LB28-560-I3-FF38,LB28-560-I3-FF40,LB28-560-I3-FF42,LB28-560-I3-FF42-VC,LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-VC,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-VC,LB28-800-I3-FF25-VCE,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40,LB28-1200-I3-FF40-VC,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VC,LB28-1600-I3-FF40-VCE,LB28-1600-I3-FF50,LB28-1600-I3-FF50-VCE,LB28-1800-I3-FC38,LB28-1800-I3-FC38-VC,LB28-1800-I3-FC38-VCE,LB28-2400-I3-FC38,LB28-2400-I3-FC38-VCE,LB28-2400-I3-FF40,LB28-2400-I3-FF40-VC,LB28-2400-I3-FF40-VCE,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VC,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-4800-I3-FF40,LB28-4800-I3-FF40-VC,LB28-4800-I3-FF40-VCE,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC25-VCE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FF40-VC,LB28-6400-I3-FF40-VCE,LB28-6400-I3-FC50,LB28-12800-I3,LB28-12800-I3-FC5,LB28-12800-I3-FC10,LB28-12800-I3-FC20,LB28-12800-I3-FC40,LB28-12800-I3-FF40,LB28-25600-I3-FC5,LB28-25600-I3-FC10,LB28-25600-I3-FC20,LB28-25600-I3-FC40,LB28-25600-I3-FF40'.split(',')
+
+    #base_mode_ref = {3: [0, "LB28-480-I3-", ""], 4: [0, "LB28-560-I3-", ""], 5: [0, "LB28-700-I3-", ""], 6: [0, "LB28-800-I3-", ""], 8: [0, "LB28-700-I3-", "-VC"], 9: [0, "LB28-800-I3-", "-VCE"], 12: [1, "LB28-1600-I3-", ""], 14: [1, "LB28-1200-I3-", "-VCE"], 19: [1, "LB28-1600-I3-", "-VCE"], 25:[1, "LB28-3200-I3-", ""], 29: [2, "LB28-2400-I3-", "-VCE"], 37: [1, "LB28-4800-I3-", ""], 39: [1, "LB28-3200-I3-", "-VCE"], 51: [1, "LB28-6400-I3-", ""], 59: [1, "LB28-4800-I3-", "-VCE"], 79: [1, "LB28-6400-I3-", "-VCE"]}
+
+    self.combo_modem_prod_modes_rx_sync_20_sec    = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40'.split(',')
+    self.combo_modem_prod_modes_rx_sync_30_sec    = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE'.split(',')
+    self.combo_modem_prod_modes_rx_sync_1_min     = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FF40-VCE,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-4800-I3-FF40'.split(',')
+    self.combo_modem_prod_modes_rx_sync_2_min     = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FF40-VCE,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-4800-I3-FF40,LB28-4800-I3-FF40-VCE,LB28-6400-I3-FF40,LB28-6400-I3-FF40-VCE'.split(',')
+
+    #self.combo_modem_prod_modes_rx_sync_20_sec    = 'LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40'.split(',')
+    #self.combo_modem_prod_modes_rx_sync_30_sec    = 'LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF40,LB28-1600-I3-FF50,LB28-1800-I3-FC38'.split(',')
+    #self.combo_modem_prod_modes_rx_sync_1_min     = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FC10,LB28-3200-I3-FF10,LB28-3200-I3-FC16,LB28-3200-I3-FF16,LB28-3200-I3-FC20,LB28-3200-I3-FC25,LB28-3200-I3-FF25,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FC40,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-3200-I3-FC50,LB28-4800-I3-FF25,LB28-6400-I3,LB28-6400-I3-FC10,LB28-6400-I3-FC16,LB28-6400-I3-FC20,LB28-6400-I3-FC25,LB28-6400-I3-FC25-CE,LB28-6400-I3-FC40,LB28-6400-I3-FF40,LB28-6400-I3-FC50'.split(',')
+
+    #self.combo_modem_prod_modes_beacon_1_minute   = 'LB28-600-I3-FF25,LB28-600-I3-FF25-HFM4,LB28-600-I3-FC38,LB28-600-I3-FF38,LB28-600-I3-FF38-HFM4,LB28-600-I3-FF38-VC,LB28-700-I3-FF20,LB28-700-I3-FF20-HFM4,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF20,LB28-800-I3-FF20-HFM4,LB28-800-I3-FF25,LB28-800-I3-FF25-HFM4,LB28-800-I3-FF38,LB28-800-I3-FF38-HFM4,LB28-800-I3-FF38-VC,LB28-960-I3-FF25,LB28-960-I3-FF25-HFM4,LB28-1200-I3-FF25,LB28-1200-I3-FF25-HFM4,LB28-1200-I3-FC38,LB28-1200-I3-FC38-VC,LB28-1200-I3-FF40,LB28-1600-I3-FC10,LB28-1600-I3-FC20,LB28-1600-I3-FF25,LB28-1600-I3-FF40,LB28-1600-I3-FF50,LB28-1800-I3-FC38'.split(',')
+    self.combo_modem_prod_modes_beacon_1_minute   = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FF40-VCE,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-4800-I3-FF40'.split(',')
+    self.combo_modem_prod_modes_beacon_5_minutes  = 'LB28-480-I3-FF25,LB28-560-I3-FF42,LB28-700-I3-FF38,LB28-700-I3-FF38-VC,LB28-800-I3-FF25,LB28-800-I3-FF25-VCE,LB28-1200-I3-FF40-VCE,LB28-1600-I3-FF40,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FF40-VCE,LB28-3200-I3-FF40,LB28-3200-I3-FF40-VCE,LB28-4800-I3-FF40'.split(',')
+    self.combo_modem_prod_modes_beacon_10_minutes = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+    self.combo_modem_prod_modes_beacon_15_minutes = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+    self.combo_modem_prod_modes_beacon_30_minutes = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+    self.combo_modem_prod_modes_beacon_45_minutes = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+    self.combo_modem_prod_modes_beacon_1_hour     = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+    self.combo_modem_prod_modes_beacon_2_hours    = 'LB28-1600-I3-FF25-VCE,LB28-1600-I3-FF40-VCE,LB28-2400-I3-FC38-VCE,LB28-3200-I3-FF25-VCE,LB28-3200-I3-FF40-VCE,LB28-6400-I3-FC25-VCE'.split(',')
+
+    #self.combo_modem_prod_modes_beacon_30_minutes = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
+    #self.combo_modem_prod_modes_beacon_1_hour     = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
 
 
     self.combo_modem_prod_modes = combo_modem_prod_modes
@@ -184,8 +208,6 @@ LB28-204800-2048-2-15-I,LB28-2048-2-15-I,LB28-2048-2-10-I'.split(',')
     self.combo_modem_prod_modes_2_minutes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
     self.combo_modem_prod_modes_4_minutes  = 'LB28-1600-I3,LB28-1600-I3E,LB28-1600-I3-FEC,LB28-1600-I3E-FEC,LB28-3200-I3'.split(',')
 
-    self.combo_modem_prod_modes_beacon_30_minutes = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
-    self.combo_modem_prod_modes_beacon_1_hour     = 'LB28-6400-I3,LB28-12800-I3,LB28-25600-I3'.split(',')
 
     combo_timing_choices = '15 Seconds,30 Seconds,1 Minute,2 Minutes,4 Minutes'.split(',')
 
@@ -245,7 +267,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_modem_message_lengths = '16,32,64,128,256,512,1024'.split(',')
 
-    combo_re_decode_noise_level = '0,1,2,3,4,5,6,7,8'.split(',')
+    combo_re_decode_selector = '0,1,2,3,4,5,6,7,8'.split(',')
 
     combo_fdmpairlevel_options  = 'Scale 1,Scale 2,Scale 3'.split(',')
 
@@ -254,10 +276,16 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
     combo_txrx_choices = 'Tx Only,Tx + Rx'.split(',')
 
-    combo_beacon_timer_interval  = '--Off--,1 Minute,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes,1 Hour,2 Hours'.split(',')
+    combo_beacon_timer_interval  = '--Off--,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes'.split(',')
     #combo_beacon_type = 'General Beacon,p2pip Node,p2pip Gateway,Message Store'.split(',')
     combo_beacon_type = 'General Beacon'.split(',')
     self.combo_beacon_timer_interval = combo_beacon_timer_interval
+
+    combo_beacon_one_in_n = '1 in 5,1 in 10,1 in 20'.split(',')
+
+    combo_syncmsg_timer_interval  = '--Off--,20 Seconds,30 Seconds,1 Minute'.split(',')
+
+
 
     #combo_modem_devices = 'tes1,tes2,tes3'.split(',')
 
@@ -333,7 +361,7 @@ Pattern 44,Pattern 45,Pattern 46,Pattern 47,Pattern 48,Pattern 49,Pattern 50'.sp
 
 
     about_text = '\n\
-                      OSMOD de WH6GGO v0.4.0 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
+                      OSMOD de WH6GGO v0.4.1 Alpha - Open Source Modem Test and Reference Platform for LB28 Modulation.  \n\
 \n\
 \n\
 \n\
@@ -890,6 +918,13 @@ SOFTWARE.\n\
 
                         ], size=(130, 60)),
 
+                        sg.Frame('Manual Selector', [
+                           [sg.Button('Re - Decode', size=(11, 1), key='btn_re_decode', visible=True),
+                            sg.Combo(combo_re_decode_selector, key='combo_re_decode_selector', size=(4, 1), font=("Helvetica", 10), default_value=combo_re_decode_selector[0], enable_events=True, visible=True)],
+
+                        ], size=(130, 60)),
+
+
                         sg.Frame('Frequency Bias', [
                            [sg.Slider(range=(0.5, 2), default_value = 1.14, orientation='h', resolution=0.01, expand_x = False, expand_y = True, enable_events = True, key='slider_low_freq_bias_filter')],
 
@@ -910,43 +945,49 @@ SOFTWARE.\n\
                             #sg.Text('Beacon Type:', size=(15, 1) ) ,
                             sg.Combo(combo_beacon_type, default_value=combo_beacon_type[0], key='option_beacon_type', size=(17, 1))],
 
+                           [sg.Text('Tx to Rx: ', size=(7, 1), font=("Helvetica", 12)),
+                            sg.Combo(combo_beacon_one_in_n, key='option_beacon_one_in_n', default_value=combo_beacon_one_in_n[0], enable_events=True, visible = False ),
+                            sg.CBox('Randomized', key='cb_enable_beacon_seq_randomized', font=("Helvetica", 12), default=False, enable_events=True )],
+                            #sg.CBox('1 in 20', key='cb_enable_beacon_one_in_ten', font=("Helvetica", 12), default=False, enable_events=True )],
+
                             #sg.Button('Beacon', size=(5, 1), key='btn_send_beacon_message')],
-                           ], size=(300, 60) ),
+                           ], size=(300, 70) ),
 
 
                             sg.Frame('Time Sync Messages', [
                                [sg.CBox('Sync', key='cb_enable_sync_rx_processing_timing', font=("Helvetica", 12), default=False, enable_events=True ),
-                                sg.Slider(range=(-1, 1),size=(15, 25),  default_value = 0, orientation='h', resolution=0.1, expand_x = False, expand_y = False, enable_events = True, key='slider_listen_process_cycle')],
+                                sg.Combo(combo_syncmsg_timer_interval, default_value=combo_syncmsg_timer_interval[0], key='option_syncmsg_timer_interval', size=(17, 1), enable_events=True)],
+                                #sg.Slider(range=(-1, 1),size=(15, 25),  default_value = 0, orientation='h', resolution=0.1, expand_x = False, expand_y = False, enable_events = True, key='slider_listen_process_cycle')],
                                 #sg.Button('Send', size=(8, 1), key='btn_send_sync_message')],
 
                                 #sg.Combo(combo_timing_choices, key='combo_select_timing_choice', size=(80, 1), font=("Helvetica", 12), default_value=combo_timing_choices[1], enable_events=True)],
 
-                           ], size=(180, 60)),
+                           ], size=(180, 70)),
 
                            sg.Frame('Net', [
                            [sg.CBox('Enable', key='cb_enable_osmod_net', font=("Helvetica", 12), default=False, enable_events=True )],
-                           ], size=(80, 60)),
+                           ], size=(80, 70)),
 
 
                            sg.Frame('Freestyle Messages', [
                                [sg.CBox('Squelch', key='cb_enable_squelch_rx_processing', font=("Helvetica", 12), default=True, enable_events=True ),
                                 sg.Slider(range=(0, 20),size=(20, 25),  default_value = 1.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch')],
 
-                           ], size=(180, 60)),
+                           ], size=(180, 70)),
 
                            sg.Frame('Squelch Reset', [
                               [sg.Slider(range=(0, 20),size=(20, 25),  default_value = 1.0, orientation='h', resolution=0.01, expand_x = False, expand_y = False, enable_events = True, key='slider_signal_squelch_reset')],
 
-                           ], size=(140, 60)),
+                           ], size=(110, 70)),
 
 
 
 
-                            sg.Frame('Detected Mode', [
-                            [sg.Text(' -----', size=(14, 1), font=("Helvetica", 12), key='text_input_detected_mode' )],
-                            [sg.Text(' -----', size=(14, 1), font=("Helvetica", 12), key='text_input_detected_block_start' )],
+                            sg.Frame('Detected Mode (64 Char.)', [
+                            [sg.Text(' -----', size=(19, 1), font=("Helvetica", 12), key='text_input_detected_mode' )],
+                            [sg.Text(' -----', size=(19, 1), font=("Helvetica", 12), key='text_input_detected_block_start' )],
 
-                            ], size=(100, 60))],
+                            ], size=(150, 70))],
 
 
                            #sg.Text('Output Gain:', font=("Helvetica", 12), expand_x = False),
@@ -956,7 +997,7 @@ SOFTWARE.\n\
 
                            [sg.Table(values='', headings=['Frequency', 'Mode', 'Timestamp', 'Message'],
                             max_col_width=150,
-                            col_widths=[7, 15, 10, 100],
+                            col_widths=[7, 18, 14, 100],
                             auto_size_columns=False,
                             justification='left',
                             enable_events=True,
@@ -976,15 +1017,15 @@ SOFTWARE.\n\
 
 
                         [
-                            sg.MLine('', size=(120, 2), font=("Courier New Bold", 11), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_y=False, disabled = False), 
+                            sg.MLine('', size=(120, 2), font=("Courier New Bold", 11), key='ml_txrx_sendtext', text_color='black', background_color='white', expand_y=False, disabled = False, enable_events = True), 
+
+                            sg.CBox('Queue Message', key='cb_time_sync_queue_msg', default=False , visible=True, enable_events = True)],
+
                             #sg.InputText('', key='ml_txrx_sendtext', size=(150, 1), font=("Courier New", 9), text_color='black', background_color='white', enable_events=True),
 
                             #sg.Button('Queue / Send', size=(11, 1), key='btn_another_button', visible=True)],
                             #sg.Button('Tx Send', size=(15, 1), key='btn_init_test', visible=True),
                             #sg.CBox('EOM Callsign', key='cb_enable_eom_callsign', default=False ),
-                            sg.Button('Re - Decode', size=(11, 1), key='btn_re_decode', visible=True),
-                            #sg.Text('Noise: ', size=(5, 1) ) ,
-                            sg.Combo(combo_re_decode_noise_level, key='combo_re_decode_noise_level', size=(4, 1), font=("Helvetica", 10), default_value=combo_re_decode_noise_level[0], enable_events=True, visible=False)],
 
 
                           [
@@ -1009,7 +1050,7 @@ SOFTWARE.\n\
 
                            sg.CBox('Preset', key='cb_use_preset_message', default=True ),
 
-                           sg.CBox('CRC', key='cb_enable_crc', default=False ),
+                           sg.CBox('CRC', key='cb_enable_crc', default=False, enable_events=True ),
 
                            sg.CBox('Signal Detect', key='cb_enable_automatic_mode_detection', default=False ),
 
@@ -1028,7 +1069,7 @@ SOFTWARE.\n\
 
 
                         [sg.Frame('Modulation', [
-                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[5], enable_events=True)],
+                          [sg.Combo(combo_modem_prod_modes, key='combo_main_modem_prod_modes', size=(80, 1), font=("Helvetica", 12), default_value=combo_modem_prod_modes[38], enable_events=True)],
 
                         ], size=(200, 60)),
 
@@ -1157,7 +1198,7 @@ SOFTWARE.\n\
 
     self.tabgrp = [
 
-                           [sg.Frame('Timerss', [
+                           [sg.Frame('Clock & Timers', [
 
 
                            [sg.Frame('UTC', [
@@ -1244,7 +1285,7 @@ SOFTWARE.\n\
                             ]
 
 
-    self.window = sg.Window("OSMOD de WH6GGO v0.4.0 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
+    self.window = sg.Window("OSMOD de WH6GGO v0.4.1 Alpha - Live Modem + Test and Reference Code for LB28 Modulation", self.layout_main_tabs, default_element_size=(40, 1), grab_anywhere=False, disable_close=True,  size=(1500, 930))                       
 
     self.osmod.osmod_net.window = self.window
     self.osmod.osmod_net_view.window = self.window
@@ -1291,6 +1332,9 @@ class ReceiveControlsProc(object):
   beacon_trigger_time = None
   sync_trigger_time = None
   net_start_time = None
+  beacon_trigger_counter = 0
+  beacon_modulo = 5
+  seq_randomized = 0
 
   def __init__(self):  
     self.debug = db.Debug(cn.DEBUG_INFO)
@@ -1319,20 +1363,53 @@ class ReceiveControlsProc(object):
         delta = self.beacon_trigger_time - nowTimeUtc
         triggered, hours = displayDeltaTime(delta)
         if triggered:
-          self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+          #self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+
           try:
-            kernel_action = ocn.KERNEL_TX_BEACON_GENERAL
-            form_gui.osmod.sonic.pushKernelQueue(kernel_action)
-            form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+            if form_gui.window['cb_enable_beacon_seq_randomized'].get():
+              if self.beacon_trigger_counter % self.beacon_modulo == 0:
+                self.seq_randomized = random.randint(0, self.beacon_modulo - 1) 
+            else:
+              self.seq_randomized = 0
+
+            if self.beacon_trigger_counter % self.beacon_modulo == self.seq_randomized:
+              self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+              kernel_action = ocn.KERNEL_TX_BEACON_GENERAL
+              form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+              form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+            else:
+              #self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+              kernel_action = ocn.KERNEL_RX_BEACON
+              form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+              form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+            self.beacon_trigger_counter = self.beacon_trigger_counter + 1
           except:
             sys.stdout.write("Exception in updateCountdownTimer: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
-
       elif self.sync_trigger_time != None:
+        #sys.stdout.write("sync_trigger_time: " + str(self.sync_trigger_time) + "\n")
         delta = self.sync_trigger_time - nowTimeUtc
         triggered, hours = displayDeltaTime(delta)
         if triggered:
-          self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+          sys.stdout.write("msg sync triggered\n")
+          try:
+            #self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+            send_text = form_gui.window['ml_txrx_sendtext'].get()
+            if send_text.strip() != '' and form_gui.window['cb_time_sync_queue_msg'].get():
+              self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+              kernel_action = ocn.KERNEL_TX_NOW
+              form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+              form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+            else:
+              #self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+              kernel_action = ocn.KERNEL_RX_TIME_SYNC
+              form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+              form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+          except:
+            sys.stdout.write("Exception in updateCountdownTimer: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
 
       elif self.net_start_time != None:
         delta = self.net_start_time - nowTimeUtc
@@ -1356,13 +1433,13 @@ class ReceiveControlsProc(object):
         form_gui.window['beacon_clock'].update(displayString)
 
         if tdHours == 0 and tdMinutes == 0 and tdSeconds == 0:
-          sys.stdout.write("beacon trigger time\n")
+          sys.stdout.write("beacon \ sync trigger time\n")
           return True, tdHours
         elif tdHours == 23 and tdMinutes == 59 and tdSeconds > 55:
-          sys.stdout.write("beacon trigger time\n")
+          sys.stdout.write("beacon \ sync trigger time\n")
           return True, tdHours
         else:
-          sys.stdout.write("displayString: " + str(displayString) + "\n")
+          #sys.stdout.write("displayString: " + str(displayString) + "\n")
           return False, tdHours
 
     def drawLines():
@@ -1830,12 +1907,11 @@ class ReceiveControlsProc(object):
     sys.stdout.write("event_btn_re_decode\n")
 
     try:
-      #lds_noise_level = int(values['combo_re_decode_noise_level'])
-      #form_gui.osmod.override_resample_params = True
-      #form_gui.osmod.lds_awgn_level = lds_noise_level
+      lds_selector = int(values['combo_re_decode_selector'])
+      form_gui.osmod.override_resample_params = True
+      form_gui.osmod.lds_selector = lds_selector
 
       form_gui.window['cb_test_routine_use_audio_sample'].update(True)
-
       form_gui.window['combo_audio_sample_name'].update(value = 'sampled_audio.wav')
     
       test = OsmodTest(form_gui.osmod, window)
@@ -1859,8 +1935,12 @@ class ReceiveControlsProc(object):
 
       form_gui.window['cb_test_routine_use_audio_sample'].update(False)
 
-      #form_gui.window['combo_re_decode_noise_level'].update(value = str((lds_noise_level + 1) % len(form_gui.osmod.lds_per_awgn) ))
-      #form_gui.osmod.override_resample_params = False
+      auto_correct_lds = form_gui.window['cb_enable_block_level_resample_auto_correct'].get()
+      auto_correct_fs  = form_gui.window['cb_enable_auto_correct_frequency_only'].get()
+
+      if auto_correct_lds or auto_correct_fs:
+        form_gui.window['combo_re_decode_selector'].update(value = str((lds_selector + 1) % 2 ))
+      form_gui.osmod.override_resample_params = False
 
     except:
       sys.stdout.write("Exception in event_btn_re_decode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
@@ -1979,7 +2059,7 @@ class ReceiveControlsProc(object):
 
 
       if use_shortened_beacon_modes_list == True:
-        combo_beacon_timer_interval  = '--Off--,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes,1 Hour,2 Hours'.split(',')
+        combo_beacon_timer_interval  = '--Off--,5 Minutes,10 Minutes,15 Minutes,30 Minutes,45 Minutes'.split(',')
         window['combo_settings_beacon_timer_interval'].update(values=combo_beacon_timer_interval)
       else:
         window['combo_settings_beacon_timer_interval'].update(values=form_gui.combo_beacon_timer_interval)
@@ -2001,6 +2081,8 @@ class ReceiveControlsProc(object):
       self.updateBeaconOptions(window, values, form_gui, mode)
 
       if form_gui.osmod.sonic.kernel_thread_initialized == True:
+        form_gui.osmod.setDecoderRunning(False)
+
         kernel_action = ocn.KERNEL_SDD_STOP
         form_gui.osmod.sonic.pushKernelQueue(kernel_action)
         form_gui.osmod.sonic.send_threaded(window, values, form_gui)
@@ -2127,13 +2209,26 @@ class ReceiveControlsProc(object):
   def event_combo_settings_beacon_timer_interval(self, window, values, form_gui):
     sys.stdout.write("event_combo_settings_beacon_timer_interval\n")
     try:
-      timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
-      if timer_interval == "30 Minutes":
-        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_30_minutes)
-      elif timer_interval == "1 Hour":
-        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_hour)
+      #timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+      #if timer_interval == "30 Minutes":
+      #  window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_30_minutes)
+      #elif timer_interval == "1 Hour":
+      #  window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_hour)
 
-      self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+      beacon_enabled = form_gui.window['cb_enable_beacon_mode'].get()
+      if beacon_enabled:
+
+        timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+        self.updateBeaconModes(timer_interval, window, form_gui)
+
+        #if timer_interval == "1 Minute":
+        #  window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_minute)
+        #  window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_1_minute[5])
+
+        self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+
+      else:
+        self.beacon_trigger_time = None
 
     except:
       sys.stdout.write("Exception in event_combo_settings_beacon_timer_interval: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
@@ -2144,51 +2239,61 @@ class ReceiveControlsProc(object):
   def getNextTimeIncrementBeacon(self, window, values, form_gui):
     sys.stdout.write("getNextTimeIncrementBeacon\n")
     try:
+      cycle_basis_mins = 1 # default 1 min cycle basis
+
       timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
-      if timer_interval == "1 Minute":
+      #if timer_interval == "1 Minute":
+      #  increment_type = "Minutes"
+      #  inc_amount = 1
+      if timer_interval == "5 Minutes":
         increment_type = "Minutes"
         inc_amount = 1
-      elif timer_interval == "5 Minutes":
-        increment_type = "Minutes"
-        inc_amount = 5
+        self.beacon_modulo = 5
       elif timer_interval == "10 Minutes":
         increment_type = "Minutes"
-        inc_amount = 10
+        inc_amount = 2
+        self.beacon_modulo = 5
+        cycle_basis_mins = 2
       elif timer_interval == "15 Minutes":
         increment_type = "Minutes"
-        inc_amount = 15
+        inc_amount = 1
+        self.beacon_modulo = 15
+        cycle_basis_mins = 1
       elif timer_interval == "30 Minutes":
         increment_type = "Minutes"
-        inc_amount = 30
+        inc_amount = 2
+        self.beacon_modulo = 15
+        cycle_basis_mins = 2
       elif timer_interval == "45 Minutes":
         increment_type = "Minutes"
-        inc_amount = 45
-      elif timer_interval == "1 Hour":
-        increment_type = "Hours"
         inc_amount = 1
-      elif timer_interval == "2 Hours":
-        increment_type = "Hours"
-        inc_amount = 2
+        self.beacon_modulo = 45
+      #elif timer_interval == "1 Hour":
+      #  increment_type = "Hours"
+      #  inc_amount = 1
+      #  cycle_basis_mins = 2
+      #elif timer_interval == "2 Hours":
+      #  increment_type = "Hours"
+      #  inc_amount = 2
+      #  cycle_basis_mins = 2
       elif timer_interval == "--Off--":
         return None
 
       now = datetime.utcnow()
       if increment_type == "Minutes":
         minutes = (now.minute // inc_amount + 1) * inc_amount
-        if minutes >= 60:
-          #next_interval = now.replace(minute=0, hour=now.hour + 1)
-          next_interval = now.replace(second = 0, minute = minutes -60, hour = now.hour + 1)
-        else:
-          next_interval = now.replace(second = 0, minute = minutes)
-        
+
+        if cycle_basis_mins == 2 and (minutes % 2) == 1:
+          minutes = minutes + 1
+
+        hours = now.hour + (minutes // 60)
+        next_interval = now.replace(second = 0, minute = minutes % 60, hour = hours % 24, day = now.day + (hours // 24) )
+
         sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M") + "\n")
       elif increment_type == "Hours":
-        #else:
         hours = (now.hour // inc_amount + 1) * inc_amount
-        if hours >= 24:
-          next_interval = now.replace(second = 0, minute = 0, hour = hours - 24, day = now.day + 1)
-        else:
-          next_interval = now.replace(second = 0, minute = 0, hour = hours)
+        next_interval = now.replace(second = 0, minute = 0, hour = hours % 24, day = now.day + (hours // 24) )
+
         sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M") + "\n")
 
       return next_interval
@@ -2199,26 +2304,70 @@ class ReceiveControlsProc(object):
   def getNextTimeIncrementSync(self, window, values, form_gui):
     sys.stdout.write("getNextTimeIncrementSync\n")
     try:
-      inc_amount = 20
+
+      timer_interval = form_gui.window['option_syncmsg_timer_interval'].get()
+      if timer_interval == "20 Seconds":
+        increment_type = "Seconds"
+        inc_amount = 20
+      elif timer_interval == "30 Seconds":
+        increment_type = "Seconds"
+        inc_amount = 30
+      elif timer_interval == "1 Minute":
+        increment_type = "Minutes"
+        inc_amount = 1
+
       now = datetime.utcnow()
+      sys.stdout.write("seconds 1: " + str(now.second) + "\n")
+
+      if increment_type == "Seconds":
+        if inc_amount == 20:
+          seconds = (((now.second + 10) // inc_amount) * inc_amount) + 10
+          minutes = now.minute
+          if now.second >=5 and now.second <= 10 and seconds == 10:
+            seconds = 30
+          elif now.second >=25 and now.second <= 30 and seconds == 30:
+            seconds = 50
+          elif now.second >=45 and now.second <= 50 and seconds == 50:
+            seconds = 10
+            minutes = minutes + 1
+        elif inc_amount == 30:
+          seconds = (((now.second + 15) // inc_amount) * inc_amount) + 15
+          minutes = now.minute
+          if now.second >=10 and now.second <= 15 and seconds == 15:
+            seconds = 45
+          elif now.second >=40 and now.second <= 45 and seconds == 45:
+            seconds = 15
+            minutes = minutes + 1
+      else:
+        if now.second >= 28:
+          minutes = now.minute + 1
+        else:
+          minutes = now.minute
+
+        seconds = 30
+
+
+      sys.stdout.write("seconds: " + str(seconds) + "\n")
+      sys.stdout.write("minutes: " + str(minutes) + "\n")
+
+        #if ((seconds + 10 )% 20) < 1:
+        #  seconds = (((now.second + 10) // inc_amount) * inc_amount) + 20 + 10
+
       if True:
-        sys.stdout.write("seconds 1: " + str(now.second) + "\n")
-
-        #seconds = ((now.second // inc_amount + 1) * inc_amount) - 10
-        seconds = (((now.second + 10) // inc_amount) * inc_amount) + 10
-        if ((seconds + 10 )% 20) < 1:
-          seconds = (((now.second + 10) // inc_amount) * inc_amount) + 30
-        #  seconds = ((now.second // inc_amount + 2) * inc_amount) - 10
-
-        sys.stdout.write("seconds: " + str(seconds) + "\n")
+        hours = now.hour
 
         if seconds >= 60:
-          if now.minute == 59:
-            next_interval = now.replace(second=seconds - 60, minute=now.minute , hour=now.hour+1)
-          else:
-            next_interval = now.replace(second=seconds - 60, minute=now.minute + 1, hour=now.hour)
-        else:
-          next_interval = now.replace(second=seconds, minute = now.minute)
+          minutes = minutes + 1
+          seconds = seconds - 60
+
+        if minutes >= 60:
+          hours = hours + 1
+          minutes = minutes - 60
+
+        if hours >= 24:
+          hours = hours - 24
+
+        next_interval = now.replace(second=seconds, minute=minutes , hour=hours)
         
         sys.stdout.write("next_interval: " + next_interval.strftime("%H:%M:%S") + "\n")
 
@@ -2226,6 +2375,46 @@ class ReceiveControlsProc(object):
     except:
       sys.stdout.write("Exception in getNextTimeIncrementSync: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
+
+  def event_cb_enable_crc(self, window, values, form_gui):
+    sys.stdout.write("event_cb_enable_crc\n")
+    crc_enabled = form_gui.window['cb_enable_crc'].get()
+    form_gui.osmod.setCrcEnabled(crc_enabled)
+
+
+  def event_option_beacon_one_in_n(self, window, values, form_gui):
+    sys.stdout.write("event_option_beacon_one_in_n\n")
+
+    try:
+      tx_to_rx = form_gui.window['option_beacon_one_in_n'].get()
+      if tx_to_rx == "1 in 5":
+        self.beacon_modulo = 5
+      elif tx_to_rx == "1 in 10":
+        self.beacon_modulo = 10
+      elif tx_to_rx == "1 in 20":
+        self.beacon_modulo = 20
+    except:
+      sys.stdout.write("Exception in event_option_beacon_one_in_n: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def event_option_syncmsg_timer_interval(self, window, values, form_gui):
+    sys.stdout.write("event_option_syncmsg_timer_interval\n")
+
+    sync_enabled = form_gui.window['cb_enable_sync_rx_processing_timing'].get()
+
+    if sync_enabled:
+      timer_interval = form_gui.window['option_syncmsg_timer_interval'].get()
+      if timer_interval == "20 Seconds":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_20_sec)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_20_sec[6])
+      elif timer_interval == "30 Seconds":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_30_sec)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_30_sec[8])
+      elif timer_interval == "1 Minute":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_1_min)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_1_min[11])
+
+      self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
 
 
   def event_cb_enable_osmod_net(self, window, values, form_gui):
@@ -2259,33 +2448,151 @@ class ReceiveControlsProc(object):
         form_gui.window['text_net_on_air'].update("")
         self.net_start_time = None
     except:
-      sys.stdout.write("Exception in getNextTimeIncrementSync: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+      sys.stdout.write("Exception in event_cb_enable_osmod_net: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
+
+  def updateBeaconModes(self, timer_interval, window, form_gui):
+
+    try:
+      if timer_interval == "1 Minute":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_minute)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_1_minute[5])
+      elif timer_interval == "5 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_5_minutes)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_5_minutes[5])
+      elif timer_interval == "10 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_10_minutes)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_10_minutes[5])
+      elif timer_interval == "15 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_15_minutes)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_15_minutes[5])
+      elif timer_interval == "30 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_30_minutes)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_30_minutes[5])
+      elif timer_interval == "45 Minutes":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_45_minutes)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_45_minutes[5])
+      elif timer_interval == "1 Hour":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_1_hour)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_1_hour[5])
+      elif timer_interval == "2 Hours":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_beacon_2_hours)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_beacon_2_hours[5])
+    except:
+      sys.stdout.write("Exception in updateBeaconModes: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
   def event_cb_enable_beacon_mode(self, window, values, form_gui):
     sys.stdout.write("event_cb_enable_beacon_mode\n")
-    form_gui.window['cb_enable_squelch_rx_processing'].update(False)
-    form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
-    form_gui.window['cb_enable_osmod_net'].update(False)
-    form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
-    form_gui.window['tab_main_phase_charts2'].update(disabled=True)
-    window['combo_max_message_length'].update(disabled = True)
-    self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+
+    try:
+      timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+      self.updateBeaconModes(timer_interval, window, form_gui)
+
+      enabled = form_gui.window['cb_enable_beacon_mode'].get()
+      if enabled:
+        sys.stdout.write("enabled\n")
+
+        form_gui.window['cb_enable_automatic_mode_detection'].update(True)
+
+        form_gui.osmod.setDecoderRunning(False)
+        kernel_action = ocn.KERNEL_RX_STOP
+        form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+        form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+        if timer_interval != "--Off--":
+          self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+        #sys.stdout.write("next_interval - sync_trigger_time: " + str(self.sync_trigger_time) + "\n")
+
+        form_gui.window['btn_8pskdecoder'].update(disabled = True)
+        form_gui.window['btn_stop8pskdecoder'].update(disabled = True)
+        form_gui.window['btn_txrx_c_code_2'].update(disabled = True)
+        form_gui.window['btn_init_test'].update(disabled = True)
+        form_gui.window['btn_stop_tx'].update(disabled = True)
+      else:
+        sys.stdout.write("disabled\n")
+        self.beacon_trigger_time = None
+        form_gui.window['btn_8pskdecoder'].update(disabled = False)
+        form_gui.window['btn_stop8pskdecoder'].update(disabled = False)
+        form_gui.window['btn_txrx_c_code_2'].update(disabled = False)
+        form_gui.window['btn_init_test'].update(disabled = False)
+        form_gui.window['btn_stop_tx'].update(disabled = False)
+
+      form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+      form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
+      form_gui.window['cb_enable_osmod_net'].update(False)
+      form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+      form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+      window['combo_max_message_length'].update(disabled = True)
+      #self.beacon_trigger_time = self.getNextTimeIncrementBeacon(window, values, form_gui)
+    except:
+      sys.stdout.write("Exception in event_cb_enable_beacon_mode: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
 
   def event_enable_sync_rx_processing_timing(self, window, values, form_gui):
     sys.stdout.write("event_enable_sync_rx_processing_timing\n")
-    form_gui.window['cb_enable_squelch_rx_processing'].update(False)
-    form_gui.window['cb_enable_beacon_mode'].update(False)
-    form_gui.window['cb_enable_osmod_net'].update(False)
-    form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
-    form_gui.window['tab_main_phase_charts2'].update(disabled=True)
-    window['combo_max_message_length'].update(disabled = True)
-    self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+
+    try:
+      timer_interval = form_gui.window['option_syncmsg_timer_interval'].get()
+      if timer_interval == "20 Seconds":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_20_sec)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_20_sec[6])
+      elif timer_interval == "30 Seconds":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_30_sec)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_30_sec[8])
+      elif timer_interval == "1 Minute":
+        window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes_rx_sync_1_min)
+        window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes_rx_sync_1_min[11])
+
+      form_gui.window['cb_enable_squelch_rx_processing'].update(False)
+      form_gui.window['cb_enable_beacon_mode'].update(False)
+      form_gui.window['cb_enable_osmod_net'].update(False)
+      form_gui.net_callback_redirect = form_gui.NetCallbackRedirectNull
+      form_gui.window['tab_main_phase_charts2'].update(disabled=True)
+      window['combo_max_message_length'].update(disabled = True)
+
+      enabled = form_gui.window['cb_enable_sync_rx_processing_timing'].get()
+      if enabled:
+        sys.stdout.write("enabled\n")
+
+        form_gui.window['cb_enable_automatic_mode_detection'].update(True)
+
+        form_gui.osmod.setDecoderRunning(False)
+        kernel_action = ocn.KERNEL_RX_STOP
+        form_gui.osmod.sonic.pushKernelQueue(kernel_action)
+        form_gui.osmod.sonic.send_threaded(window, values, form_gui)
+
+        if timer_interval != "--Off--":
+          self.sync_trigger_time = self.getNextTimeIncrementSync(window, values, form_gui)
+        sys.stdout.write("next_interval - sync_trigger_time: " + str(self.sync_trigger_time) + "\n")
+
+        form_gui.window['btn_8pskdecoder'].update(disabled = True)
+        form_gui.window['btn_stop8pskdecoder'].update(disabled = True)
+        form_gui.window['btn_txrx_c_code_2'].update(disabled = True)
+        form_gui.window['btn_init_test'].update(disabled = True)
+        form_gui.window['btn_stop_tx'].update(disabled = True)
+
+        #self.beacon_trigger_time = None
+
+      else:
+        sys.stdout.write("disabled\n")
+        self.sync_trigger_time = None
+        form_gui.window['btn_8pskdecoder'].update(disabled = False)
+        form_gui.window['btn_stop8pskdecoder'].update(disabled = False)
+        form_gui.window['btn_txrx_c_code_2'].update(disabled = False)
+        form_gui.window['btn_init_test'].update(disabled = False)
+        form_gui.window['btn_stop_tx'].update(disabled = False)
+    except:
+      sys.stdout.write("Exception in event_enable_sync_rx_processing_timing: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
+
 
 
   def event_enable_squelch_rx_processing(self, window, values, form_gui):
     sys.stdout.write("event_enable_squelch_rx_processing\n")
+
+    window['combo_main_modem_prod_modes'].update(values=form_gui.combo_modem_prod_modes)
+    window['combo_main_modem_prod_modes'].update(form_gui.combo_modem_prod_modes[38])
+
     form_gui.window['cb_enable_sync_rx_processing_timing'].update(False)
     form_gui.window['cb_enable_beacon_mode'].update(False)
     form_gui.window['cb_enable_osmod_net'].update(False)
@@ -2296,6 +2603,11 @@ class ReceiveControlsProc(object):
     self.sync_trigger_time = None
     form_gui.window['beacon_clock'].update("--:--:--")
 
+    form_gui.window['btn_8pskdecoder'].update(disabled = False)
+    form_gui.window['btn_stop8pskdecoder'].update(disabled = False)
+    form_gui.window['btn_txrx_c_code_2'].update(disabled = False)
+    form_gui.window['btn_init_test'].update(disabled = False)
+    form_gui.window['btn_stop_tx'].update(disabled = False)
 
 
   def event_overridecostasloop(self, window, values, form_gui):
@@ -2437,6 +2749,12 @@ class ReceiveControlsProc(object):
     except:
       sys.stdout.write("Exception in event_tbl_callsign_locator: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ) + "\n")
 
+
+  def event_ml_txrx_sendtext(self, window, values, form_gui):
+    sys.stdout.write("event_ml_txrx_sendtext\n")
+
+    form_gui.window['cb_use_preset_message'].update(False)
+    form_gui.window['cb_time_sync_queue_msg'].update(False)
 
 
   def event_tbl_frequency_mode_message(self, window, values, form_gui):
@@ -2819,6 +3137,11 @@ class ReceiveControlsProc(object):
       'btn_load_solve_data'                   : event_btn_load_solve_data,
       'btn_re_decode'                         : event_btn_re_decode,
       'cb_test_show_czt_frequencies'          : event_cb_test_show_czt_frequencies,
+      'ml_txrx_sendtext'                      : event_ml_txrx_sendtext,
+      'option_syncmsg_timer_interval'         : event_option_syncmsg_timer_interval,
+      'option_beacon_one_in_n'                : event_option_beacon_one_in_n,
+      'cb_enable_crc'                         : event_cb_enable_crc,
+
       #'add_stn'          : self.osmod.osmod_net_dispatcher.event_addstn, 
 
 

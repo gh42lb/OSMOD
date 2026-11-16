@@ -122,6 +122,9 @@ class OsmodSonic(object):
           output_device = form_gui.window['combo_main_modem_output_device'].get()
           self.initialize(input_device, output_device, self.osmod.getTxSampleRate(), self.osmod.get_sd_blocksize_tx() )
 
+          separation_override = self.osmod.getSliderCarrierSeparation()
+          self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
+
           if self.continuous: 
             self.startInputStream()
 
@@ -182,7 +185,14 @@ class OsmodSonic(object):
             separation_override = self.osmod.getSliderCarrierSeparation()
             self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
             gc.disable()
+
+            self.osmod.form_gui.TxStatusActive()
+
             num_sd_blocks = self.tx_now(window, values, form_gui)
+
+            self.osmod.form_gui.window['ml_txrx_sendtext'].update(value="")
+            self.osmod.form_gui.window['cb_time_sync_queue_msg'].update(False)
+
             self.startOutputStream()
 
             #time.sleep(num_sd_blocks + 1)
@@ -201,8 +211,12 @@ class OsmodSonic(object):
                   resume_decode_after_transmit = True
 
             self.stopOutputStream()
+
+            self.osmod.form_gui.TxStatusInactive()
+
             gc.enable()
             gc.collect()
+
 
             #if resume_decode_after_transmit == True:             
             #if True: #always start listening after Tx
@@ -217,6 +231,8 @@ class OsmodSonic(object):
               spectralDensityDisplayEnabled = True
 
             gc.disable()
+
+            self.osmod.form_gui.TxStatusActive()
 
             mode = form_gui.window['combo_main_modem_prod_modes'].get()
             locator = form_gui.window['in_locator_grid_square'].get().strip().upper()
@@ -233,6 +249,9 @@ class OsmodSonic(object):
             self.startOutputStream()
             time.sleep(num_sd_blocks + 1)
             self.stopOutputStream()
+
+            self.osmod.form_gui.TxStatusInactive()
+
             gc.enable()
             gc.collect()
 
@@ -292,10 +311,68 @@ class OsmodSonic(object):
             if self.continuous: 
               spectralDensityDisplayEnabled = False
 
+
+          elif kernel_action == ocn.KERNEL_RX_BEACON:
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
+            separation_override = self.osmod.getSliderCarrierSeparation()
+            self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
+            gc.disable()
+
+            bufferStart = self.getRxBufferStart()
+
+            timer_interval = form_gui.window['combo_settings_beacon_timer_interval'].get()
+            if timer_interval == "5 Minutes":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 30) 
+            elif timer_interval == "10 Minutes":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 85) 
+            elif timer_interval == "15 Minutes":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 30) 
+            elif timer_interval == "30 Minutes":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 85) 
+            elif timer_interval == "45 Minutes":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 30) 
+
+            self.decodeData(form_gui, values, rxData, fdd)
+
+            gc.enable()
+            gc.collect()
+
+            form_gui.form_events.beacon_trigger_time = form_gui.form_events.getNextTimeIncrementBeacon(window, values, form_gui)
+
+
           elif kernel_action == ocn.KERNEL_TX_TIME_SYNC:
             self.tx_time_sync()
+
           elif kernel_action == ocn.KERNEL_RX_TIME_SYNC:
-            self.rx_time_sync()
+            #self.rx_time_sync()
+            if self.continuous: 
+              spectralDensityDisplayEnabled = True
+
+            separation_override = self.osmod.getSliderCarrierSeparation()
+            self.watch_frequency = self.osmod.calcCarrierFrequencies(self.osmod.center_frequency, separation_override)[0]
+            gc.disable()
+
+            bufferStart = self.getRxBufferStart()
+            #rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, num_sd_blocks)
+
+            timer_interval = form_gui.window['option_syncmsg_timer_interval'].get()
+            if timer_interval == "20 Seconds":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 15) 
+            elif timer_interval == "30 Seconds":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 22) 
+            elif timer_interval == "1 Minute":
+              rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, 45) 
+
+            self.decodeData(form_gui, values, rxData, fdd)
+
+            gc.enable()
+            gc.collect()
+
+            form_gui.form_events.sync_trigger_time = form_gui.form_events.getNextTimeIncrementSync(window, values, form_gui)
+
+
 
           elif kernel_action == ocn.KERNEL_REINITIALIZE:
             self.debug.info_message("KERNEL_REINITIALIZE")
@@ -377,19 +454,14 @@ class OsmodSonic(object):
 
       num_sd_blocks = self.tx_now(window, values, form_gui)
 
-      if self.continuous: #self.osmod.form_gui.window['cb_continuous_decode'].get() == False:
+      if self.continuous: 
         bufferStart = self.getRxBufferStart()
         self.startOutputStream()
       else:
         self.startStream()
 
-      #rxData, fdd = self.rx_squelch(window, values, form_gui, bufferStart, num_sd_blocks)
       rxData, fdd = self.rx_fixed_block_count(window, values, form_gui, bufferStart, num_sd_blocks)
-
-
-
       form_gui.TxStatusInactive()
-
       self.decodeData(form_gui, values, rxData, fdd)
 
     except:
@@ -658,51 +730,19 @@ class OsmodSonic(object):
 
     try:
 
-      if True:
-        #self.osmod.modulation_object.findDecodeCandidates(multi_block)
+      def decode_it(mode):
+        nonlocal multi_block
 
-        self.osmod.modulation_object.writeFileWavSR("sampled_audio.wav", multi_block, self.osmod.getRxSampleRate())
-
-        save_sampled_signal_checked = self.osmod.form_gui.window['cb_savesampledsignal'].get()
-        if save_sampled_signal_checked:
-          sampled_signal_name = self.osmod.form_gui.window['in_sampledsignalname'].get()
-          self.osmod.modulation_object.writeFileWavSR(sampled_signal_name, multi_block, self.osmod.getRxSampleRate())
-
-        multi_block = self.osmod.getInputGain() * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
-
-
-
-        show_czt_frequencies = self.osmod.form_gui.window['cb_test_show_czt_frequencies'].get()
-        if show_czt_frequencies:
-          self.debug.info_message("TEST CODE show_czt_frequencies in processRxData ...")
-          self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
-          self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
-
-
-
-        #center_frequency = values['slider_frequency']
-        #separation_override = values['slider_carrier_separation']
-        separation_override = self.osmod.getSliderCarrierSeparation()
-
+        #if "-VCE" in mode: 
+        #  self.osmod.form_gui.window['cb_enable_crc'].update(True)
+        #else:
+        #  self.osmod.form_gui.window['cb_enable_crc'].update(False)
 
         """ adjust for doppler shift """
         multi_block = self.osmod.modulation_object.adjustFrequencyShiftAndDopplerShiftSR(multi_block, values, self.osmod.center_frequency, self.osmod.getTxSampleRate())
 
-
-        """ DEBUG CODE ONLY"""
-        #multi_block = self.osmod.modulation_object.alignTimePointT0(multi_block, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
-        #self.osmod.modulation_object.alignTimePointT0(multi_block, self.osmod.getRxSampleRate(), self.osmod.getRxSymbolBlockSize())
-        automatic_mode_detection = self.osmod.form_gui.window['cb_enable_automatic_mode_detection'].get()
-        if automatic_mode_detection:
-          multi_block = self.osmod.modulation_object.findDecodeCandidates(multi_block)
-
-
-
-        #mode = self.osmod.getRealMode(values, self.osmod.form_gui)
-        mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
-
-
-        self.osmod.setInitializationBlock(mode)
+        if mode != '':
+          self.osmod.setInitializationBlock(mode)
         frequency = self.osmod.calcCarrierFrequenciesSR(self.osmod.center_frequency, separation_override, self.osmod.getRxSampleRate())
 
         """ filter the input signal """
@@ -719,12 +759,77 @@ class OsmodSonic(object):
         try:
           self.osmod.decoder_callback(multi_block, frequency)
         except:
-          self.debug.error_message("Exception in decodeProcessing: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
-
+          self.debug.info_message("Exception in decodeProcessing: " + str(sys.exc_info()[0]) + str(sys.exc_info()[1] ))
 
         SNR_db = self.osmod.mod_2fsk8psk.calculateSNR(multi_block, frequency)
         self.osmod.form_gui.window['text_snr_value_new'].update("SNR dB (est.): "f"{SNR_db:.3f}")
 
+
+
+      if True:
+        self.osmod.modulation_object.writeFileWavSR("sampled_audio.wav", multi_block, self.osmod.getRxSampleRate())
+
+        save_sampled_signal_checked = self.osmod.form_gui.window['cb_savesampledsignal'].get()
+        if save_sampled_signal_checked:
+          sampled_signal_name = self.osmod.form_gui.window['in_sampledsignalname'].get()
+          self.osmod.modulation_object.writeFileWavSR(sampled_signal_name, multi_block, self.osmod.getRxSampleRate())
+
+        multi_block = self.osmod.getInputGain() * 0.001 * multi_block * (2**15 - 1) / np.max(np.abs(multi_block)) 
+
+        show_czt_frequencies = self.osmod.form_gui.window['cb_test_show_czt_frequencies'].get()
+        if show_czt_frequencies:
+          self.debug.info_message("TEST CODE show_czt_frequencies in processRxData ...")
+          self.debug.info_message("FREQUENCY LO WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() - (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+          self.debug.info_message("FREQUENCY HI WITH RESOLVER: " + str(self.osmod.modulation_object.resolveFrequencyToNDP(multi_block, 1, self.osmod.getCenterFrequency() + (self.osmod.carrier_separation / 2), 1.5, 10, 0, 12, 1000, self.osmod.getTxSampleRate()) - self.osmod.getCenterFrequency()))
+
+        separation_override = self.osmod.getSliderCarrierSeparation()
+
+
+        """ DEBUG CODE ONLY"""
+        original_center_frequency = self.osmod.center_frequency
+
+        sync_mode_checked   = self.osmod.form_gui.window['cb_enable_sync_rx_processing_timing'].get()
+        beacon_mode_checked = self.osmod.form_gui.window['cb_enable_beacon_mode'].get()
+
+        automatic_mode_detection = self.osmod.form_gui.window['cb_enable_automatic_mode_detection'].get()
+        if automatic_mode_detection:
+          #if True:
+          if sync_mode_checked or beacon_mode_checked:
+            self.debug.info_message("Beacon / Time Sync enabled")
+
+            #multi_block, dict_signal_candidates = self.osmod.modulation_object.findDecodeCandidates(multi_block)
+            _, dict_signal_candidates = self.osmod.modulation_object.findDecodeCandidates(multi_block, original_center_frequency)
+
+            saved_multi_block = multi_block.copy()
+            saved_frequency = self.osmod.center_frequency
+
+            for key, value in dict_signal_candidates.items():
+              current_frequency = int(key)
+              signal_start = int(value["signal_start"])
+              signal_end = int(value["signal_end"])
+              mode_name = value["mode_name"]
+              self.debug.info_message("current_frequency: " + str(current_frequency) )
+              self.debug.info_message("signal_start: " + str(signal_start) )
+              self.debug.info_message("signal_end: " + str(signal_end) )
+              self.debug.info_message("mode_name: " + str(mode_name) )
+
+              self.osmod.form_gui.window['slider_frequency'].update(value=current_frequency)
+              self.osmod.center_frequency = current_frequency
+              multi_block = saved_multi_block[signal_start:signal_end]
+              #multi_block = saved_multi_block[signal_start:]
+
+              decode_it(mode_name)
+
+            self.osmod.form_gui.window['slider_frequency'].update(value=saved_frequency)
+            self.osmod.center_frequency = saved_frequency
+          else:
+            multi_block, dict_signal_candidates = self.osmod.modulation_object.findDecodeCandidates(multi_block, original_center_frequency)
+            mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
+            decode_it(mode)
+
+        else:
+          mode = self.osmod.form_gui.window['combo_main_modem_prod_modes'].get()
+          decode_it(mode)
 
 
     except:
